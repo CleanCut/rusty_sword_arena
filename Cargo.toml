@@ -1,0 +1,6 @@
+[package]
+name = "rusty_sword_arena"
+version = "0.1.0"
+authors = ["Nathan Stocks <cleancut@github.com>"]
+
+[dependencies]
