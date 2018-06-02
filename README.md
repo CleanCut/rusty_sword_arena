@@ -1,6 +1,6 @@
 # Rusty Sword Arena: A Crash Course in Rust
 
-This is the companion repository to the 3-hour tutorial.
+This is the companion repository to the half-day tutorial for OSCON 2018.
 
 # Preparation
 
