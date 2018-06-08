@@ -5,3 +5,4 @@ authors = ["Nathan Stocks <cleancut@github.com>"]
 
 [dependencies]
 zmq = "0.8"
+glium = "*"

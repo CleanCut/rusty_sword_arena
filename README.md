@@ -34,3 +34,11 @@ For all other operating systems, please see
 
 We will be using ZeroMQ for our network communication.
 
+### Install VulkanSDK
+
+On Windows and Linux, the theory is that graphics will work without you having to install anything.  If that turns out 
+not to be true, then [you can find the VulkanSDK downloads here](https://vulkan.lunarg.com/sdk/home).
+
+On macOS, 
+[download the macOS VulkanSDK (MoltenVK)](https://vulkan.lunarg.com/sdk/home#sdk/downloadConfirm/1.1.73.0/mac/vulkansdk-macos-1.1.73.0.tar.gz),
+uncompress it, and  
