@@ -1,35 +1,57 @@
-/// The endpoint for clients to request (zmq::REQ) to the server's reply (zmq::REP) socket.
-/// Clients will send their updates to the server this way.
-pub const client_port : i32 = 8001;
+pub mod net;
 
-/// The endpoint for clients to subscribe (zmq::SUB) to the server's publish (zmq::PUB) socket and
-/// receive game state updates.
-pub const game_port : i32 = 8002;
+use std::collections::HashMap;
+
+extern crate zmq;
+#[macro_use]
+extern crate serde_derive;
+extern crate bincode;
+
+use bincode::{serialize, deserialize};
 
 
-pub mod prelude {
-    pub use super::{client_port, game_port};
+
+/// Various game control actions. Join a game, leave a game, just fetch updated game settings.
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
+pub enum GameControlMsg {
+    Join  { name : String },
+    Leave { name : String },
+    Fetch,
 }
 
-pub mod network {
-//    extern crate zmq;
-//
-//    use std::time::{Duration, Instant};
-//    use std::thread::{self};
-//
-//    let ctx = zmq::Context::new();
-//
-//    let mut req_socket = ctx.socket(zmq::REQ).unwrap();
-//    let mut sub_socket = ctx.socket(zmq::SUB).unwrap();
-//    req_socket.connect(&format!("tcp://localhost:{}", rsa::client_port)).unwrap();
-//    sub_socket.connect(&format!("tcp://localhost:{}", rsa::game_port)).unwrap();
-//    sub_socket.set_subscribe(&[]);
-//
-//    loop {
-//    req_socket.send_str("hello from client", 0).unwrap();
-//    println!("Sent hello, received: {}", req_socket.recv_string(0).unwrap().unwrap());
-//
-//    println!("Game info from server: {}", sub_socket.recv_string(0).unwrap().unwrap());
-//    thread::sleep(Duration::from_secs(1));
-//    }
+/// A color with 32-bit float parts from `[0.0, 1.0]` suitable for OpenGL.
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
+pub struct Color {
+    /// Red
+    pub r : f32,
+    /// Green
+    pub g : f32,
+    /// Blue
+    pub b : f32,
+}
+
+/// Server returns a GameSettings in response to receiving a PlayerSync
+/// Game settings and player names and colors (including your own) are all in there.  You will
+/// need to re-parse this every time someone joins or leaves the game.
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
+pub struct GameSettings {
+    /// The ID of your player.
+    pub your_player_id : u8,
+    /// OpenGL units. Collision radius of players (size of a player)
+    pub player_radius : f64,
+    /// Percentage `[0.0, 1.0]`.  How much the server will dampen your player's movement if moving
+    /// exactly backwards.  Dampening effect is zero when moving exactly forwards, and linearly
+    /// scales in movement directions between straight forward and straight backward.
+    pub move_dampening : f64,
+    /// Seconds. Server will never _send_ frame updates more frequently than this. When and how far
+    /// apart they arrive is entirely up to the network.
+    pub frame_delay : f64,
+    /// Seconds. How long the server will wait to respawn a player who dies.
+    pub respawn_delay : f64,
+    /// Seconds. How long the server will allow not receiving input before dropping a player.
+    pub drop_timeout : f64,
+    /// Map of player id to names, including your own name _which may not be what you expect_.
+    pub player_names : HashMap<u8, String>,
+    /// Map of player id to player colors, including your own assigned color.
+    pub player_colors : HashMap<u8, Color>,
 }

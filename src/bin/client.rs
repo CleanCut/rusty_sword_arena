@@ -1,12 +1,22 @@
 extern crate rusty_sword_arena;
 #[macro_use]
 extern crate glium;
-
-use rusty_sword_arena as rsa;
-
 use glium::{glutin, Surface};
 
+use rusty_sword_arena as rsa;
+use rsa::{GameControlMsg, GameSettings};
+use rsa::net::{ServerConnection};
+
 fn main() {
+
+    let mut server_conn = ServerConnection::new("localhost");
+
+    let msg = GameControlMsg::Join {name : "bob".to_string()};
+    if let Ok(game_settings) = server_conn.game_control(msg) {
+        println!("Got game settings! {:?}", game_settings);
+    }
+
+
     // network code commented out and stashed in lib.rs for now
     use glium::glutin;
 
@@ -81,6 +91,7 @@ fn main() {
                     &Default::default()).unwrap();
         target.finish().unwrap();
 
+        // Handle network events
 
         // Time to close the app?
         events_loop.poll_events(|ev| {
