@@ -1,4 +1,8 @@
+#[macro_use]
+extern crate glium;
+
 pub mod net;
+pub mod gfx;
 
 use std::collections::HashMap;
 
@@ -7,7 +11,7 @@ extern crate zmq;
 extern crate serde_derive;
 extern crate bincode;
 
-use bincode::{serialize, deserialize};
+//use bincode::{serialize, deserialize};
 
 
 
