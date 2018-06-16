@@ -4,15 +4,23 @@ use glium::glutin::{self, Event, ElementState};
 use std::f64::consts::PI;
 use std;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 struct Vertex {
     position: [f32; 2],
 }
 
+#[derive(Copy, Clone, Debug)]
+struct Position {
+    x : f32,
+    y : f32,
+}
+
+type Angle = f32;
+
 implement_vertex!(Vertex, position);
 
-fn angle_between(pos_x : f32, pos_y : f32, target_coords : (f32, f32)) -> f32 {
-    (pos_x - target_coords.0).atan2(pos_y - target_coords.1)
+fn angle_between(pos : Position, target_coords : Position) -> Angle {
+    (pos.x - target_coords.x).atan2(pos.y - target_coords.y)
 }
 
 fn create_circle_vertices(radius : f64, num_vertices : usize) -> Vec<Vertex> {
@@ -33,18 +41,22 @@ fn create_circle_vertices(radius : f64, num_vertices : usize) -> Vec<Vertex> {
 //    uniforms : U,
 //}
 
+pub struct Circle {
+
+
+}
+
 
 pub struct Display {
     events_loop : glutin::EventsLoop,
     display : glium::Display,
     vertex_buffer : glium::vertex::VertexBuffer<Vertex>,
     program : glium::Program,
-    ox : f32,
-    oy : f32,
-    mouse_coords : (f32, f32),
+    coords : Position,
+    mouse_coords : Position,
     horiz_axis : f32,
     vert_axis : f32,
-    screen_to_opengl : Box<FnMut((f64, f64)) -> (f32, f32)>,
+    screen_to_opengl : Box<FnMut((f64, f64)) -> Position>,
 }
 
 
@@ -60,10 +72,10 @@ impl Display {
         // Create a closure that captures the hidpi_factor to do local screen coordinate conversion
         // for us.
         let hidpi_factor = display.gl_window().window().hidpi_factor();
-        let screen_to_opengl = Box::new(move |screen_coords : (f64, f64)| -> (f32, f32) {
+        let screen_to_opengl = Box::new(move |screen_coords : (f64, f64)| -> Position {
             let x = (screen_coords.0 as f32 / (0.5 * hidpi_factor * width as f32)) - 1.0;
             let y = 1.0 - (screen_coords.1 as f32 / (0.5 * hidpi_factor * height as f32));
-            (x, y)
+            Position { x, y }
         });
 
 
@@ -107,9 +119,8 @@ impl Display {
             display,
             vertex_buffer,
             program,
-            ox : 0.0,
-            oy : 0.0,
-            mouse_coords : (0.0, 0.0),
+            coords : Position { x: 0.0, y: 0.0 },
+            mouse_coords : Position { x: 0.0, y: 0.0 },
             horiz_axis : 0.0,
             vert_axis : 0.0,
             screen_to_opengl,
@@ -118,7 +129,7 @@ impl Display {
 
     pub fn draw(&self) {
         let indices = glium::index::NoIndices(glium::index::PrimitiveType::TriangleFan);
-        let angle = angle_between(self.ox, self.oy, self.mouse_coords);
+        let angle = angle_between(self.coords, self.mouse_coords);
 
 
         let mut target = self.display.draw();
@@ -129,7 +140,7 @@ impl Display {
                 [angle.cos() as f32, -angle.sin() as f32, 0.0, 0.0],
                 [angle.sin() as f32, angle.cos() as f32, 0.0, 0.0],
                 [0.0, 0.0, 1.0, 0.0],
-                [self.ox, self.oy, 0.0, 1.0f32],
+                [self.coords.x, self.coords.y, 0.0, 1.0f32],
             ]
         };
         target.draw(&self.vertex_buffer, &indices, &self.program, &uniforms,
@@ -190,8 +201,8 @@ impl Display {
         self.vert_axis = vert_axis;
 
         // Modify position
-        self.ox += movement_speed * horiz_axis;
-        self.oy += movement_speed * vert_axis;
+        self.coords.x += movement_speed * horiz_axis;
+        self.coords.y += movement_speed * vert_axis;
     }
 }
 
