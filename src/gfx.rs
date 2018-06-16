@@ -10,17 +10,17 @@ struct Vertex {
 }
 
 #[derive(Copy, Clone, Debug)]
-struct Position {
+pub struct Position {
     x : f32,
     y : f32,
 }
 
-type Angle = f32;
+pub type Angle = f32;
 
 implement_vertex!(Vertex, position);
 
-fn angle_between(pos : Position, target_coords : Position) -> Angle {
-    (pos.x - target_coords.x).atan2(pos.y - target_coords.y)
+pub fn angle_between(pos : Position, target_pos : Position) -> Angle {
+    (pos.x - target_pos.x).atan2(pos.y - target_pos.y)
 }
 
 fn create_circle_vertices(radius : f64, num_vertices : usize) -> Vec<Vertex> {
@@ -40,8 +40,13 @@ fn create_circle_vertices(radius : f64, num_vertices : usize) -> Vec<Vertex> {
 //    program : glium::Program,
 //    uniforms : U,
 //}
+//
+
+pub struct Color (f32, f32, f32);
 
 pub struct Circle {
+    pos : Position,
+    direction : Angle,
 
 
 }
@@ -52,8 +57,8 @@ pub struct Display {
     display : glium::Display,
     vertex_buffer : glium::vertex::VertexBuffer<Vertex>,
     program : glium::Program,
-    coords : Position,
-    mouse_coords : Position,
+    pos : Position,
+    mouse_pos : Position,
     horiz_axis : f32,
     vert_axis : f32,
     screen_to_opengl : Box<FnMut((f64, f64)) -> Position>,
@@ -72,9 +77,9 @@ impl Display {
         // Create a closure that captures the hidpi_factor to do local screen coordinate conversion
         // for us.
         let hidpi_factor = display.gl_window().window().hidpi_factor();
-        let screen_to_opengl = Box::new(move |screen_coords : (f64, f64)| -> Position {
-            let x = (screen_coords.0 as f32 / (0.5 * hidpi_factor * width as f32)) - 1.0;
-            let y = 1.0 - (screen_coords.1 as f32 / (0.5 * hidpi_factor * height as f32));
+        let screen_to_opengl = Box::new(move |screen_coord : (f64, f64)| -> Position {
+            let x = (screen_coord.0 as f32 / (0.5 * hidpi_factor * width as f32)) - 1.0;
+            let y = 1.0 - (screen_coord.1 as f32 / (0.5 * hidpi_factor * height as f32));
             Position { x, y }
         });
 
@@ -119,8 +124,8 @@ impl Display {
             display,
             vertex_buffer,
             program,
-            coords : Position { x: 0.0, y: 0.0 },
-            mouse_coords : Position { x: 0.0, y: 0.0 },
+            pos : Position { x: 0.0, y: 0.0 },
+            mouse_pos : Position { x: 0.0, y: 0.0 },
             horiz_axis : 0.0,
             vert_axis : 0.0,
             screen_to_opengl,
@@ -129,7 +134,7 @@ impl Display {
 
     pub fn draw(&self) {
         let indices = glium::index::NoIndices(glium::index::PrimitiveType::TriangleFan);
-        let angle = angle_between(self.coords, self.mouse_coords);
+        let angle = angle_between(self.pos, self.mouse_pos);
 
 
         let mut target = self.display.draw();
@@ -140,7 +145,7 @@ impl Display {
                 [angle.cos() as f32, -angle.sin() as f32, 0.0, 0.0],
                 [angle.sin() as f32, angle.cos() as f32, 0.0, 0.0],
                 [0.0, 0.0, 1.0, 0.0],
-                [self.coords.x, self.coords.y, 0.0, 1.0f32],
+                [self.pos.x, self.pos.y, 0.0, 1.0f32],
             ]
         };
         target.draw(&self.vertex_buffer, &indices, &self.program, &uniforms,
@@ -152,7 +157,7 @@ impl Display {
 
         let movement_speed : f32 = 0.002;
         // Poll events
-        let mut mouse_coords = self.mouse_coords;
+        let mut mouse_pos = self.mouse_pos;
         let mut horiz_axis = self.horiz_axis;
         let mut vert_axis = self.vert_axis;
         let mut screen_to_opengl = &mut self.screen_to_opengl;
@@ -164,7 +169,7 @@ impl Display {
                     glutin::WindowEvent::Closed => std::process::exit(0), //closed = true,
                     // Mouse moved
                     glutin::WindowEvent::CursorMoved { device_id, position, modifiers } => {
-                        mouse_coords = screen_to_opengl(position);
+                        mouse_pos = screen_to_opengl(position);
                     },
                     // Keyboard button
                     glutin::WindowEvent::KeyboardInput { device_id, input } => {
@@ -196,13 +201,13 @@ impl Display {
         });
 
         // Propogate shadowed values back to self
-        self.mouse_coords = mouse_coords;
+        self.mouse_pos = mouse_pos;
         self.horiz_axis = horiz_axis;
         self.vert_axis = vert_axis;
 
         // Modify position
-        self.coords.x += movement_speed * horiz_axis;
-        self.coords.y += movement_speed * vert_axis;
+        self.pos.x += movement_speed * horiz_axis;
+        self.pos.y += movement_speed * vert_axis;
     }
 }
 
