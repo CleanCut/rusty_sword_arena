@@ -1,5 +1,4 @@
 extern crate rusty_sword_arena;
-#[macro_use]
 extern crate glium;
 
 use rusty_sword_arena as rsa;

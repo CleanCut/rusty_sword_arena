@@ -47,8 +47,7 @@ pub struct Color (f32, f32, f32);
 pub struct Circle {
     pos : Position,
     direction : Angle,
-
-
+    color : Color,
 }
 
 
@@ -67,7 +66,7 @@ pub struct Display {
 
 impl Display {
     pub fn new(width : u32, height : u32) -> Self {
-        let mut events_loop = glutin::EventsLoop::new();
+        let events_loop = glutin::EventsLoop::new();
         let window = glutin::WindowBuilder::new()
             .with_dimensions(width, height)
             .with_title("Rusty Sword Arena!");
@@ -156,58 +155,44 @@ impl Display {
     pub fn update(self : &mut Self) {
 
         let movement_speed : f32 = 0.002;
-        // Poll events
-        let mut mouse_pos = self.mouse_pos;
-        let mut horiz_axis = self.horiz_axis;
-        let mut vert_axis = self.vert_axis;
-        let mut screen_to_opengl = &mut self.screen_to_opengl;
-
-        self.events_loop.poll_events(|ev| {
-            match ev {
-                Event::WindowEvent {event, ..} => match event {
+        // Handle all events
+        let mut events = Vec::new();
+        self.events_loop.poll_events(|ev| { events.push(ev) });
+        for ev in events {
+            if let Event::WindowEvent {event, ..} = ev {
+                match event {
                     // Time to close the app?
                     glutin::WindowEvent::Closed => std::process::exit(0), //closed = true,
                     // Mouse moved
-                    glutin::WindowEvent::CursorMoved { device_id, position, modifiers } => {
-                        mouse_pos = screen_to_opengl(position);
+                    glutin::WindowEvent::CursorMoved { device_id : _, position, modifiers : _ } => {
+                        self.mouse_pos = (self.screen_to_opengl)(position);
                     },
                     // Keyboard button
-                    glutin::WindowEvent::KeyboardInput { device_id, input } => {
-                        match input {
-                            glium::glutin::KeyboardInput { scancode, state, virtual_keycode, modifiers } => {
-                                let amount : f32;
-                                match state {
-                                    ElementState::Pressed => { amount = 1.0 },
-                                    ElementState::Released => { amount = 0.0 },
-                                }
-                                use glium::glutin::VirtualKeyCode::*;
-                                if let Some(vkey) = virtual_keycode {
-                                    match vkey {
-                                        W | Up | Comma => { vert_axis  = amount },
-                                        S | Down | O   => { vert_axis  = -amount },
-                                        A | Left       => { horiz_axis = -amount },
-                                        D | Right | E  => { horiz_axis = amount },
-                                        _ => (),
-                                    }
-                                }
-                            },
-                            _ => (),
+                    glutin::WindowEvent::KeyboardInput { device_id : _, input } => {
+                        let amount : f32;
+                        match input.state {
+                            ElementState::Pressed => { amount = 1.0 },
+                            ElementState::Released => { amount = 0.0 },
+                        }
+                        use glium::glutin::VirtualKeyCode::*;
+                        if let Some(vkey) = input.virtual_keycode {
+                            match vkey {
+                                W | Up | Comma => { self.vert_axis  = amount },
+                                S | Down | O   => { self.vert_axis  = -amount },
+                                A | Left       => { self.horiz_axis = -amount },
+                                D | Right | E  => { self.horiz_axis = amount },
+                                _ => (),
+                            }
                         }
                     },
                     _ => (),
-                },
-                _ => (),
+                }
             }
-        });
-
-        // Propogate shadowed values back to self
-        self.mouse_pos = mouse_pos;
-        self.horiz_axis = horiz_axis;
-        self.vert_axis = vert_axis;
+        }
 
         // Modify position
-        self.pos.x += movement_speed * horiz_axis;
-        self.pos.y += movement_speed * vert_axis;
+        self.pos.x += movement_speed * self.horiz_axis;
+        self.pos.y += movement_speed * self.vert_axis;
     }
 }
 

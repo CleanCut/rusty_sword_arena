@@ -40,7 +40,7 @@ impl ServerConnection {
 
         let game_state_socket = context.socket(zmq::SUB).unwrap();
         game_state_socket.connect(&format!("tcp://{}:{}", server_host, GAME_STATE_PORT)).unwrap();
-        game_state_socket.set_subscribe(&[]);
+        game_state_socket.set_subscribe(&[]).unwrap();
 
         let player_input_socket = context.socket(zmq::PUSH).unwrap();
         player_input_socket.connect(&format!("tcp://{}:{}", server_host, PLAYER_INPUT_PORT)).unwrap();
