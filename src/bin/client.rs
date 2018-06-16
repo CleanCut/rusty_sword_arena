@@ -2,7 +2,7 @@ extern crate rusty_sword_arena;
 extern crate glium;
 
 use rusty_sword_arena as rsa;
-use rsa::{GameControlMsg, GameSettings};
+use rsa::{GameControlMsg};
 use rsa::net::{ServerConnection};
 use rsa::gfx::Display;
 

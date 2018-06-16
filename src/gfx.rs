@@ -4,10 +4,14 @@ use glium::glutin::{self, Event, ElementState};
 use std::f64::consts::PI;
 use std;
 
+use super::{Color, Angle};
+
 #[derive(Copy, Clone, Debug)]
 struct Vertex {
     position: [f32; 2],
+    color: [f32; 3],
 }
+implement_vertex!(Vertex, position, color);
 
 #[derive(Copy, Clone, Debug)]
 pub struct Position {
@@ -15,19 +19,25 @@ pub struct Position {
     y : f32,
 }
 
-pub type Angle = f32;
+impl Position {
+    pub fn new() -> Self {
+        Self { x: 0.0, y: 0.0 }
+    }
+}
 
-implement_vertex!(Vertex, position);
 
 pub fn angle_between(pos : Position, target_pos : Position) -> Angle {
     (pos.x - target_pos.x).atan2(pos.y - target_pos.y)
 }
 
-fn create_circle_vertices(radius : f64, num_vertices : usize) -> Vec<Vertex> {
+fn create_circle_vertices(radius : f64, num_vertices : usize, color : Color) -> Vec<Vertex> {
     let mut v = Vec::<Vertex>::with_capacity(num_vertices+1);
     for x in 0..=num_vertices {
         let inner : f64 = 2.0 * PI / num_vertices as f64 * x as f64;
-        v.push(Vertex { position: [(inner.cos()*radius) as f32, (inner.sin()*radius) as f32] });
+        v.push(Vertex {
+            position: [(inner.cos()*radius) as f32, (inner.sin()*radius) as f32],
+            color: [color.r, color.g, color.b],
+        });
     }
     v
 }
@@ -40,27 +50,33 @@ fn create_circle_vertices(radius : f64, num_vertices : usize) -> Vec<Vertex> {
 //    program : glium::Program,
 //    uniforms : U,
 //}
-//
 
-pub struct Color (f32, f32, f32);
-
-pub struct Circle {
+pub struct Shape {
     pos : Position,
     direction : Angle,
-    color : Color,
+    vertex_buffer : glium::vertex::VertexBuffer<Vertex>,
+}
+
+impl Shape {
+    pub fn new_circle(display : &glium::Display, radius : f64, pos : Position, direction : Angle, color : Color) -> Self {
+        let vertex_buffer = glium::VertexBuffer::new(display, &create_circle_vertices(radius, 30, color)).unwrap();
+        Self {
+            pos,
+            direction,
+            vertex_buffer,
+        }
+    }
 }
 
 
 pub struct Display {
     events_loop : glutin::EventsLoop,
     display : glium::Display,
-    vertex_buffer : glium::vertex::VertexBuffer<Vertex>,
     program : glium::Program,
-    pos : Position,
-    mouse_pos : Position,
     horiz_axis : f32,
     vert_axis : f32,
     screen_to_opengl : Box<FnMut((f64, f64)) -> Position>,
+    shapes : Vec<Shape>,
 }
 
 
@@ -82,26 +98,22 @@ impl Display {
             Position { x, y }
         });
 
-
-        //let vertex1 = Vertex { position: [-0.5, -0.5] };
-        //let vertex2 = Vertex { position: [ 0.0,  0.5] };
-        //let vertex3 = Vertex { position: [ 0.5, -0.25] };
-        //let shape = vec![vertex1, vertex2, vertex3];
-        let shape = create_circle_vertices(0.2, 30);
-
-        let vertex_buffer = glium::VertexBuffer::new(&display, &shape).unwrap();
-
+        let shapes = vec![
+            Shape::new_circle(&display, 0.2, Position::new(), 0.0, Color { r : 0.1, g : 0.2, b : 1.0 }),
+            Shape::new_circle(&display, 0.2, Position { x : 0.5, y : 0.5 }, 0.0, Color { r : 1.0, g : 0.1, b : 0.1 }),
+        ];
 
         let vertex_shader_src = r#"
         #version 140
 
         in vec2 position;
-        out vec2 my_attr;
+        in vec3 color;
+        out vec3 v_color;
 
         uniform mat4 matrix;
 
         void main() {
-            my_attr = position;
+            v_color = color;
             gl_Position = matrix * vec4(position, 0.0, 1.0);
         }
         "#;
@@ -109,11 +121,11 @@ impl Display {
         let fragment_shader_src = r#"
             #version 140
 
-            in vec2 my_attr;
+            in vec3 v_color;
             out vec4 color;
 
             void main() {
-                color = vec4(my_attr, 0.3, 1.0);
+                color = vec4(v_color, 1.0);
             }
         "#;
 
@@ -121,43 +133,41 @@ impl Display {
         Self {
             events_loop,
             display,
-            vertex_buffer,
             program,
-            pos : Position { x: 0.0, y: 0.0 },
-            mouse_pos : Position { x: 0.0, y: 0.0 },
             horiz_axis : 0.0,
             vert_axis : 0.0,
             screen_to_opengl,
+            shapes,
         }
     }
 
     pub fn draw(&self) {
         let indices = glium::index::NoIndices(glium::index::PrimitiveType::TriangleFan);
-        let angle = angle_between(self.pos, self.mouse_pos);
 
 
         let mut target = self.display.draw();
         target.clear_color(0.0, 0.0, 0.0, 1.0);
 
-        let uniforms = uniform! {
-            matrix: [
-                [angle.cos() as f32, -angle.sin() as f32, 0.0, 0.0],
-                [angle.sin() as f32, angle.cos() as f32, 0.0, 0.0],
-                [0.0, 0.0, 1.0, 0.0],
-                [self.pos.x, self.pos.y, 0.0, 1.0f32],
-            ]
-        };
-        target.draw(&self.vertex_buffer, &indices, &self.program, &uniforms,
-                    &Default::default()).unwrap();
+        for shape in &self.shapes {
+            let uniforms = uniform! {
+                matrix: [
+                    [shape.direction.cos() as f32, -shape.direction.sin() as f32, 0.0, 0.0],
+                    [shape.direction.sin() as f32, shape.direction.cos() as f32, 0.0, 0.0],
+                    [0.0, 0.0, 1.0, 0.0],
+                    [shape.pos.x, shape.pos.y, 0.0, 1.0f32],
+                ]
+            };
+            target.draw(&shape.vertex_buffer, &indices, &self.program, &uniforms,
+                        &Default::default()).unwrap();
+        }
         target.finish().unwrap();
     }
 
     pub fn update(self : &mut Self) {
-
-        let movement_speed : f32 = 0.002;
         // Handle all events
         let mut events = Vec::new();
         self.events_loop.poll_events(|ev| { events.push(ev) });
+        let mut mouse_pos_opt : Option<Position> = None;
         for ev in events {
             if let Event::WindowEvent {event, ..} = ev {
                 match event {
@@ -165,7 +175,7 @@ impl Display {
                     glutin::WindowEvent::Closed => std::process::exit(0), //closed = true,
                     // Mouse moved
                     glutin::WindowEvent::CursorMoved { device_id : _, position, modifiers : _ } => {
-                        self.mouse_pos = (self.screen_to_opengl)(position);
+                        mouse_pos_opt = Some((self.screen_to_opengl)(position));
                     },
                     // Keyboard button
                     glutin::WindowEvent::KeyboardInput { device_id : _, input } => {
@@ -190,9 +200,15 @@ impl Display {
             }
         }
 
-        // Modify position
-        self.pos.x += movement_speed * self.horiz_axis;
-        self.pos.y += movement_speed * self.vert_axis;
+        // Update position
+        let movement_speed : f32 = 0.002;
+        if self.shapes.len() > 0 {
+            if let Some(mouse_pos) = mouse_pos_opt {
+                self.shapes[0].direction = angle_between(self.shapes[0].pos, mouse_pos);
+            }
+            self.shapes[0].pos.x += movement_speed * self.horiz_axis;
+            self.shapes[0].pos.y += movement_speed * self.vert_axis;
+        }
     }
 }
 

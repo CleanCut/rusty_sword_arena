@@ -23,6 +23,9 @@ pub enum GameControlMsg {
     Fetch,
 }
 
+/// Angle denotes a direction something is facing, in radians.
+pub type Angle = f32;
+
 /// A color with 32-bit float parts from `[0.0, 1.0]` suitable for OpenGL.
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct Color {
