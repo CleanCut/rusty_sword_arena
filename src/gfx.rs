@@ -37,8 +37,6 @@ fn create_circle_vertices(radius : f64, num_vertices : usize) -> Vec<Vertex> {
 pub struct Display {
     events_loop : glutin::EventsLoop,
     display : glium::Display,
-    width : u32,
-    height : u32,
     vertex_buffer : glium::vertex::VertexBuffer<Vertex>,
     program : glium::Program,
     ox : f32,
@@ -46,7 +44,7 @@ pub struct Display {
     mouse_coords : (f32, f32),
     horiz_axis : f32,
     vert_axis : f32,
-    hidpi_factor : f32,
+    screen_to_opengl : Box<FnMut((f64, f64)) -> (f32, f32)>,
 }
 
 
@@ -59,7 +57,16 @@ impl Display {
         let context = glutin::ContextBuilder::new();
         let display = glium::Display::new(window, context, &events_loop).unwrap();
 
+        // Create a closure that captures the hidpi_factor to do local screen coordinate conversion
+        // for us.
         let hidpi_factor = display.gl_window().window().hidpi_factor();
+        let screen_to_opengl = Box::new(move |screen_coords : (f64, f64)| -> (f32, f32) {
+            let x = (screen_coords.0 as f32 / (0.5 * hidpi_factor * width as f32)) - 1.0;
+            let y = 1.0 - (screen_coords.1 as f32 / (0.5 * hidpi_factor * height as f32));
+            (x, y)
+        });
+
+
         //let vertex1 = Vertex { position: [-0.5, -0.5] };
         //let vertex2 = Vertex { position: [ 0.0,  0.5] };
         //let vertex3 = Vertex { position: [ 0.5, -0.25] };
@@ -67,7 +74,6 @@ impl Display {
         let shape = create_circle_vertices(0.2, 30);
 
         let vertex_buffer = glium::VertexBuffer::new(&display, &shape).unwrap();
-
 
 
         let vertex_shader_src = r#"
@@ -99,8 +105,6 @@ impl Display {
         Self {
             events_loop,
             display,
-            width,
-            height,
             vertex_buffer,
             program,
             ox : 0.0,
@@ -108,7 +112,7 @@ impl Display {
             mouse_coords : (0.0, 0.0),
             horiz_axis : 0.0,
             vert_axis : 0.0,
-            hidpi_factor,
+            screen_to_opengl,
         }
     }
 
@@ -137,20 +141,10 @@ impl Display {
 
         let movement_speed : f32 = 0.002;
         // Poll events
-        let width = self.width;
-        let height = self.height;
         let mut mouse_coords = self.mouse_coords;
         let mut horiz_axis = self.horiz_axis;
         let mut vert_axis = self.vert_axis;
-        let screen_height = self.height;
-        let screen_width = self.width;
-        let hidpi_factor = self.hidpi_factor;
-
-        let screen_to_opengl = |hidpi_factor : f32, screen_coords : (f64, f64), screen_height : u32, screen_width : u32| -> (f32, f32) {
-            let x = (screen_coords.0 as f32 / (0.5 * hidpi_factor * screen_width as f32)) - 1.0;
-            let y = 1.0 - (screen_coords.1 as f32 / (0.5 * hidpi_factor * screen_height as f32));
-            (x, y)
-        };
+        let mut screen_to_opengl = &mut self.screen_to_opengl;
 
         self.events_loop.poll_events(|ev| {
             match ev {
@@ -159,7 +153,7 @@ impl Display {
                     glutin::WindowEvent::Closed => std::process::exit(0), //closed = true,
                     // Mouse moved
                     glutin::WindowEvent::CursorMoved { device_id, position, modifiers } => {
-                        mouse_coords = screen_to_opengl(hidpi_factor, position, screen_height, screen_width);
+                        mouse_coords = screen_to_opengl(position);
                     },
                     // Keyboard button
                     glutin::WindowEvent::KeyboardInput { device_id, input } => {
