@@ -191,7 +191,6 @@ impl Display {
         });
 
         // Propogate shadowed values back to self
-        println!("{:2.2}, {:2.2}", mouse_coords.0, mouse_coords.1);
         self.mouse_coords = mouse_coords;
         self.horiz_axis = horiz_axis;
         self.vert_axis = vert_axis;
