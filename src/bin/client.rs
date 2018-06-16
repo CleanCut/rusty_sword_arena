@@ -11,11 +11,9 @@ fn main() {
     let mut server_conn = ServerConnection::new("localhost");
 
     let msg = GameControlMsg::Join {name : "bob".to_string()};
-    if let Ok(game_settings) = server_conn.game_control(msg) {
-        println!("Got game settings! {:?}", game_settings);
-    }
+    let game_settings = server_conn.game_control(msg).unwrap();
 
-    let mut display = Display::new(1024, 1024);
+    let mut display = Display::new(1024, 1024, game_settings);
     loop {
         display.update();
         display.draw();

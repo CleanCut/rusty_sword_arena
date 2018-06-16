@@ -35,7 +35,8 @@ fn main() {
 
     let mut game_settings = GameSettings {
         your_player_id : 0,
-        player_radius : 0.025,
+        player_radius : 0.05,
+        move_speed : 0.001,
         move_dampening : 0.5,
         frame_delay : 0.5,
         respawn_delay : 5.0,

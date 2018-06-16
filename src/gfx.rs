@@ -4,7 +4,7 @@ use glium::glutin::{self, Event, ElementState};
 use std::f64::consts::PI;
 use std;
 
-use super::{Color, Angle};
+use super::{Angle, Color, GameSettings};
 
 #[derive(Copy, Clone, Debug)]
 struct Vertex {
@@ -30,12 +30,20 @@ pub fn angle_between(pos : Position, target_pos : Position) -> Angle {
     (pos.x - target_pos.x).atan2(pos.y - target_pos.y)
 }
 
-fn create_circle_vertices(radius : f64, num_vertices : usize, color : Color) -> Vec<Vertex> {
-    let mut v = Vec::<Vertex>::with_capacity(num_vertices+1);
+fn create_circle_vertices(radius : f32, num_vertices : usize, color : Color) -> Vec<Vertex> {
+    let mut v = Vec::<Vertex>::with_capacity(num_vertices+2);
+    // The center of the circle/fan
+    v.push(Vertex {
+        position: [0.0, 0.0],
+        color: [color.r, color.g, color.b],
+    });
     for x in 0..=num_vertices {
         let inner : f64 = 2.0 * PI / num_vertices as f64 * x as f64;
+        // Color the forward-facing vertex of the circle differently so we can have a small "sword"
+        // indicator of our forward-facing direction
+        let color = if x == (num_vertices * 3)/4 { Color { r: 0.1, g: 0.1, b: 0.1 } } else { color };
         v.push(Vertex {
-            position: [(inner.cos()*radius) as f32, (inner.sin()*radius) as f32],
+            position: [inner.cos() as f32 * radius, inner.sin() as f32 * radius],
             color: [color.r, color.g, color.b],
         });
     }
@@ -58,8 +66,8 @@ pub struct Shape {
 }
 
 impl Shape {
-    pub fn new_circle(display : &glium::Display, radius : f64, pos : Position, direction : Angle, color : Color) -> Self {
-        let vertex_buffer = glium::VertexBuffer::new(display, &create_circle_vertices(radius, 30, color)).unwrap();
+    pub fn new_circle(display : &glium::Display, radius : f32, pos : Position, direction : Angle, color : Color) -> Self {
+        let vertex_buffer = glium::VertexBuffer::new(display, &create_circle_vertices(radius, 32, color)).unwrap();
         Self {
             pos,
             direction,
@@ -75,13 +83,15 @@ pub struct Display {
     program : glium::Program,
     horiz_axis : f32,
     vert_axis : f32,
+    mouse_pos : Position,
     screen_to_opengl : Box<FnMut((f64, f64)) -> Position>,
     shapes : Vec<Shape>,
+    game_settings : GameSettings,
 }
 
 
 impl Display {
-    pub fn new(width : u32, height : u32) -> Self {
+    pub fn new(width : u32, height : u32, game_settings : GameSettings) -> Self {
         let events_loop = glutin::EventsLoop::new();
         let window = glutin::WindowBuilder::new()
             .with_dimensions(width, height)
@@ -99,8 +109,8 @@ impl Display {
         });
 
         let shapes = vec![
-            Shape::new_circle(&display, 0.2, Position::new(), 0.0, Color { r : 0.1, g : 0.2, b : 1.0 }),
-            Shape::new_circle(&display, 0.2, Position { x : 0.5, y : 0.5 }, 0.0, Color { r : 1.0, g : 0.1, b : 0.1 }),
+            Shape::new_circle(&display, game_settings.player_radius, Position::new(), 0.0, Color { r : 0.1, g : 0.2, b : 1.0 }),
+            Shape::new_circle(&display, game_settings.player_radius, Position { x : 0.5, y : 0.5 }, 0.0, Color { r : 1.0, g : 0.1, b : 0.1 }),
         ];
 
         let vertex_shader_src = r#"
@@ -136,8 +146,10 @@ impl Display {
             program,
             horiz_axis : 0.0,
             vert_axis : 0.0,
+            mouse_pos : Position { x : 0.0, y : 0.0 },
             screen_to_opengl,
             shapes,
+            game_settings,
         }
     }
 
@@ -167,7 +179,6 @@ impl Display {
         // Handle all events
         let mut events = Vec::new();
         self.events_loop.poll_events(|ev| { events.push(ev) });
-        let mut mouse_pos_opt : Option<Position> = None;
         for ev in events {
             if let Event::WindowEvent {event, ..} = ev {
                 match event {
@@ -175,7 +186,7 @@ impl Display {
                     glutin::WindowEvent::Closed => std::process::exit(0), //closed = true,
                     // Mouse moved
                     glutin::WindowEvent::CursorMoved { device_id : _, position, modifiers : _ } => {
-                        mouse_pos_opt = Some((self.screen_to_opengl)(position));
+                        self.mouse_pos = (self.screen_to_opengl)(position);
                     },
                     // Keyboard button
                     glutin::WindowEvent::KeyboardInput { device_id : _, input } => {
@@ -201,13 +212,10 @@ impl Display {
         }
 
         // Update position
-        let movement_speed : f32 = 0.002;
         if self.shapes.len() > 0 {
-            if let Some(mouse_pos) = mouse_pos_opt {
-                self.shapes[0].direction = angle_between(self.shapes[0].pos, mouse_pos);
-            }
-            self.shapes[0].pos.x += movement_speed * self.horiz_axis;
-            self.shapes[0].pos.y += movement_speed * self.vert_axis;
+            self.shapes[0].direction = angle_between(self.shapes[0].pos, self.mouse_pos);
+            self.shapes[0].pos.x += self.game_settings.move_speed * self.horiz_axis;
+            self.shapes[0].pos.y += self.game_settings.move_speed * self.vert_axis;
         }
     }
 }
