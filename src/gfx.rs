@@ -147,8 +147,8 @@ impl Display {
         let hidpi_factor = self.hidpi_factor;
 
         let screen_to_opengl = |hidpi_factor : f32, screen_coords : (f64, f64), screen_height : u32, screen_width : u32| -> (f32, f32) {
-            let x = (screen_coords.0 as f32 / screen_width as f32) - (hidpi_factor * 0.5);
-            let y = (hidpi_factor * 0.5) - (screen_coords.1 as f32 / screen_height as f32);
+            let x = (screen_coords.0 as f32 / (0.5 * hidpi_factor * screen_width as f32)) - 1.0;
+            let y = 1.0 - (screen_coords.1 as f32 / (0.5 * hidpi_factor * screen_height as f32));
             (x, y)
         };
 
