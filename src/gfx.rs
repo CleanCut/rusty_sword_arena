@@ -11,8 +11,8 @@ struct Vertex {
 
 implement_vertex!(Vertex, position);
 
-fn angle_between(pos_x : f32, pos_y : f32, target_x : f32, target_y : f32) -> f32 {
-    (pos_x - target_x).atan2(pos_y - target_y)
+fn angle_between(pos_x : f32, pos_y : f32, target_coords : (f32, f32)) -> f32 {
+    (pos_x - target_coords.0).atan2(pos_y - target_coords.1)
 }
 
 fn create_circle_vertices(radius : f64, num_vertices : usize) -> Vec<Vertex> {
@@ -43,10 +43,10 @@ pub struct Display {
     program : glium::Program,
     ox : f32,
     oy : f32,
-    mousex : f32,
-    mousey : f32,
+    mouse_coords : (f32, f32),
     horiz_axis : f32,
     vert_axis : f32,
+    hidpi_factor : f32,
 }
 
 
@@ -59,6 +59,7 @@ impl Display {
         let context = glutin::ContextBuilder::new();
         let display = glium::Display::new(window, context, &events_loop).unwrap();
 
+        let hidpi_factor = display.gl_window().window().hidpi_factor();
         //let vertex1 = Vertex { position: [-0.5, -0.5] };
         //let vertex2 = Vertex { position: [ 0.0,  0.5] };
         //let vertex3 = Vertex { position: [ 0.5, -0.25] };
@@ -104,16 +105,16 @@ impl Display {
             program,
             ox : 0.0,
             oy : 0.0,
-            mousex : 0.0,
-            mousey : 0.0,
+            mouse_coords : (0.0, 0.0),
             horiz_axis : 0.0,
             vert_axis : 0.0,
+            hidpi_factor,
         }
     }
 
     pub fn draw(&self) {
         let indices = glium::index::NoIndices(glium::index::PrimitiveType::TriangleFan);
-        let angle = angle_between(self.ox, self.oy, self.mousex, self.mousey);
+        let angle = angle_between(self.ox, self.oy, self.mouse_coords);
 
 
         let mut target = self.display.draw();
@@ -134,15 +135,23 @@ impl Display {
 
     pub fn update(self : &mut Self) {
 
-        //let mut closed = false;
         let movement_speed : f32 = 0.002;
         // Poll events
         let width = self.width;
         let height = self.height;
-        let mut mousex = self.mousex;
-        let mut mousey = self.mousey;
+        let mut mouse_coords = self.mouse_coords;
         let mut horiz_axis = self.horiz_axis;
         let mut vert_axis = self.vert_axis;
+        let screen_height = self.height;
+        let screen_width = self.width;
+        let hidpi_factor = self.hidpi_factor;
+
+        let screen_to_opengl = |hidpi_factor : f32, screen_coords : (f64, f64), screen_height : u32, screen_width : u32| -> (f32, f32) {
+            let x = (screen_coords.0 as f32 / screen_width as f32) - (hidpi_factor * 0.5);
+            let y = (hidpi_factor * 0.5) - (screen_coords.1 as f32 / screen_height as f32);
+            (x, y)
+        };
+
         self.events_loop.poll_events(|ev| {
             match ev {
                 Event::WindowEvent {event, ..} => match event {
@@ -150,8 +159,7 @@ impl Display {
                     glutin::WindowEvent::Closed => std::process::exit(0), //closed = true,
                     // Mouse moved
                     glutin::WindowEvent::CursorMoved { device_id, position, modifiers } => {
-                        mousex = ((position.0 / width as f64) - 1.0) as f32;
-                        mousey = (1.0 - (position.1 / height as f64)) as f32;
+                        mouse_coords = screen_to_opengl(hidpi_factor, position, screen_height, screen_width);
                     },
                     // Keyboard button
                     glutin::WindowEvent::KeyboardInput { device_id, input } => {
@@ -183,8 +191,8 @@ impl Display {
         });
 
         // Propogate shadowed values back to self
-        self.mousex = mousex;
-        self.mousey = mousey;
+        println!("{:2.2}, {:2.2}", mouse_coords.0, mouse_coords.1);
+        self.mouse_coords = mouse_coords;
         self.horiz_axis = horiz_axis;
         self.vert_axis = vert_axis;
 
