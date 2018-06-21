@@ -16,3 +16,6 @@ serde = "1.0"
 serde_derive = "1.0"
 # The format we want to serialize to/from.
 bincode = "1.0"
+
+# For random numbers!
+rand = "0.5"

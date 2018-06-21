@@ -14,12 +14,56 @@ extern crate bincode;
 //use bincode::{serialize, deserialize};
 
 
+/// Represents (x, y) coordinates in OpenGL space that fill your window.
+#[derive(Copy, Clone, Debug)]
+pub struct Position {
+    pub x : f32,
+    pub y : f32,
+}
+
+impl Position {
+    pub fn new() -> Self {
+        Self { x: 0.0, y: 0.0 }
+    }
+}
+
+
+
+/// Abstracted key values you may receive (arrow keys and WASD keys combined, for example)
+#[derive(Copy, Clone, Debug)]
+pub enum KeyValue {
+    Up,
+    Down,
+    Left,
+    Right,
+}
+
+/// When KeyboardInput occurs, we want to know what state was entered
+#[derive(Copy, Clone, Debug)]
+pub enum KeyState {
+    Pressed,
+    Released,
+}
+
+/// Client Events that may occur
+#[derive(Copy, Clone, Debug)]
+pub enum Event {
+    /// The window was closed somehow, so we better quit
+    WindowClosed,
+    /// The mouse is now at this location (OpenGL coordinates - can extend past what's viewable if
+    /// the mouse is outside the window)
+    MouseMoved { position : Position },
+    KeyboardInput {
+        key_value : KeyValue,
+        key_state : KeyState
+    },
+}
 
 /// Various game control actions. Join a game, leave a game, just fetch updated game settings.
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub enum GameControlMsg {
     Join  { name : String },
-    Leave { name : String },
+    Leave { id : u8 },
     Fetch,
 }
 
@@ -40,10 +84,12 @@ pub struct Color {
 /// Server returns a GameSettings in response to receiving a PlayerSync
 /// Game settings and player names and colors (including your own) are all in there.  You will
 /// need to re-parse this every time someone joins or leaves the game.
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
+#[derive(Clone, Serialize, Deserialize, PartialEq, Debug)]
 pub struct GameSettings {
     /// The ID of your player.
     pub your_player_id : u8,
+    /// The maximum amount of players this server will allow
+    pub max_players : u8,
     /// OpenGL units. Collision radius of players (size of a player)
     pub player_radius : f32,
     /// How fast (in OpenGL units) a player moves per second
@@ -63,4 +109,34 @@ pub struct GameSettings {
     pub player_names : HashMap<u8, String>,
     /// Map of player id to player colors, including your own assigned color.
     pub player_colors : HashMap<u8, Color>,
+}
+
+pub enum PlayerEvent {
+    Attack,
+    ChangeWeapon,
+    Die,
+    HealEnd,
+    HealStart,
+    MoveEnd,
+    MoveStart,
+    Spawn,
+    TookDamage,
+}
+
+pub struct Weapon {
+    pub description : String,
+    pub damage : f32,
+    pub delay : f32,
+    pub radius : f32,
+}
+
+pub struct PlayerState {
+    pub id : u8,
+    pub pos : Position,
+    pub angle : Angle,
+    pub velocity : f32,
+    pub health : f32,
+    pub regen : f32,
+    pub weapon : Weapon,
+    pub player_events : Vec<PlayerEvent>,
 }

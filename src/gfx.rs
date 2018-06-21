@@ -1,10 +1,9 @@
 extern crate glium;
 use glium::Surface;
-use glium::glutin::{self, Event, ElementState};
+use glium::glutin::{self, ElementState};
 use std::f64::consts::PI;
-use std;
 
-use super::{Angle, Color, GameSettings};
+use super::*;
 
 #[derive(Copy, Clone, Debug)]
 struct Vertex {
@@ -12,19 +11,6 @@ struct Vertex {
     color: [f32; 3],
 }
 implement_vertex!(Vertex, position, color);
-
-#[derive(Copy, Clone, Debug)]
-pub struct Position {
-    x : f32,
-    y : f32,
-}
-
-impl Position {
-    pub fn new() -> Self {
-        Self { x: 0.0, y: 0.0 }
-    }
-}
-
 
 pub fn angle_between(pos : Position, target_pos : Position) -> Angle {
     (pos.x - target_pos.x).atan2(pos.y - target_pos.y)
@@ -60,14 +46,14 @@ fn create_circle_vertices(radius : f32, num_vertices : usize, color : Color) -> 
 //}
 
 pub struct Shape {
-    pos : Position,
-    direction : Angle,
+    pub pos : Position,
+    pub direction : Angle,
     vertex_buffer : glium::vertex::VertexBuffer<Vertex>,
 }
 
 impl Shape {
-    pub fn new_circle(display : &glium::Display, radius : f32, pos : Position, direction : Angle, color : Color) -> Self {
-        let vertex_buffer = glium::VertexBuffer::new(display, &create_circle_vertices(radius, 32, color)).unwrap();
+    pub fn new_circle(display : &Display, radius : f32, pos : Position, direction : Angle, color : Color) -> Self {
+        let vertex_buffer = glium::VertexBuffer::new(&display.display, &create_circle_vertices(radius, 32, color)).unwrap();
         Self {
             pos,
             direction,
@@ -79,19 +65,18 @@ impl Shape {
 
 pub struct Display {
     events_loop : glutin::EventsLoop,
-    display : glium::Display,
+    pub display : glium::Display,
     program : glium::Program,
     horiz_axis : f32,
     vert_axis : f32,
     mouse_pos : Position,
     screen_to_opengl : Box<FnMut((f64, f64)) -> Position>,
-    shapes : Vec<Shape>,
     game_settings : GameSettings,
 }
 
 
 impl Display {
-    pub fn new(width : u32, height : u32, game_settings : GameSettings) -> Self {
+    pub fn new(width : u32, height : u32, game_settings : &GameSettings) -> Self {
         let events_loop = glutin::EventsLoop::new();
         let window = glutin::WindowBuilder::new()
             .with_dimensions(width, height)
@@ -107,11 +92,6 @@ impl Display {
             let y = 1.0 - (screen_coord.1 as f32 / (0.5 * hidpi_factor * height as f32));
             Position { x, y }
         });
-
-        let shapes = vec![
-            Shape::new_circle(&display, game_settings.player_radius, Position::new(), 0.0, Color { r : 0.1, g : 0.2, b : 1.0 }),
-            Shape::new_circle(&display, game_settings.player_radius, Position { x : 0.5, y : 0.5 }, 0.0, Color { r : 1.0, g : 0.1, b : 0.1 }),
-        ];
 
         let vertex_shader_src = r#"
         #version 140
@@ -148,19 +128,18 @@ impl Display {
             vert_axis : 0.0,
             mouse_pos : Position { x : 0.0, y : 0.0 },
             screen_to_opengl,
-            shapes,
-            game_settings,
+            game_settings : game_settings.clone(),
         }
     }
 
-    pub fn draw(&self) {
+    pub fn draw(&self, shapes : &Vec<Shape>) {
         let indices = glium::index::NoIndices(glium::index::PrimitiveType::TriangleFan);
 
 
         let mut target = self.display.draw();
         target.clear_color(0.0, 0.0, 0.0, 1.0);
 
-        for shape in &self.shapes {
+        for shape in shapes {
             let uniforms = uniform! {
                 matrix: [
                     [shape.direction.cos() as f32, -shape.direction.sin() as f32, 0.0, 0.0],
@@ -175,33 +154,34 @@ impl Display {
         target.finish().unwrap();
     }
 
-    pub fn update(self : &mut Self) {
-        // Handle all events
-        let mut events = Vec::new();
-        self.events_loop.poll_events(|ev| { events.push(ev) });
-        for ev in events {
-            if let Event::WindowEvent {event, ..} = ev {
+    /// Get events that the graphics system may have seen (window, keyboard, mouse)
+    pub fn events(&mut self) -> Vec<Event> {
+        let screen_to_opengl = &mut (self.screen_to_opengl);
+        let mut events = Vec::<Event>::new();
+        self.events_loop.poll_events(|ev| {
+            if let glium::glutin::Event::WindowEvent {event, ..} = ev {
                 match event {
                     // Time to close the app?
-                    glutin::WindowEvent::Closed => std::process::exit(0), //closed = true,
+                    glutin::WindowEvent::Closed => events.push(Event::WindowClosed),
                     // Mouse moved
                     glutin::WindowEvent::CursorMoved { device_id : _, position, modifiers : _ } => {
-                        self.mouse_pos = (self.screen_to_opengl)(position);
+                        let mouse_pos = screen_to_opengl(position);
+                        events.push(Event::MouseMoved { position : mouse_pos });
                     },
                     // Keyboard button
                     glutin::WindowEvent::KeyboardInput { device_id : _, input } => {
                         let amount : f32;
-                        match input.state {
-                            ElementState::Pressed => { amount = 1.0 },
-                            ElementState::Released => { amount = 0.0 },
-                        }
+                        let key_state = match input.state {
+                            ElementState::Pressed => { KeyState::Pressed },
+                            ElementState::Released => { KeyState::Released },
+                        };
                         use glium::glutin::VirtualKeyCode::*;
                         if let Some(vkey) = input.virtual_keycode {
                             match vkey {
-                                W | Up | Comma => { self.vert_axis  = amount },
-                                S | Down | O   => { self.vert_axis  = -amount },
-                                A | Left       => { self.horiz_axis = -amount },
-                                D | Right | E  => { self.horiz_axis = amount },
+                                W | Up | Comma => { events.push(Event::KeyboardInput { key_state, key_value : KeyValue::Up }) },
+                                S | Down | O   => { events.push(Event::KeyboardInput { key_state, key_value : KeyValue::Down }) },
+                                A | Left       => { events.push(Event::KeyboardInput { key_state, key_value : KeyValue::Left }) },
+                                D | Right | E  => { events.push(Event::KeyboardInput { key_state, key_value : KeyValue::Right }) },
                                 _ => (),
                             }
                         }
@@ -209,15 +189,10 @@ impl Display {
                     _ => (),
                 }
             }
-        }
-
-        // Update position
-        if self.shapes.len() > 0 {
-            self.shapes[0].direction = angle_between(self.shapes[0].pos, self.mouse_pos);
-            self.shapes[0].pos.x += self.game_settings.move_speed * self.horiz_axis;
-            self.shapes[0].pos.y += self.game_settings.move_speed * self.vert_axis;
-        }
+        });
+        events
     }
+
 }
 
 
