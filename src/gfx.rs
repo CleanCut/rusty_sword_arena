@@ -154,7 +154,8 @@ impl Display {
         target.finish().unwrap();
     }
 
-    /// Get events that the graphics system may have seen (window, keyboard, mouse)
+    /// Get events that the graphics system may have seen (window, keyboard, mouse) and translate
+    /// them into our own, simpler events.
     pub fn events(&mut self) -> Vec<Event> {
         let screen_to_opengl = &mut (self.screen_to_opengl);
         let mut events = Vec::<Event>::new();
@@ -170,20 +171,30 @@ impl Display {
                     },
                     // Keyboard button
                     glutin::WindowEvent::KeyboardInput { device_id : _, input } => {
-                        let amount : f32;
-                        let key_state = match input.state {
-                            ElementState::Pressed => { KeyState::Pressed },
-                            ElementState::Released => { KeyState::Released },
+                        let button_state = match input.state {
+                            ElementState::Pressed => { ButtonState::Pressed },
+                            ElementState::Released => { ButtonState::Released },
                         };
                         use glium::glutin::VirtualKeyCode::*;
                         if let Some(vkey) = input.virtual_keycode {
                             match vkey {
-                                W | Up | Comma => { events.push(Event::KeyboardInput { key_state, key_value : KeyValue::Up }) },
-                                S | Down | O   => { events.push(Event::KeyboardInput { key_state, key_value : KeyValue::Down }) },
-                                A | Left       => { events.push(Event::KeyboardInput { key_state, key_value : KeyValue::Left }) },
-                                D | Right | E  => { events.push(Event::KeyboardInput { key_state, key_value : KeyValue::Right }) },
+                                W | Up | Comma => { events.push(Event::Button { button_state, button_value : ButtonValue::Up }) },
+                                S | Down | O   => { events.push(Event::Button { button_state, button_value : ButtonValue::Down }) },
+                                A | Left       => { events.push(Event::Button { button_state, button_value : ButtonValue::Left }) },
+                                D | Right | E  => { events.push(Event::Button { button_state, button_value : ButtonValue::Right }) },
+                                Escape         => { events.push(Event::Button { button_state, button_value : ButtonValue::Quit }) },
+                                Return | NumpadEnter | Space => { events.push(Event::Button { button_state, button_value : ButtonValue::Attack }) },
                                 _ => (),
                             }
+                        }
+                    },
+                    glutin::WindowEvent::MouseInput { device_id : _, state, button, modifiers : _ } => {
+                        if button == glium::glutin::MouseButton::Left {
+                            let button_state = match state {
+                                ElementState::Pressed => { ButtonState::Pressed },
+                                ElementState::Released => { ButtonState::Released },
+                            };
+                            events.push(Event::Button { button_state, button_value : ButtonValue::Attack });
                         }
                     },
                     _ => (),

@@ -1,5 +1,5 @@
 extern crate zmq;
-use super::{GameControlMsg, GameSettings};
+use super::{GameControlMsg, GameSettings, GameState, PlayerInput};
 use std::string::ToString;
 use bincode::{serialize, deserialize};
 use std::boxed::Box;
@@ -39,6 +39,7 @@ impl ServerConnection {
         game_control_socket.connect(&format!("tcp://{}:{}", server_host, GAME_CONTROL_PORT)).unwrap();
 
         let game_state_socket = context.socket(zmq::SUB).unwrap();
+        game_state_socket.set_rcvtimeo(0).unwrap();
         game_state_socket.connect(&format!("tcp://{}:{}", server_host, GAME_STATE_PORT)).unwrap();
         game_state_socket.set_subscribe(&[]).unwrap();
 
@@ -54,10 +55,26 @@ impl ServerConnection {
     }
 
     /// Send a control message to join, leave, or sync a game. Get back GameSettings.
-    pub fn game_control(self: &mut Self, msg : GameControlMsg) -> Result<GameSettings, Box<Error>> {
-        self.game_control_socket.send(&serialize(&msg).unwrap(), 0)?;
+    pub fn send_game_control(&mut self, msg : GameControlMsg) -> Result<GameSettings, Box<Error>> {
+        self.game_control_socket.send(&serialize(&msg)?, 0)?;
         let bytes = self.game_control_socket.recv_bytes(0)?;
         let game_settings : GameSettings = deserialize(&bytes[..])?;
         Ok(game_settings)
+    }
+
+    /// Gets all available unprocessed game states.  You should call this often enough that you
+    /// usually don't receive more than one.
+    pub fn recv_game_states(&mut self) -> Vec<GameState> {
+        let mut game_states = Vec::<GameState>::new();
+        while let Ok(bytes) = self.game_state_socket.recv_bytes(0) {
+            game_states.push(deserialize(&bytes[..]).unwrap());
+        }
+        game_states
+    }
+
+    /// Send player input to the server. The server processes input as it comes in, so you should
+    /// send it ASAP to reduce lag and improve the simulation.
+    pub fn send_player_input(&mut self, player_input : PlayerInput) {
+        self.player_input_socket.send(&serialize(&player_input).unwrap(), 0).unwrap();
     }
 }

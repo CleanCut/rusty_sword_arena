@@ -6,7 +6,7 @@ extern crate serde_derive;
 extern crate zmq;
 
 use rand::prelude::{Rng, thread_rng};
-use rsa::{Color, GameControlMsg, GameSettings};
+use rsa::{Color, GameControlMsg, GameSettings, GameState, PlayerInput, PlayerState};
 use rusty_sword_arena as rsa;
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
@@ -16,22 +16,20 @@ use std::thread::{self};
 use bincode::{serialize, deserialize};
 
 struct ExtraPlayerState {
-    horiz_axis : f32,
-    vert_axis : f32,
-    attack_timer : f32,
 }
 
 fn main() {
     let ctx = zmq::Context::new();
 
     let mut game_control_server_socket = ctx.socket(zmq::REP).unwrap();
-    game_control_server_socket.set_rcvtimeo(0);
+    game_control_server_socket.set_rcvtimeo(0).unwrap();
     game_control_server_socket.bind(&format!("tcp://*:{}", rsa::net::GAME_CONTROL_PORT)).unwrap();
 
     let mut game_state_server_socket = ctx.socket(zmq::PUB).unwrap();
     game_state_server_socket.bind(&format!("tcp://*:{}", rsa::net::GAME_STATE_PORT)).unwrap();
 
     let mut player_input_server_socket = ctx.socket(zmq::PULL).unwrap();
+    player_input_server_socket.set_rcvtimeo(0).unwrap();
     player_input_server_socket.bind(&format!("tcp://*:{}", rsa::net::PLAYER_INPUT_PORT)).unwrap();
 
     let mut loop_iterations : i64 = 0;
@@ -54,10 +52,13 @@ fn main() {
     println!("{:?}", gs);
 
     let mut rng = thread_rng();
+    let mut game_settings_changed = true;
+    let mut frame_number : u64 = 0;
+    let mut player_states = Vec::<PlayerState>::new();
 
     'gameloop:
     loop {
-        thread::sleep(Duration::from_millis(1));
+        thread::sleep(Duration::from_micros(100));
         loop_iterations += 1;
 
         // Reply to all Game Control requests
@@ -94,6 +95,7 @@ fn main() {
                                 gs.your_player_id = 0;
                                 println!("Denied entrance for {}", name)
                             }
+                            game_settings_changed = true;
                             game_control_server_socket.send(&serialize(&gs).unwrap(), 0).unwrap();
                         },
                         GameControlMsg::Leave {id} => {
@@ -109,12 +111,16 @@ fn main() {
                             }
                             // Per ZMQ REQ/REP protocol we must respond no matter what, so even invalid
                             // requests get the game settings back.
+                            game_settings_changed = true;
                             game_control_server_socket.send(&serialize(&gs).unwrap(), 0).unwrap();
                         },
                         GameControlMsg::Fetch => {
-                            // your_player_id has no meaning in this response, so we set it to the
-                            // invalid id.
-                            gs.your_player_id = 0;
+                            // your_player_id has no meaning in this response, so we make sure it
+                            // is the invalid id.
+                            if { gs.your_player_id != 0 } {
+                                gs.your_player_id = 0;
+                                game_settings_changed = true;
+                            }
                             game_control_server_socket.send(&serialize(&gs).unwrap(), 0).unwrap();
                             println!("Someone fetches new settings.");
                         },
@@ -122,20 +128,34 @@ fn main() {
                 },
             }
         }
-
         // Pull all the Player Input pushes
+        while let Ok(bytes) = player_input_server_socket.recv_bytes(0) {
+            let player_input : PlayerInput = deserialize(&bytes[..]).unwrap();
+            println!("{:#?}", player_input);
+        }
 
         // Process a frame (if it's time)
-        if report_starttime.elapsed() > report_frequency {
+        let delta = report_starttime.elapsed();
+        if delta > report_frequency {
+            report_starttime = Instant::now();
+            // Convert delta to a float
+            let delta = delta.as_secs() as f32 + delta.subsec_nanos() as f32 * 1e-9;
 
-        // Broadcast new game state computed this frame
-            let status = format!("STATUS | Time: {:?}, Messages Processed: {}, Loops: {}",
-                                 report_starttime, processed, loop_iterations);
-            game_state_server_socket.send_str(&status, 0);
+            // Broadcast new game state computed this frame
+            let status = format!("STATUS | Frame: {}, Delta: {:2.3}, Messages Processed: {}, Loops: {}",
+                                 frame_number, delta, processed, loop_iterations);
+            let game_state = GameState {
+                frame_number,
+                delta,
+                game_settings_changed,
+                player_states : player_states.clone(),
+            };
+            game_state_server_socket.send(&serialize(&game_state).unwrap(), 0).unwrap();
             println!("{}", status);
+            game_settings_changed = false;
             processed = 0;
             loop_iterations = 0;
-            report_starttime = Instant::now();
+            frame_number += 1;
         }
     }
 
