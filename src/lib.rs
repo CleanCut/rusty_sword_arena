@@ -158,6 +158,17 @@ pub struct Weapon {
     pub radius : f32,
 }
 
+impl Weapon {
+    pub fn new() -> Self {
+        Self {
+            description : "Rusty Sword".to_string(),
+            damage : 10.0,
+            delay : 1.0,
+            radius : 0.035,
+        }
+    }
+}
+
 
 /// The state of a player on the server. The server broadcasts these to all clients every frame as
 /// part of a FrameState.  Note that you can receive `PlayerState`s before you have gotten a
@@ -199,12 +210,7 @@ impl PlayerState {
             velocity : 0.0,
             health : 0.0,
             regen : 0.0,
-            weapon : Weapon {
-                description : "No Weapon".to_string(),
-                damage : 0.0,
-                delay : 100.0,
-                radius : 0.0001,
-            },
+            weapon : Weapon::new(),
             player_events : Vec::<PlayerEvent>::new(),
             horiz_axis: 0.0,
             vert_axis : 0.0,

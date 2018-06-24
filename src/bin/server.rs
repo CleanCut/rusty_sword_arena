@@ -35,7 +35,7 @@ fn process_game_control_requests(
                             let mut new_id : u8;
                             loop {
                                 new_id = rng.gen::<u8>();
-                                if (new_id != 0) && !game_settings.player_names.contains_key(&new_id) { break }
+                                if (new_id != 0) && !player_states.contains_key(&new_id) { break }
                             }
                             game_settings.your_player_id = new_id;
                             // Make sure player name is unique, and then store it.
@@ -48,7 +48,7 @@ fn process_game_control_requests(
                             let new_color = Color { r: 1.0, g: 0.0, b: 0.0 };
                             game_settings.player_colors.insert(new_id, new_color.clone());
                             // Create the new player state
-                            //player_
+                            player_states.insert(new_id, PlayerState::new());
                             println!("Joined: {} (id {}, {:?})", new_name, new_id, new_color);
                         } else {
                             // Use the invalid player ID to let the client know they didn't get
@@ -63,17 +63,17 @@ fn process_game_control_requests(
                         // your_player_id has no meaning in this response, so we set it to the
                         // invalid id.
                         game_settings.your_player_id = 0;
-                        if !game_settings.player_names.contains_key(&id) {
-                            println!("Ignoring request for player {} to leave since that player isn't here.", id);
-                        } else {
-                            let name = game_settings.player_names.remove(&id).unwrap();
-                            game_settings.player_colors.remove(&id);
-                            println!("Player {} ({}) leaves", name, id);
+                        let mut msg = format!("Player {} leaves", id);
+                        if let Some(name) = game_settings.player_names.remove(&id) {
+                            msg.push_str(&format!(", name: {}", name));
                         }
+                        game_settings.player_colors.remove(&id);
+                        player_states.remove(&id);
                         // Per ZMQ REQ/REP protocol we must respond no matter what, so even invalid
                         // requests get the game settings back.
                         game_settings_changed = true;
                         game_control_server_socket.send(&serialize(&game_settings).unwrap(), 0).unwrap();
+                        println!("{}", msg);
                     },
                     GameControlMsg::Fetch => {
                         // your_player_id has no meaning in this response, so we make sure it
