@@ -40,7 +40,7 @@ pub enum ButtonValue {
     Left,
     /// Arrow Right, D, E (Dvorak)
     Right,
-    /// Left Mouse Button, Space Bar, Enter
+    /// Left Mouse Button, Space Bar, Backspace (Kinesis Advantage Keyboard)
     Attack,
     /// Escape
     Quit,
@@ -224,14 +224,14 @@ pub struct GameState {
     /// a GameControlMsg::Fetch to get the new GameSettings from the server.
     pub game_settings_changed : bool,
     /// All of the player's states, including your own!
-    pub player_states : Vec<PlayerState>,
+    pub player_states : HashMap<u8, PlayerState>,
 }
 
 /// Clients should send `PlayerInput`s to the server ASAP.  The quicker the server gets inputs, the
 /// more accurate the simulation will be.  But of course, you also shouldn't overload the server
-/// with too much traffic, because that's bad too.  Good rule of thumb: Coalesce 4.17 milliseconds
-/// worth of input together, and send that.  That's 4 times faster than frames are sent by the
-/// server (60fps = 16.7ms).  The server should be able to handle ~240 pkts/sec per client.  I hope.
+/// with too much traffic, because that's bad too.  Good rule of thumb: Coalesce 4 milliseconds
+/// worth of input together, and send that.  That's about 4 times faster than frames are sent by the
+/// server (60fps = 16.7ms).  The server should be able to handle ~250 pkts/sec per client.  I hope.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct PlayerInput {
     /// The ID of your player
@@ -245,5 +245,17 @@ pub struct PlayerInput {
     pub vert_axis : f32,
     /// What angle your player is facing. You can turn instantly, you lucky dog.
     pub turn_angle : Angle,
+}
+
+impl PlayerInput {
+    pub fn new() -> Self {
+        Self {
+            id : 0,
+            attack : false,
+            horiz_axis : 0.0,
+            vert_axis : 0.0,
+            turn_angle : 0.0,
+        }
+    }
 }
 

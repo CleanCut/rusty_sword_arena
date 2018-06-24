@@ -6,7 +6,7 @@ use rsa::{Color, Event, ButtonState, ButtonValue, GameControlMsg, PlayerInput, P
 use rsa::net::{ServerConnection};
 use rsa::gfx::{angle_between, Display, Shape};
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 fn main() {
 
@@ -23,47 +23,51 @@ fn main() {
         Shape::new_circle(&display, game_settings.player_radius, Position { x : 0.5, y : 0.5 }, 0.0, Color { r : 1.0, g : 0.1, b : 0.1 }),
     ];
 
-    let mut attack = false;
-    let mut horiz_axis = 0.0f32;
-    let mut vert_axis = 0.0f32;
     let mut mouse_pos = Position { x : 0.0, y : 0.0 };
     let mut my_state = PlayerState::new();
+    let mut my_input = PlayerInput::new();
+    let mut last_input_sent = Instant::now();
     'gameloop:
     loop {
-        // Process user input and send it to the server
-        let mut new_input = false;
+        // Accumulate user input into one struct
         for event in display.events() {
-            new_input = true;
             match event {
                 Event::WindowClosed => break 'gameloop,
-                Event::MouseMoved { position } => mouse_pos = position,
+                Event::MouseMoved { position } => {
+                    mouse_pos = position;
+                    my_input.turn_angle = angle_between(my_state.pos, mouse_pos);
+                },
                 Event::Button { button_state, button_value } => {
                     let axis_amount = match button_state {
                         ButtonState::Pressed => { 1.0 },
                         ButtonState::Released => { 0.0 },
                     };
                     match button_value {
-                        ButtonValue::Up    => vert_axis  = axis_amount,
-                        ButtonValue::Down  => vert_axis  = -axis_amount,
-                        ButtonValue::Left  => horiz_axis = -axis_amount,
-                        ButtonValue::Right => horiz_axis = axis_amount,
-                        ButtonValue::Attack => attack = match button_state {
-                            ButtonState::Pressed => { true },
-                            ButtonState::Released => { false }
+                        ButtonValue::Up    => my_input.vert_axis  = axis_amount,
+                        ButtonValue::Down  => my_input.vert_axis  = -axis_amount,
+                        ButtonValue::Left  => my_input.horiz_axis = -axis_amount,
+                        ButtonValue::Right => my_input.horiz_axis = axis_amount,
+                        ButtonValue::Attack => {
+                            // We only turn ON attack here.  We turn it off when the input is sent
+                            // to the server.
+                            let attack = match button_state {
+                                ButtonState::Pressed => { true },
+                                ButtonState::Released => { false }
+                            };
+                            if attack {
+                                my_input.attack = true;
+                            }
                         },
                         ButtonValue::Quit => break 'gameloop,
                     }
                 },
             }
         }
-        if new_input {
-            server_conn.send_player_input(PlayerInput {
-                id : my_id,
-                attack,
-                horiz_axis,
-                vert_axis,
-                turn_angle : angle_between(my_state.pos, mouse_pos),
-            });
+        // Every 4 milliseconds, send accumulated input and reset attack
+        if last_input_sent.elapsed() > Duration::from_millis(4) {
+            server_conn.send_player_input(my_input.clone());
+            my_input.attack = false;
+            last_input_sent = Instant::now();
         }
 
         // See if there are new game states to process

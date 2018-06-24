@@ -183,7 +183,7 @@ impl Display {
                                 A | Left       => { events.push(Event::Button { button_state, button_value : ButtonValue::Left }) },
                                 D | Right | E  => { events.push(Event::Button { button_state, button_value : ButtonValue::Right }) },
                                 Escape         => { events.push(Event::Button { button_state, button_value : ButtonValue::Quit }) },
-                                Return | NumpadEnter | Space => { events.push(Event::Button { button_state, button_value : ButtonValue::Attack }) },
+                                Space | Backspace => { events.push(Event::Button { button_state, button_value : ButtonValue::Attack }) },
                                 _ => (),
                             }
                         }
