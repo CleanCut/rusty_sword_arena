@@ -1,10 +1,9 @@
 extern crate rusty_sword_arena;
 extern crate glium;
 
-use rusty_sword_arena as rsa;
-use rsa::{Color, Event, ButtonState, ButtonValue, GameControlMsg, PlayerInput, PlayerState, Position};
-use rsa::net::{ServerConnection};
-use rsa::gfx::{angle_between, Display, Shape};
+use rusty_sword_arena::{Color, Event, ButtonState, ButtonValue, GameControlMsg, PlayerInput, PlayerState, Position};
+use rusty_sword_arena::net::{ServerConnection};
+use rusty_sword_arena::gfx::{angle_between, Display, Shape};
 use std::thread;
 use std::time::{Duration, Instant};
 
