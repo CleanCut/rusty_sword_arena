@@ -6,8 +6,7 @@ extern crate serde_derive;
 extern crate zmq;
 
 use rand::prelude::{Rng, thread_rng, ThreadRng};
-use rsa::{Color, GameControlMsg, GameSettings, GameState, PlayerInput, PlayerState};
-use rusty_sword_arena as rsa;
+use rusty_sword_arena::{Color, GameControlMsg, GameSettings, GameState, net, PlayerInput, PlayerState};
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
 use std::thread::{self};
@@ -25,7 +24,7 @@ fn process_game_control_requests(
     'gamecontrol:
     loop {
         match game_control_server_socket.recv_bytes(0) {
-            Err(e) => break 'gamecontrol,
+            Err(_e) => break 'gamecontrol,
             Ok(bytes) => {
                 let msg: GameControlMsg = deserialize(&bytes[..]).unwrap();
                 match msg {
@@ -48,7 +47,9 @@ fn process_game_control_requests(
                             let new_color = Color { r: 1.0, g: 0.0, b: 0.0 };
                             game_settings.player_colors.insert(new_id, new_color.clone());
                             // Create the new player state
-                            player_states.insert(new_id, PlayerState::new());
+                            let mut player_state = PlayerState::new();
+                            player_state.id = new_id;
+                            player_states.insert(new_id, player_state);
                             println!("Joined: {} (id {}, {:?})", new_name, new_id, new_color);
                         } else {
                             // Use the invalid player ID to let the client know they didn't get
@@ -92,10 +93,20 @@ fn process_game_control_requests(
     game_settings_changed
 }
 
-fn process_player_input(player_input_server_socket : &mut Socket, player_states : &mut HashMap<u8, PlayerState>) {
+fn process_player_input(
+    player_input_server_socket : &mut Socket,
+    player_states : &mut HashMap<u8, PlayerState>,
+    game_settings : &GameSettings,
+) {
     while let Ok(bytes) = player_input_server_socket.recv_bytes(0) {
         let player_input : PlayerInput = deserialize(&bytes[..]).unwrap();
-        println!("{:#?}", player_input);
+
+        if let Some(player_state) = player_states.get_mut(&player_input.id) {
+            // TODO: do something with player_input.attack
+            player_state.angle = player_input.turn_angle;
+            player_state.pos.x += game_settings.move_speed * player_input.horiz_axis;
+            player_state.pos.y += game_settings.move_speed * player_input.vert_axis;
+        }
     }
 }
 
@@ -104,25 +115,25 @@ fn main() {
 
     let mut game_control_server_socket = ctx.socket(zmq::REP).unwrap();
     game_control_server_socket.set_rcvtimeo(0).unwrap();
-    game_control_server_socket.bind(&format!("tcp://*:{}", rsa::net::GAME_CONTROL_PORT)).unwrap();
+    game_control_server_socket.bind(&format!("tcp://*:{}", net::GAME_CONTROL_PORT)).unwrap();
 
     let mut game_state_server_socket = ctx.socket(zmq::PUB).unwrap();
-    game_state_server_socket.bind(&format!("tcp://*:{}", rsa::net::GAME_STATE_PORT)).unwrap();
+    game_state_server_socket.bind(&format!("tcp://*:{}", net::GAME_STATE_PORT)).unwrap();
 
     let mut player_input_server_socket = ctx.socket(zmq::PULL).unwrap();
     player_input_server_socket.set_rcvtimeo(0).unwrap();
-    player_input_server_socket.bind(&format!("tcp://*:{}", rsa::net::PLAYER_INPUT_PORT)).unwrap();
+    player_input_server_socket.bind(&format!("tcp://*:{}", net::PLAYER_INPUT_PORT)).unwrap();
 
     let mut loop_iterations : i64 = 0;
     let mut processed = 0;
     let mut report_starttime = Instant::now();
-    let report_frequency = Duration::new(1, 0);
+    let report_frequency = Duration::new(0, 16666666);
 
     let mut game_settings = GameSettings {
         your_player_id : 0,
         max_players : 64,
         player_radius : 0.05,
-        move_speed : 0.001,
+        move_speed : 0.004,
         move_dampening : 0.5,
         frame_delay : 0.5,
         respawn_delay : 5.0,
@@ -149,7 +160,7 @@ fn main() {
             &mut rng);
 
         // Handle and process all the player input we've received so far
-        process_player_input(&mut player_input_server_socket, &mut player_states);
+        process_player_input(&mut player_input_server_socket, &mut player_states, &game_settings);
 
         // Process a frame (if it's time)
         let delta = report_starttime.elapsed();

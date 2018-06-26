@@ -4,6 +4,7 @@ use glium::glutin::{self, ElementState};
 use std::f64::consts::PI;
 
 use super::*;
+use glium::Frame;
 
 #[derive(Copy, Clone, Debug)]
 struct Vertex {
@@ -36,15 +37,6 @@ fn create_circle_vertices(radius : f32, num_vertices : usize, color : Color) -> 
     v
 }
 
-//pub struct GlThingy<I, U>
-//    where I : glium::index::Index,
-//          U : glium::uniforms::Uniforms {
-//    vertex_buffer : glium::VertexBuffer,
-//    index : I,
-//    program : glium::Program,
-//    uniforms : U,
-//}
-
 pub struct Shape {
     pub pos : Position,
     pub direction : Angle,
@@ -72,6 +64,8 @@ pub struct Display {
     mouse_pos : Position,
     screen_to_opengl : Box<FnMut((f64, f64)) -> Position>,
     game_settings : GameSettings,
+    indices : glium::index::NoIndices,
+    target : Option<Frame>,
 }
 
 
@@ -120,6 +114,9 @@ impl Display {
         "#;
 
         let program = glium::Program::from_source(&display, vertex_shader_src, fragment_shader_src, None).unwrap();
+
+        let indices = glium::index::NoIndices(glium::index::PrimitiveType::TriangleFan);
+
         Self {
             events_loop,
             display,
@@ -129,17 +126,20 @@ impl Display {
             mouse_pos : Position { x : 0.0, y : 0.0 },
             screen_to_opengl,
             game_settings : game_settings.clone(),
+            indices,
+            target : None,
         }
     }
 
-    pub fn draw(&self, shapes : &Vec<Shape>) {
-        let indices = glium::index::NoIndices(glium::index::PrimitiveType::TriangleFan);
+    pub fn drawstart(&mut self) {
+        self.target = Some(self.display.draw());
+        if let Some(ref mut target) = self.target {
+            target.clear_color(0.0, 0.0, 0.0, 1.0);
+        }
+    }
 
-
-        let mut target = self.display.draw();
-        target.clear_color(0.0, 0.0, 0.0, 1.0);
-
-        for shape in shapes {
+    pub fn draw(&mut self, shape : &Shape) {
+        if let Some(ref mut target) = self.target {
             let uniforms = uniform! {
                 matrix: [
                     [shape.direction.cos() as f32, -shape.direction.sin() as f32, 0.0, 0.0],
@@ -148,10 +148,13 @@ impl Display {
                     [shape.pos.x, shape.pos.y, 0.0, 1.0f32],
                 ]
             };
-            target.draw(&shape.vertex_buffer, &indices, &self.program, &uniforms,
+            target.draw(&shape.vertex_buffer, &self.indices, &self.program, &uniforms,
                         &Default::default()).unwrap();
         }
-        target.finish().unwrap();
+    }
+
+    pub fn drawfinish(&mut self) {
+        self.target.take().unwrap().finish().unwrap();
     }
 
     /// Get events that the graphics system may have seen (window, keyboard, mouse) and translate

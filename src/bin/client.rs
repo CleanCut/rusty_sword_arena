@@ -1,30 +1,30 @@
 extern crate rusty_sword_arena;
 extern crate glium;
 
-use rusty_sword_arena::{Color, Event, ButtonState, ButtonValue, GameControlMsg, PlayerInput, PlayerState, Position};
+use rusty_sword_arena::{Event, ButtonState, ButtonValue, GameControlMsg, PlayerInput, PlayerState, Position};
 use rusty_sword_arena::net::{ServerConnection};
 use rusty_sword_arena::gfx::{angle_between, Display, Shape};
 use std::thread;
 use std::time::{Duration, Instant};
+use std::collections::HashMap;
 
 fn main() {
 
     let mut server_conn = ServerConnection::new("localhost");
 
     let msg = GameControlMsg::Join {name : "bob".to_string()};
-    let game_settings = server_conn.send_game_control(msg).unwrap();
+    let mut game_settings = server_conn.send_game_control(msg).unwrap();
     let my_id = game_settings.your_player_id;
     println!("{:#?}", game_settings);
 
     let mut display = Display::new(1024, 1024, &game_settings);
-    let mut circles = vec![
-        Shape::new_circle(&display, game_settings.player_radius, Position::new(), 0.0, Color { r : 0.1, g : 0.2, b : 1.0 }),
-        Shape::new_circle(&display, game_settings.player_radius, Position { x : 0.5, y : 0.5 }, 0.0, Color { r : 1.0, g : 0.1, b : 0.1 }),
-    ];
+
+    let mut circles = HashMap::<u8, Shape>::new();
+    let mut player_states = HashMap::<u8, PlayerState>::new();
 
     let mut mouse_pos = Position { x : 0.0, y : 0.0 };
-    let mut my_state = PlayerState::new();
     let mut my_input = PlayerInput::new();
+    my_input.id = my_id;
     let mut last_input_sent = Instant::now();
     'gameloop:
     loop {
@@ -34,7 +34,6 @@ fn main() {
                 Event::WindowClosed => break 'gameloop,
                 Event::MouseMoved { position } => {
                     mouse_pos = position;
-                    my_input.turn_angle = angle_between(my_state.pos, mouse_pos);
                 },
                 Event::Button { button_state, button_value } => {
                     let axis_amount = match button_state {
@@ -51,7 +50,7 @@ fn main() {
                             // to the server.
                             let attack = match button_state {
                                 ButtonState::Pressed => { true },
-                                ButtonState::Released => { false }
+                                ButtonState::Released => { false },
                             };
                             if attack {
                                 my_input.attack = true;
@@ -62,29 +61,53 @@ fn main() {
                 },
             }
         }
+
+
         // Every 4 milliseconds, send accumulated input and reset attack
         if last_input_sent.elapsed() > Duration::from_millis(4) {
+            if let Some(my_state) = player_states.get(&my_id) {
+                my_input.turn_angle = angle_between(my_state.pos, mouse_pos);
+            }
             server_conn.send_player_input(my_input.clone());
             my_input.attack = false;
             last_input_sent = Instant::now();
         }
 
-        // See if there are new game states to process
-        let new_game_states = server_conn.recv_game_states();
+        // Any new game states?
+        let mut new_game_states = server_conn.recv_game_states();
         if !new_game_states.is_empty() {
-            for game_state in new_game_states {
-                println!("{:#?}", game_state);
+            for mut game_state in new_game_states {
+                if game_state.game_settings_changed {
+                    let msg = GameControlMsg::Fetch;
+                    game_settings = server_conn.send_game_control(msg).unwrap();
+                }
+                player_states.clear();
+                player_states.extend(game_state.player_states.drain());
+//        Shape::new_circle(&display, game_settings.player_radius, Position::new(), 0.0, Color { r : 0.1, g : 0.2, b : 1.0 }),
+//        Shape::new_circle(&display, game_settings.player_radius, Position { x : 0.5, y : 0.5 }, 0.0, Color { r : 1.0, g : 0.1, b : 0.1 }),
             }
-
         }
-        display.draw(&Vec::<Shape>::new());
-        // Update position
-        //if circles.len() > 0 {
-        //    circles[0].direction = angle_between(circles[0].pos, mouse_pos);
-        //    circles[0].pos.x += game_settings.move_speed * horiz_axis;
-        //    circles[0].pos.y += game_settings.move_speed * vert_axis;
-        //}
-        thread::sleep(Duration::from_millis(1));
+        // Update the circles
+        for (id, player_state) in &player_states {
+            if circles.contains_key(id) {
+                let circle = circles.get_mut(id).unwrap();
+                circle.direction = player_state.angle;
+                circle.pos = player_state.pos;
+            } else {
+                if let Some(color) = game_settings.player_colors.get(id) {
+                    circles.insert(*id, Shape::new_circle(
+                        &display, game_settings.player_radius, player_state.pos, player_state.angle, *color));
+                }
+            }
+        }
+        //println!("{:#?}", player_states);
+
+        display.drawstart();
+        for circle in circles.values() {
+            display.draw(&circle);
+        }
+        display.drawfinish();
+//        thread::sleep(Duration::from_millis(1));
     }
 
     println!("Disconnecting from server.");
