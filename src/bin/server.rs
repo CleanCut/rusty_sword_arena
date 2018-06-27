@@ -15,12 +15,91 @@ use zmq::Socket;
 
 use bincode::{serialize, deserialize};
 
+struct ColorPicker {
+    colors : HashMap<String, Color>,
+}
+
+impl ColorPicker {
+    fn new() -> Self {
+        let mut colors = HashMap::<String, Color>::with_capacity(32);
+        // 32 of the colors from http://eastfarthing.com/blog/2016-09-19-palette/ on 2018-06-26
+        colors.insert("bright teal".to_string(), Color {r : 0.021, g : 0.992, b : 0.757});
+        colors.insert("green blue".to_string(), Color {r : 0.198, g : 0.684, b : 0.531});
+        colors.insert("tree green".to_string(), Color {r : 0.177, g : 0.519, b : 0.189});
+        colors.insert("green".to_string(), Color {r : 0.004, g : 0.718, b : 0.086});
+        colors.insert("poison green".to_string(), Color {r : 0.314, g : 0.992, b : 0.204});
+        colors.insert("aqua blue".to_string(), Color {r : 0.021, g : 0.861, b : 0.865});
+        colors.insert("turquoise blue".to_string(), Color {r : 0.287, g : 0.623, b : 0.666});
+        colors.insert("sea blue".to_string(), Color {r : 0.187, g : 0.429, b : 0.510});
+        colors.insert("azure".to_string(), Color {r : 0.223, g : 0.580, b : 0.842});
+        colors.insert("lightblue".to_string(), Color {r : 0.471, g : 0.805, b : 0.971});
+        colors.insert("light periwinkle".to_string(), Color {r : 0.734, g : 0.774, b : 0.924});
+        colors.insert("lavender blue".to_string(), Color {r : 0.555, g : 0.551, b : 0.989});
+        colors.insert("bright blue".to_string(), Color {r : 0.121, g : 0.393, b : 0.955});
+        colors.insert("heather".to_string(), Color {r : 0.641, g : 0.554, b : 0.708});
+        colors.insert("light lavendar".to_string(), Color {r : 0.961, g : 0.719, b : 0.953});
+        colors.insert("light magenta".to_string(), Color {r : 0.874, g : 0.435, b : 0.945});
+        colors.insert("electric purple".to_string(), Color {r : 0.657, g : 0.194, b : 0.933});
+        colors.insert("strong blue".to_string(), Color {r : 0.212, g : 0.066, b : 0.887});
+        colors.insert("berry".to_string(), Color {r : 0.575, g : 0.153, b : 0.305});
+        colors.insert("dull pink".to_string(), Color {r : 0.897, g : 0.494, b : 0.640});
+        colors.insert("tomato red".to_string(), Color {r : 0.931, g : 0.164, b : 0.069});
+        colors.insert("brownish red".to_string(), Color {r : 0.617, g : 0.158, b : 0.123});
+        colors.insert("ugly brown".to_string(), Color {r : 0.494, g : 0.458, b : 0.104});
+        colors.insert("puke green".to_string(), Color {r : 0.636, g : 0.684, b : 0.135});
+        colors.insert("sickly yellow".to_string(), Color {r : 0.878, g : 0.960, b : 0.247});
+        colors.insert("pinkish grey".to_string(), Color {r : 0.872, g : 0.724, b : 0.728});
+        colors.insert("light peach".to_string(), Color {r : 0.931, g : 0.754, b : 0.569});
+        colors.insert("ochre".to_string(), Color {r : 0.757, g : 0.566, b : 0.162});
+        colors.insert("golden yellow".to_string(), Color {r : 0.972, g : 0.794, b : 0.102});
+        colors.insert("orange".to_string(), Color {r : 0.917, g : 0.475, b : 0.143});
+        colors.insert("eggshell blue".to_string(), Color {r : 0.804, g : 100.0, b : 0.942});
+        colors.insert("egg shell".to_string(), Color {r : 1.000, g : 0.982, b : 0.776});
+
+        /* Too dark, too close to another color, too gray, or I just didn't like it.
+        colors.insert("black".to_string(), Color {r : 0.000, g : 0.000, b : 0.000});
+        colors.insert("charcoal".to_string(), Color {r : 0.110, g : 0.203, b : 0.167});
+        colors.insert("navy green".to_string(), Color {r : 0.167, g : 0.323, b : 0.100});
+        colors.insert("cobalt".to_string(), Color {r : 0.147, g : 0.279, b : 0.494});
+        colors.insert("dark lavender".to_string(), Color {r : 0.449, g : 0.385, b : 0.623});
+        colors.insert("dark indigo".to_string(), Color {r : 0.142, g : 0.072, b : 0.404});
+        colors.insert("darkish purple".to_string(), Color {r : 0.498, g : 0.139, b : 0.528});
+        colors.insert("aubergine".to_string(), Color {r : 0.278, g : 0.105, b : 0.228});
+        colors.insert("chocolate brown".to_string(), Color {r : 0.306, g : 0.130, b : 0.102});
+        colors.insert("purplish brown".to_string(), Color {r : 0.356, g : 0.316, b : 0.348});
+        colors.insert("mud brown".to_string(), Color {r : 0.371, g : 0.303, b : 0.159});
+        colors.insert("pale brown".to_string(), Color {r : 0.671, g : 0.548, b : 0.462});
+        colors.insert("silver".to_string(), Color {r : 0.668, g : 0.730, b : 0.702});
+        colors.insert("green grey".to_string(), Color {r : 0.519, g : 0.574, b : 0.425});
+        colors.insert("blue green".to_string(), Color {r : 0.219, g : 0.447, b : 0.382});
+        colors.insert("mauve".to_string(), Color {r : 0.593, g : 0.407, b : 0.466});
+        colors.insert("pink red".to_string(), Color {r : 0.866, g : 0.219, b : 0.355});
+        colors.insert("salmon".to_string(), Color {r : 0.945, g : 0.503, b : 0.443});
+        colors.insert("purpley pink".to_string(), Color {r : 0.835, g : 0.188, b : 0.615});
+        colors.insert("earth".to_string(), Color {r : 0.630, g : 0.370, b : 0.189});
+        colors.insert("light grey green".to_string(), Color {r : 0.634, g : 0.819, b : 0.558});
+        colors.insert("white".to_string(), Color {r : 1.000, g : 1.000, b : 1.000});
+        */
+        Self { colors }
+    }
+    fn pop_color(&mut self) -> (String, Color) {
+        // Lets not crash if we get emptied
+        if self.colors.len() == 0 {
+            return ("overflow white".to_string(), Color {r : 1.0, g : 1.0, b : 1.0});
+        }
+        // Who knows what order we'll get stuff in.  How exciting!
+        let key = self.colors.keys().nth(0).unwrap().clone();
+        self.colors.remove_entry(&key).unwrap()
+    }
+}
+
 fn process_game_control_requests(
     game_control_server_socket : &mut Socket,
     game_settings : &mut GameSettings,
     player_states : &mut HashMap<u8, PlayerState>,
     rng : &mut ThreadRng) -> bool {
     let mut game_settings_changed = false;
+    let mut color_picker = ColorPicker::new();
     'gamecontrol:
     loop {
         match game_control_server_socket.recv_bytes(0) {
@@ -44,13 +123,13 @@ fn process_game_control_requests(
                             }
                             game_settings.player_names.insert(new_id, new_name.clone());
                             // Assign player a color
-                            let new_color = Color { r: 1.0, g: 0.0, b: 0.0 };
-                            game_settings.player_colors.insert(new_id, new_color.clone());
+                            let (color_name, color_value) = color_picker.pop_color();
+                            game_settings.player_colors.insert(new_id, color_value);
                             // Create the new player state
                             let mut player_state = PlayerState::new();
                             player_state.id = new_id;
                             player_states.insert(new_id, player_state);
-                            println!("Joined: {} (id {}, {:?})", new_name, new_id, new_color);
+                            println!("Joined: {} (id {}, {})", new_name, new_id, color_name);
                         } else {
                             // Use the invalid player ID to let the client know they didn't get
                             // to join. Lame.
