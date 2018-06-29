@@ -6,7 +6,16 @@ extern crate serde_derive;
 extern crate zmq;
 
 use rand::prelude::{Rng, thread_rng, ThreadRng};
-use rusty_sword_arena::{Color, GameControlMsg, GameSettings, GameState, net, PlayerInput, PlayerState};
+use rusty_sword_arena::{
+    Color,
+    GameControlMsg,
+    GameSetting,
+    GameState,
+    net,
+    PlayerInput,
+    PlayerSetting,
+    PlayerState,
+};
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
 use std::thread::{self};
@@ -91,14 +100,33 @@ impl ColorPicker {
         let key = self.colors.keys().nth(0).unwrap().clone();
         self.colors.remove_entry(&key).unwrap()
     }
+    fn push_color(&mut self, name : String, color : Color) {
+        self.colors.insert(name, color);
+    }
+}
+
+fn remove_player(
+    id : u8,
+    game_setting : &mut GameSetting,
+    player_states : &mut HashMap<u8, PlayerState>,
+    color_picker : &mut ColorPicker,
+) {
+    game_setting.your_player_id = 0;
+    let mut msg = format!("Player {} leaves", id);
+    if let Some(player_setting) = game_setting.player_settings.remove(&id) {
+        msg.push_str(&format!(", name: {}", player_setting.name));
+        color_picker.push_color(player_setting.name.clone(), player_setting.color);
+    }
+    player_states.remove(&id);
+    println!("{}", msg);
 }
 
 fn process_game_control_requests(
     game_control_server_socket : &mut Socket,
-    game_settings : &mut GameSettings,
+    game_setting : &mut GameSetting,
     player_states : &mut HashMap<u8, PlayerState>,
     rng : &mut ThreadRng) -> bool {
-    let mut game_settings_changed = false;
+    let mut game_setting_changed = false;
     let mut color_picker = ColorPicker::new();
     'gamecontrol:
     loop {
@@ -108,23 +136,31 @@ fn process_game_control_requests(
                 let msg: GameControlMsg = deserialize(&bytes[..]).unwrap();
                 match msg {
                     GameControlMsg::Join {name} => {
-                        if game_settings.player_names.len() < game_settings.max_players as usize {
+                        if game_setting.player_settings.len() < game_setting.max_players as usize {
                             // Find an unused, non-zero id
                             let mut new_id : u8;
                             loop {
                                 new_id = rng.gen::<u8>();
                                 if (new_id != 0) && !player_states.contains_key(&new_id) { break }
                             }
-                            game_settings.your_player_id = new_id;
+                            game_setting.your_player_id = new_id;
                             // Make sure player name is unique, and then store it.
                             let mut new_name = name.clone();
-                            while game_settings.player_names.values().any(|x| { x == &new_name }) {
+                            while game_setting.player_settings
+                                .values()
+                                .map(|player_setting | {&player_setting.name})
+                                .any(|x| { x == &new_name }) {
                                 new_name.push_str("_");
                             }
-                            game_settings.player_names.insert(new_id, new_name.clone());
                             // Assign player a color
-                            let (color_name, color_value) = color_picker.pop_color();
-                            game_settings.player_colors.insert(new_id, color_value);
+                            let (color_name, color) = color_picker.pop_color();
+                            // Create the PlayerSetting and add it to the GameSetting
+                            game_setting.player_settings.insert(
+                                new_id,
+                                PlayerSetting {
+                                    name : new_name.clone(),
+                                    color_name : color_name.clone(),
+                                    color});
                             // Create the new player state
                             let mut player_state = PlayerState::new();
                             player_state.id = new_id;
@@ -133,49 +169,40 @@ fn process_game_control_requests(
                         } else {
                             // Use the invalid player ID to let the client know they didn't get
                             // to join. Lame.
-                            game_settings.your_player_id = 0;
+                            game_setting.your_player_id = 0;
                             println!("Denied entrance for {}", name)
                         }
-                        game_settings_changed = true;
-                        game_control_server_socket.send(&serialize(&game_settings).unwrap(), 0).unwrap();
+                        game_control_server_socket.send(&serialize(&game_setting).unwrap(), 0).unwrap();
                     },
                     GameControlMsg::Leave {id} => {
                         // your_player_id has no meaning in this response, so we set it to the
                         // invalid id.
-                        game_settings.your_player_id = 0;
-                        let mut msg = format!("Player {} leaves", id);
-                        if let Some(name) = game_settings.player_names.remove(&id) {
-                            msg.push_str(&format!(", name: {}", name));
-                        }
-                        game_settings.player_colors.remove(&id);
-                        player_states.remove(&id);
+                        remove_player(id, game_setting, player_states, &mut color_picker);
                         // Per ZMQ REQ/REP protocol we must respond no matter what, so even invalid
                         // requests get the game settings back.
-                        game_settings_changed = true;
-                        game_control_server_socket.send(&serialize(&game_settings).unwrap(), 0).unwrap();
-                        println!("{}", msg);
+                        game_control_server_socket.send(&serialize(&game_setting).unwrap(), 0).unwrap();
                     },
-                    GameControlMsg::Fetch => {
+                    GameControlMsg::Fetch {id} => {
                         // your_player_id has no meaning in this response, so we make sure it
                         // is the invalid id.
-                        if { game_settings.your_player_id != 0 } {
-                            game_settings.your_player_id = 0;
-                            game_settings_changed = true;
+                        if { game_setting.your_player_id != 0 } {
+                            game_setting.your_player_id = 0;
+                            game_setting_changed = true;
                         }
-                        game_control_server_socket.send(&serialize(&game_settings).unwrap(), 0).unwrap();
-                        println!("Someone fetches new settings.");
+                        game_control_server_socket.send(&serialize(&game_setting).unwrap(), 0).unwrap();
+                        println!("Player {} fetches new settings.", id);
                     },
                 }
             },
         }
     }
-    game_settings_changed
+    game_setting_changed
 }
 
 fn process_player_input(
     player_input_server_socket : &mut Socket,
     player_states : &mut HashMap<u8, PlayerState>,
-    game_settings : &GameSettings,
+    game_settings : &GameSetting,
 ) {
     while let Ok(bytes) = player_input_server_socket.recv_bytes(0) {
         let player_input : PlayerInput = deserialize(&bytes[..]).unwrap();
@@ -208,7 +235,7 @@ fn main() {
     let mut report_starttime = Instant::now();
     let report_frequency = Duration::new(0, 16666666);
 
-    let mut game_settings = GameSettings {
+    let mut game_setting = GameSetting {
         your_player_id : 0,
         max_players : 64,
         player_radius : 0.05,
@@ -217,12 +244,10 @@ fn main() {
         frame_delay : 0.5,
         respawn_delay : 5.0,
         drop_timeout : 10.0,
-        player_names : HashMap::<u8, String>::new(),
-        player_colors : HashMap::<u8, Color>::new(),
+        player_settings : HashMap::<u8, PlayerSetting>::new(),
     };
 
     let mut rng = thread_rng();
-    let mut game_settings_changed = true;
     let mut frame_number : u64 = 0;
     let mut player_states = HashMap::<u8, PlayerState>::new();
 
@@ -232,14 +257,14 @@ fn main() {
         loop_iterations += 1;
 
         // Handle and reply to all Game Control requests. The game settings might get changed.
-        game_settings_changed = game_settings_changed || process_game_control_requests(
+        process_game_control_requests(
             &mut game_control_server_socket,
-            &mut game_settings,
+            &mut game_setting,
             &mut player_states,
             &mut rng);
 
         // Handle and process all the player input we've received so far
-        process_player_input(&mut player_input_server_socket, &mut player_states, &game_settings);
+        process_player_input(&mut player_input_server_socket, &mut player_states, &game_setting);
 
         // Process a frame (if it's time)
         let delta = report_starttime.elapsed();
@@ -254,12 +279,11 @@ fn main() {
             let game_state = GameState {
                 frame_number,
                 delta,
-                game_settings_changed,
+                game_setting_hash : game_setting.get_hash(),
                 player_states : player_states.clone(),
             };
             game_state_server_socket.send(&serialize(&game_state).unwrap(), 0).unwrap();
-            println!("{}", status);
-            game_settings_changed = false;
+//            println!("{}", status);
             processed = 0;
             loop_iterations = 0;
             frame_number += 1;

@@ -13,11 +13,11 @@ fn main() {
     let mut server_conn = ServerConnection::new("localhost");
 
     let msg = GameControlMsg::Join {name : "bob".to_string()};
-    let mut game_settings = server_conn.send_game_control(msg).unwrap();
-    let my_id = game_settings.your_player_id;
-    println!("{:#?}", game_settings);
+    let mut game_setting = server_conn.send_game_control(msg).unwrap();
+    let my_id = game_setting.your_player_id;
+    println!("{:#?}", game_setting);
 
-    let mut display = Display::new(1024, 1024, &game_settings);
+    let mut display = Display::new(1024, 1024, &game_setting);
 
     let mut circles = HashMap::<u8, Shape>::new();
     let mut player_states = HashMap::<u8, PlayerState>::new();
@@ -26,6 +26,7 @@ fn main() {
     let mut my_input = PlayerInput::new();
     my_input.id = my_id;
     let mut last_input_sent = Instant::now();
+    let mut game_setting_hash : u64 = 0;
     'gameloop:
     loop {
         // Accumulate user input into one struct
@@ -77,26 +78,38 @@ fn main() {
         let mut new_game_states = server_conn.recv_game_states();
         if !new_game_states.is_empty() {
             for mut game_state in new_game_states {
-                if game_state.game_settings_changed {
-                    let msg = GameControlMsg::Fetch;
-                    game_settings = server_conn.send_game_control(msg).unwrap();
+                if game_state.game_setting_hash != game_setting_hash {
+                    let msg = GameControlMsg::Fetch { id : my_id };
+                    game_setting = server_conn.send_game_control(msg).unwrap();
+                    game_setting_hash = game_state.game_setting_hash;
+                    println!("{:#?}", game_setting);
+                    // Remove circles for any players who left
+                    circles.retain(|k, v| {game_setting.player_settings.contains_key(k)});
                 }
                 player_states.clear();
                 player_states.extend(game_state.player_states.drain());
-//        Shape::new_circle(&display, game_settings.player_radius, Position::new(), 0.0, Color { r : 0.1, g : 0.2, b : 1.0 }),
-//        Shape::new_circle(&display, game_settings.player_radius, Position { x : 0.5, y : 0.5 }, 0.0, Color { r : 1.0, g : 0.1, b : 0.1 }),
+//        Shape::new_circle(&display, game_setting.player_radius, Position::new(), 0.0, Color { r : 0.1, g : 0.2, b : 1.0 }),
+//        Shape::new_circle(&display, game_setting.player_radius, Position { x : 0.5, y : 0.5 }, 0.0, Color { r : 1.0, g : 0.1, b : 0.1 }),
             }
         }
         // Update the circles
         for (id, player_state) in &player_states {
+            // Update existing circles for existing players
             if circles.contains_key(id) {
                 let circle = circles.get_mut(id).unwrap();
                 circle.direction = player_state.angle;
                 circle.pos = player_state.pos;
+            // Add new circles for new players
             } else {
-                if let Some(color) = game_settings.player_colors.get(id) {
-                    circles.insert(*id, Shape::new_circle(
-                        &display, game_settings.player_radius, player_state.pos, player_state.angle, *color));
+                if let Some(player_setting) = game_setting.player_settings.get(id) {
+                    circles.insert(
+                        *id,
+                        Shape::new_circle(
+                            &display,
+                            game_setting.player_radius,
+                            player_state.pos,
+                            player_state.angle,
+                            player_setting.color));
                 }
             }
         }
@@ -112,7 +125,7 @@ fn main() {
 
     println!("Disconnecting from server.");
     let msg = GameControlMsg::Leave { id : my_id };
-    let game_settings = server_conn.send_game_control(msg).unwrap();
-    println!("Final server settings: {:#?}", game_settings);
+    let game_setting = server_conn.send_game_control(msg).unwrap();
+    println!("Final server settings: {:#?}", game_setting);
 
 }

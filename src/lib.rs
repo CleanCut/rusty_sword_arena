@@ -5,6 +5,8 @@ pub mod net;
 pub mod gfx;
 
 use std::collections::HashMap;
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
 
 extern crate zmq;
 #[macro_use]
@@ -72,7 +74,7 @@ pub enum Event {
 pub enum GameControlMsg {
     Join  { name : String },
     Leave { id : u8 },
-    Fetch,
+    Fetch { id : u8 },
 }
 
 /// Angle denotes a direction something is facing, in radians.
@@ -89,11 +91,20 @@ pub struct Color {
     pub b : f32,
 }
 
-/// Server returns a GameSettings in response to receiving a PlayerSync
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+/// Player settings that only change when someone joins/leaves the game, as opposed to every frame.
+pub struct PlayerSetting {
+    pub name : String,
+    pub color_name : String,
+    pub color : Color,
+}
+
+
+/// Server returns a GameSetting in response to receiving a PlayerSync
 /// Game settings and player names and colors (including your own) are all in there.  You will
 /// need to re-parse this every time someone joins or leaves the game.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
-pub struct GameSettings {
+pub struct GameSetting {
     /// The ID of your player.
     pub your_player_id : u8,
     /// The maximum amount of players this server will allow
@@ -113,11 +124,36 @@ pub struct GameSettings {
     pub respawn_delay : f32,
     /// Seconds. How long the server will allow not receiving input before dropping a player.
     pub drop_timeout : f32,
-    /// Map of player id to names, including your own name _which may not be what you expect_.
-    pub player_names : HashMap<u8, String>,
-    /// Map of player id to player colors, including your own assigned color.
-    pub player_colors : HashMap<u8, Color>,
+    /// Map of player id to settings such as names and colors. Note that this includes your own name
+    /// _which may not be what you requested originally!_.
+    pub player_settings : HashMap<u8, PlayerSetting>,
 }
+
+impl GameSetting {
+    pub fn get_hash(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        self.hash(&mut hasher);
+        hasher.finish()
+    }
+}
+
+impl Hash for GameSetting {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.your_player_id.hash(state);
+        self.max_players.hash(state);
+        (self.player_radius as u32).hash(state);
+        (self.move_speed as u32).hash(state);
+        (self.move_dampening as u32).hash(state);
+        (self.frame_delay as u32).hash(state);
+        (self.respawn_delay as u32).hash(state);
+        (self.drop_timeout as u32).hash(state);
+        // PlayerSetting entries are assumed to be immutable, so we'll only look at the keys
+        let mut sorted_keys : Vec<u8> = self.player_settings.keys().map(|x| {*x}).collect();
+        sorted_keys.sort();
+        sorted_keys.hash(state);
+    }
+}
+
 
 /// An event that has happened to your player this frame!  Note that it's possible to receive a
 /// whole bunch of events in the same frame.
@@ -172,7 +208,7 @@ impl Weapon {
 
 /// The state of a player on the server. The server broadcasts these to all clients every frame as
 /// part of a FrameState.  Note that you can receive `PlayerState`s before you have gotten a
-/// corresponding GameSettings telling you their name and color!
+/// corresponding GameSetting telling you their name and color!
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct PlayerState {
     /// The ID of the player
@@ -226,13 +262,14 @@ pub struct GameState {
     pub frame_number : u64,
     /// The delta in seconds the server measured since the previous frame
     pub delta : f32,
-    /// Game settings changed (most likely a player has joined or disconnected), so you should send
-    /// a GameControlMsg::Fetch to get the new GameSettings from the server.
-    pub game_settings_changed : bool,
+    /// The hash of the current game setting. Your client should store this somewhere. If it changes
+    /// then something has changed (most likely a player has joined or disconnected), so you should
+    /// send a GameControlMsg::Fetch to get the new GameSetting from the server and update your
+    /// client state.
+    pub game_setting_hash : u64,
     /// All of the player's states, including your own!
     pub player_states : HashMap<u8, PlayerState>,
 }
-
 /// Clients should send `PlayerInput`s to the server ASAP.  The quicker the server gets inputs, the
 /// more accurate the simulation will be.  But of course, you also shouldn't overload the server
 /// with too much traffic, because that's bad too.  Good rule of thumb: Coalesce 4 milliseconds

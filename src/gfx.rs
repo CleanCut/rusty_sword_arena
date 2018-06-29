@@ -63,14 +63,14 @@ pub struct Display {
     vert_axis : f32,
     mouse_pos : Position,
     screen_to_opengl : Box<FnMut((f64, f64)) -> Position>,
-    game_settings : GameSettings,
+    game_settings : GameSetting,
     indices : glium::index::NoIndices,
     target : Option<Frame>,
 }
 
 
 impl Display {
-    pub fn new(width : u32, height : u32, game_settings : &GameSettings) -> Self {
+    pub fn new(width : u32, height : u32, game_settings : &GameSetting) -> Self {
         let events_loop = glutin::EventsLoop::new();
         let window = glutin::WindowBuilder::new()
             .with_dimensions(width, height)

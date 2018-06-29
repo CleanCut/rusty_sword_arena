@@ -1,5 +1,5 @@
 extern crate zmq;
-use super::{GameControlMsg, GameSettings, GameState, PlayerInput};
+use super::{GameControlMsg, GameSetting, GameState, PlayerInput};
 use std::string::ToString;
 use bincode::{serialize, deserialize};
 use std::boxed::Box;
@@ -54,11 +54,11 @@ impl ServerConnection {
         }
     }
 
-    /// Send a control message to join, leave, or sync a game. Get back GameSettings.
-    pub fn send_game_control(&mut self, msg : GameControlMsg) -> Result<GameSettings, Box<Error>> {
+    /// Send a control message to join, leave, or sync a game. Get back GameSetting.
+    pub fn send_game_control(&mut self, msg : GameControlMsg) -> Result<GameSetting, Box<Error>> {
         self.game_control_socket.send(&serialize(&msg)?, 0)?;
         let bytes = self.game_control_socket.recv_bytes(0)?;
-        let game_settings : GameSettings = deserialize(&bytes[..])?;
+        let game_settings : GameSetting = deserialize(&bytes[..])?;
         Ok(game_settings)
     }
 
