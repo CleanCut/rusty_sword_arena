@@ -1,20 +1,21 @@
 #[macro_use]
 extern crate glium;
 
-pub mod net;
 pub mod gfx;
+pub mod net;
+pub mod timer;
+
+use timer::Timer;
 
 use std::collections::HashMap;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
+use std::time::Duration;
 
 extern crate zmq;
 #[macro_use]
 extern crate serde_derive;
 extern crate bincode;
-
-//use bincode::{serialize, deserialize};
-
 
 /// Represents (x, y) coordinates in OpenGL space that fill your window.
 #[derive(Copy, Clone, Debug, Deserialize, Serialize, PartialEq)]
@@ -29,7 +30,15 @@ impl Position {
     }
 }
 
+trait Floatable {
+    fn f32(&self) -> f32;
+}
 
+impl Floatable for Duration {
+    fn f32(&self) -> f32 {
+        self.as_secs() as f32 + self.subsec_nanos() as f32 * 1e-9
+    }
+}
 
 /// Abstracted button values you may receive (arrow keys and WASD keys combined into directions, for example)
 #[derive(Copy, Clone, Debug, Deserialize, Serialize, PartialEq)]
@@ -99,7 +108,6 @@ pub struct PlayerSetting {
     pub color : Color,
 }
 
-
 /// Server returns a GameSetting in response to receiving a PlayerSync
 /// Game settings and player names and colors (including your own) are all in there.  You will
 /// need to re-parse this every time someone joins or leaves the game.
@@ -154,7 +162,6 @@ impl Hash for GameSetting {
     }
 }
 
-
 /// An event that has happened to your player this frame!  Note that it's possible to receive a
 /// whole bunch of events in the same frame.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
@@ -205,7 +212,6 @@ impl Weapon {
     }
 }
 
-
 /// The state of a player on the server. The server broadcasts these to all clients every frame as
 /// part of a FrameState.  Note that you can receive `PlayerState`s before you have gotten a
 /// corresponding GameSetting telling you their name and color!
@@ -234,7 +240,9 @@ pub struct PlayerState {
     /// different from the input the player sent to the server.
     pub vert_axis : f32,
     /// How long until the player can attack again
-    pub attack_timer : f32,
+    pub attack_timer : Timer,
+    /// How long the server will wait to get input from you before disconnecting you
+    pub disconnect_timer : Timer,
 }
 
 impl PlayerState {
@@ -250,8 +258,13 @@ impl PlayerState {
             player_events : Vec::<PlayerEvent>::new(),
             horiz_axis: 0.0,
             vert_axis : 0.0,
-            attack_timer : 0.0,
+            attack_timer : Timer::from_millis(100000),
+            disconnect_timer : Timer::from_millis(5000),
         }
+    }
+    pub fn update(&mut self, delta : Duration) {
+        self.attack_timer.update(delta);
+        self.disconnect_timer.update(delta);
     }
 }
 

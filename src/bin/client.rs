@@ -9,7 +9,6 @@ use std::time::{Duration, Instant};
 use std::collections::HashMap;
 
 fn main() {
-
     let mut server_conn = ServerConnection::new("localhost");
 
     let msg = GameControlMsg::Join {name : "bob".to_string()};
@@ -63,7 +62,6 @@ fn main() {
             }
         }
 
-
         // Every 4 milliseconds, send accumulated input and reset attack
         if last_input_sent.elapsed() > Duration::from_millis(4) {
             if let Some(my_state) = player_states.get(&my_id) {
@@ -88,8 +86,6 @@ fn main() {
                 }
                 player_states.clear();
                 player_states.extend(game_state.player_states.drain());
-//        Shape::new_circle(&display, game_setting.player_radius, Position::new(), 0.0, Color { r : 0.1, g : 0.2, b : 1.0 }),
-//        Shape::new_circle(&display, game_setting.player_radius, Position { x : 0.5, y : 0.5 }, 0.0, Color { r : 1.0, g : 0.1, b : 0.1 }),
             }
         }
         // Update the circles
@@ -113,14 +109,12 @@ fn main() {
                 }
             }
         }
-        //println!("{:#?}", player_states);
 
         display.drawstart();
         for circle in circles.values() {
             display.draw(&circle);
         }
         display.drawfinish();
-//        thread::sleep(Duration::from_millis(1));
     }
 
     println!("Disconnecting from server.");

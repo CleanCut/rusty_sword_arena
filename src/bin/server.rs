@@ -15,6 +15,7 @@ use rusty_sword_arena::{
     PlayerInput,
     PlayerSetting,
     PlayerState,
+    timer,
 };
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
@@ -33,7 +34,7 @@ impl ColorPicker {
         let mut colors = HashMap::<String, Color>::with_capacity(32);
         // 32 of the colors from http://eastfarthing.com/blog/2016-09-19-palette/ on 2018-06-26
         colors.insert("bright teal".to_string(), Color {r : 0.021, g : 0.992, b : 0.757});
-        colors.insert("green blue".to_string(), Color {r : 0.198, g : 0.684, b : 0.531});
+        colors.insert("earth".to_string(), Color {r : 0.630, g : 0.370, b : 0.189});
         colors.insert("tree green".to_string(), Color {r : 0.177, g : 0.519, b : 0.189});
         colors.insert("green".to_string(), Color {r : 0.004, g : 0.718, b : 0.086});
         colors.insert("poison green".to_string(), Color {r : 0.314, g : 0.992, b : 0.204});
@@ -67,6 +68,7 @@ impl ColorPicker {
 
         /* Too dark, too close to another color, too gray, or I just didn't like it.
         colors.insert("black".to_string(), Color {r : 0.000, g : 0.000, b : 0.000});
+        colors.insert("green blue".to_string(), Color {r : 0.198, g : 0.684, b : 0.531});
         colors.insert("charcoal".to_string(), Color {r : 0.110, g : 0.203, b : 0.167});
         colors.insert("navy green".to_string(), Color {r : 0.167, g : 0.323, b : 0.100});
         colors.insert("cobalt".to_string(), Color {r : 0.147, g : 0.279, b : 0.494});
@@ -85,7 +87,6 @@ impl ColorPicker {
         colors.insert("pink red".to_string(), Color {r : 0.866, g : 0.219, b : 0.355});
         colors.insert("salmon".to_string(), Color {r : 0.945, g : 0.503, b : 0.443});
         colors.insert("purpley pink".to_string(), Color {r : 0.835, g : 0.188, b : 0.615});
-        colors.insert("earth".to_string(), Color {r : 0.630, g : 0.370, b : 0.189});
         colors.insert("light grey green".to_string(), Color {r : 0.634, g : 0.819, b : 0.558});
         colors.insert("white".to_string(), Color {r : 1.000, g : 1.000, b : 1.000});
         */
@@ -125,9 +126,9 @@ fn process_game_control_requests(
     game_control_server_socket : &mut Socket,
     game_setting : &mut GameSetting,
     player_states : &mut HashMap<u8, PlayerState>,
-    rng : &mut ThreadRng) -> bool {
-    let mut game_setting_changed = false;
-    let mut color_picker = ColorPicker::new();
+    rng : &mut ThreadRng,
+    color_picker : &mut ColorPicker,
+) {
     'gamecontrol:
     loop {
         match game_control_server_socket.recv_bytes(0) {
@@ -154,6 +155,8 @@ fn process_game_control_requests(
                             }
                             // Assign player a color
                             let (color_name, color) = color_picker.pop_color();
+                            println!("Retrieved {} {:?}", color_name, color);
+                            println!("{:#?}", color_picker.colors);
                             // Create the PlayerSetting and add it to the GameSetting
                             game_setting.player_settings.insert(
                                 new_id,
@@ -177,7 +180,7 @@ fn process_game_control_requests(
                     GameControlMsg::Leave {id} => {
                         // your_player_id has no meaning in this response, so we set it to the
                         // invalid id.
-                        remove_player(id, game_setting, player_states, &mut color_picker);
+                        remove_player(id, game_setting, player_states, color_picker);
                         // Per ZMQ REQ/REP protocol we must respond no matter what, so even invalid
                         // requests get the game settings back.
                         game_control_server_socket.send(&serialize(&game_setting).unwrap(), 0).unwrap();
@@ -187,7 +190,6 @@ fn process_game_control_requests(
                         // is the invalid id.
                         if { game_setting.your_player_id != 0 } {
                             game_setting.your_player_id = 0;
-                            game_setting_changed = true;
                         }
                         game_control_server_socket.send(&serialize(&game_setting).unwrap(), 0).unwrap();
                         println!("Player {} fetches new settings.", id);
@@ -196,13 +198,13 @@ fn process_game_control_requests(
             },
         }
     }
-    game_setting_changed
 }
 
 fn process_player_input(
     player_input_server_socket : &mut Socket,
     player_states : &mut HashMap<u8, PlayerState>,
     game_settings : &GameSetting,
+    delta : Duration,
 ) {
     while let Ok(bytes) = player_input_server_socket.recv_bytes(0) {
         let player_input : PlayerInput = deserialize(&bytes[..]).unwrap();
@@ -232,8 +234,9 @@ fn main() {
 
     let mut loop_iterations : i64 = 0;
     let mut processed = 0;
-    let mut report_starttime = Instant::now();
-    let report_frequency = Duration::new(0, 16666666);
+    let mut frame_start = Instant::now();
+    let frame_duration = Duration::new(0, 16666666); // 60 FPS
+    let mut color_picker = ColorPicker::new();
 
     let mut game_setting = GameSetting {
         your_player_id : 0,
@@ -250,9 +253,13 @@ fn main() {
     let mut rng = thread_rng();
     let mut frame_number : u64 = 0;
     let mut player_states = HashMap::<u8, PlayerState>::new();
+    let mut disconnect_timers = HashMap::<u8, timer::Timer>::new();
 
     'gameloop:
     loop {
+        let delta = frame_start.elapsed();
+        // TODO: Refactor the server to be interrupt-driven, so we don't have to sleep to keep a
+        //       busy-loop from sucking up 100% of a CPU
         thread::sleep(Duration::from_micros(100));
         loop_iterations += 1;
 
@@ -261,15 +268,22 @@ fn main() {
             &mut game_control_server_socket,
             &mut game_setting,
             &mut player_states,
-            &mut rng);
+            &mut rng,
+            &mut color_picker,
+        );
 
         // Handle and process all the player input we've received so far
-        process_player_input(&mut player_input_server_socket, &mut player_states, &game_setting);
+        process_player_input(
+            &mut player_input_server_socket,
+            &mut player_states,
+            &game_setting,
+            delta,
+        );
 
         // Process a frame (if it's time)
-        let delta = report_starttime.elapsed();
-        if delta > report_frequency {
-            report_starttime = Instant::now();
+
+        if delta >= frame_duration {
+            frame_start = Instant::now();
             // Convert delta to a float
             let delta = delta.as_secs() as f32 + delta.subsec_nanos() as f32 * 1e-9;
 
@@ -283,7 +297,6 @@ fn main() {
                 player_states : player_states.clone(),
             };
             game_state_server_socket.send(&serialize(&game_state).unwrap(), 0).unwrap();
-//            println!("{}", status);
             processed = 0;
             loop_iterations = 0;
             frame_number += 1;
