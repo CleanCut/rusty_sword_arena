@@ -19,7 +19,7 @@ while true ; do
         git pull origin master || die "Error pulling from GitHub"
         # Build the docs
         rm -rf ${DOCS_DIR} || die "Failed cleaning previous docs"
-        cargo doc --lib --no-deps --target-dir ${TARGET} || die "Failed generating documentation"
+        cargo doc --lib --no-deps --target-dir ${DOCS_DIR} || die "Failed generating documentation"
         # Build new server binary
         cargo build --release --bin server || die "Failed building the server"
         # Restart server
