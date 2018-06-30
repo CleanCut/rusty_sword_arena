@@ -30,6 +30,7 @@ while true ; do
         # Build new server binary
         cargo build --release --bin server || die "Failed building the server"
         # Restart server
+        systemctl daemon-reload || die "Failed to reload systemctl daemons"
         systemctl restart rusty_sword_arena || die "Failed restarting the server"
         echo "Started Rusty Sword Arena server version $(grep version Cargo.toml | cut -d '"' -f 2)"
         banner
