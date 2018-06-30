@@ -268,6 +268,11 @@ impl PlayerState {
         self.attack_timer.update(delta);
         self.drop_timer.update(delta);
     }
+    /// Called immediately after a clone has been sent to the clients.  Resets things that will have
+    /// been taken care of last frame.
+    pub fn new_frame(&mut self) {
+        self.player_events.clear();
+    }
 }
 
 /// Once per frame, the server will broadcast a GameState to all clients.

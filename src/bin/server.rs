@@ -199,7 +199,7 @@ fn process_game_control_requests(
     }
 }
 
-fn process_player_input(
+fn coalesce_player_input(
     player_input_server_socket : &mut Socket,
     player_states : &mut HashMap<u8, PlayerState>,
     player_inputs : &mut HashMap<u8, PlayerInput>,
@@ -340,9 +340,10 @@ fn main() {
             &mut color_picker,
         );
 
-        // Handle and process all the player input we've received so far
-        process_player_input(&mut player_input_server_socket, &mut player_states,&mut player_inputs);
+        // Handle and coalesce all the player input we've received so far into player_inputs
+        coalesce_player_input(&mut player_input_server_socket, &mut player_states, &mut player_inputs);
 
+        // Move, attack, etc.
         update_state(&mut player_states, &mut player_inputs, &mut game_setting, &mut color_picker, delta);
 
         // Process a frame (if it's time)
@@ -362,6 +363,9 @@ fn main() {
                 player_states : player_states.clone(),
             };
             game_state_server_socket.send(&serialize(&game_state).unwrap(), 0).unwrap();
+            for player_state in player_states.values_mut() {
+                player_state.new_frame();
+            }
             loop_iterations = 0;
             frame_number += 1;
         }

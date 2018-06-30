@@ -28,7 +28,7 @@ fn create_circle_vertices(radius : f32, num_vertices : usize, color : Color) -> 
         let inner : f64 = 2.0 * PI / num_vertices as f64 * x as f64;
         // Color the forward-facing vertex of the circle differently so we can have a small "sword"
         // indicator of our forward-facing direction
-        let color = if x == (num_vertices * 3)/4 { Color { r: 0.1, g: 0.1, b: 0.1 } } else { color };
+        let color = if x == (num_vertices * 3)/4 { Color { r: 0.0, g: 0.0, b: 0.0 } } else { color };
         v.push(Vertex {
             position: [inner.cos() as f32 * radius, inner.sin() as f32 * radius],
             color: [color.r, color.g, color.b],
@@ -49,6 +49,7 @@ fn create_ring_vertices(radius : f32, num_vertices : usize, color : Color) -> Ve
     v
 }
 
+/// A `Shape` can be drawn by a `Display`.  Use the provided `new_*` methods to construct a shape.
 pub struct Shape {
     pub pos : Position,
     pub direction : Angle,
