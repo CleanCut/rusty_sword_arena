@@ -16,7 +16,7 @@ use rusty_sword_arena::{
     PlayerSetting,
     PlayerState,
     timer,
-    version,
+    VERSION,
 };
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
@@ -308,7 +308,7 @@ fn main() {
     let mut color_picker = ColorPicker::new();
 
     let mut game_setting = GameSetting {
-        version : version.to_string(),
+        version : VERSION.to_string(),
         your_player_id : 0,
         max_players : 32,
         player_radius : 0.05,

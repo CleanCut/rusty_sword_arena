@@ -17,7 +17,7 @@ extern crate zmq;
 extern crate serde_derive;
 extern crate bincode;
 
-pub const version : &'static str = env!("CARGO_PKG_VERSION");
+pub const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
 /// Represents (x, y) coordinates in OpenGL space that fill your window.  The OpenGL window is
 /// (-1.0, -1.0) in the bottom left to (1.0, 1.0) in the top right.

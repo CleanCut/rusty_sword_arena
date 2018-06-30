@@ -9,7 +9,7 @@ use rusty_sword_arena::{
     PlayerInput,
     PlayerState,
     Position,
-    version,
+    VERSION,
 };
 use rusty_sword_arena::net::{ServerConnection};
 use rusty_sword_arena::gfx::{angle_between, Display, Shape};
@@ -23,7 +23,7 @@ fn main() {
     let msg = GameControlMsg::Join {name : "bob".to_string()};
     let mut game_setting = server_conn.send_game_control(msg).unwrap();
     let my_id = game_setting.your_player_id;
-    println!("Client v{} connected to server v{} at {}", version, game_setting.version, host);
+    println!("Client v{} connected to server v{} at {}", VERSION, game_setting.version, host);
 
     let mut display = Display::new(1024, 1024);
 
