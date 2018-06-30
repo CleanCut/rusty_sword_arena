@@ -1,19 +1,29 @@
 extern crate rusty_sword_arena;
 extern crate glium;
 
-use rusty_sword_arena::{Event, ButtonState, ButtonValue, GameControlMsg, PlayerInput, PlayerState, Position};
+use rusty_sword_arena::{
+    ButtonState,
+    ButtonValue,
+    Event,
+    GameControlMsg,
+    PlayerInput,
+    PlayerState,
+    Position,
+    version,
+};
 use rusty_sword_arena::net::{ServerConnection};
 use rusty_sword_arena::gfx::{angle_between, Display, Shape};
 use std::time::{Duration, Instant};
 use std::collections::HashMap;
 
 fn main() {
-    let mut server_conn = ServerConnection::new("localhost");
+    let host = "localhost";
+    let mut server_conn = ServerConnection::new(host);
 
     let msg = GameControlMsg::Join {name : "bob".to_string()};
     let mut game_setting = server_conn.send_game_control(msg).unwrap();
     let my_id = game_setting.your_player_id;
-    println!("{:#?}", game_setting);
+    println!("Client v{} connected to server v{} at {}", version, game_setting.version, host);
 
     let mut display = Display::new(1024, 1024);
 
@@ -45,16 +55,11 @@ fn main() {
                         ButtonValue::Left  => my_input.horiz_axis = -axis_amount,
                         ButtonValue::Right => my_input.horiz_axis = axis_amount,
                         ButtonValue::Attack => {
-                            // We only turn ON attack here.  We turn it off when the input is sent
-                            // to the server.
-                            let attack = match button_state {
+                            my_input.attack = match button_state {
                                 ButtonState::Pressed => { true },
                                 ButtonState::Released => { false },
                             };
-                            if attack {
-                                my_input.attack = true;
-                            }
-                        },
+                        }
                         ButtonValue::Quit => break 'gameloop,
                     }
                 },
@@ -67,7 +72,6 @@ fn main() {
                 my_input.turn_angle = angle_between(my_state.pos, mouse_pos);
             }
             server_conn.send_player_input(my_input.clone());
-            my_input.attack = false;
             last_input_sent = Instant::now();
         }
 
@@ -117,7 +121,5 @@ fn main() {
 
     println!("Disconnecting from server.");
     let msg = GameControlMsg::Leave { id : my_id };
-    let game_setting = server_conn.send_game_control(msg).unwrap();
-    println!("Final server settings: {:#?}", game_setting);
-
+    let _game_setting = server_conn.send_game_control(msg).unwrap();
 }

@@ -17,6 +17,8 @@ extern crate zmq;
 extern crate serde_derive;
 extern crate bincode;
 
+pub const version : &'static str = env!("CARGO_PKG_VERSION");
+
 /// Represents (x, y) coordinates in OpenGL space that fill your window.  The OpenGL window is
 /// (-1.0, -1.0) in the bottom left to (1.0, 1.0) in the top right.
 #[derive(Copy, Clone, Debug, Deserialize, Serialize, PartialEq)]
@@ -119,6 +121,8 @@ pub struct PlayerSetting {
 /// need to re-parse this every time someone joins or leaves the game.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct GameSetting {
+    /// Version number of the server you are connecting to. Compare to rusty_sword_arena::version
+    pub version : String,
     /// The ID of your player.
     pub your_player_id : u8,
     /// The maximum amount of players this server will allow

@@ -16,6 +16,7 @@ use rusty_sword_arena::{
     PlayerSetting,
     PlayerState,
     timer,
+    version,
 };
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
@@ -251,6 +252,8 @@ fn update_state(
             continue;
         }
         // Actually attack defenders
+        println!("Player {} swings his weapon!", id);
+        attacker.attack_timer.reset();
         let mut missed = true;
         for (&defender_id, defender) in player_states.iter_mut() {
             println!("Distance: {:2.2}, Weapon Radius: {:2.2}", attacker.pos.distance_between(defender.pos), attacker.weapon.radius + game_setting.player_radius);
@@ -305,6 +308,7 @@ fn main() {
     let mut color_picker = ColorPicker::new();
 
     let mut game_setting = GameSetting {
+        version : version.to_string(),
         your_player_id : 0,
         max_players : 32,
         player_radius : 0.05,
