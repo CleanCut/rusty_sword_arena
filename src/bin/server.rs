@@ -8,6 +8,7 @@ extern crate zmq;
 use rand::prelude::{Rng, thread_rng, ThreadRng};
 use rusty_sword_arena::{
     Color,
+    Floatable,
     GameControlMsg,
     GameSetting,
     GameState,
@@ -111,9 +112,10 @@ fn remove_player(
     game_setting : &mut GameSetting,
     player_states : &mut HashMap<u8, PlayerState>,
     color_picker : &mut ColorPicker,
+    forced : bool,
 ) {
     game_setting.your_player_id = 0;
-    let mut msg = format!("Player {} leaves", id);
+    let mut msg = format!("Player {} {}", id, if forced {"kicked for idling"} else {"left"});
     if let Some(player_setting) = game_setting.player_settings.remove(&id) {
         msg.push_str(&format!(", name: {}", player_setting.name));
         color_picker.push_color(player_setting.name.clone(), player_setting.color);
@@ -155,8 +157,6 @@ fn process_game_control_requests(
                             }
                             // Assign player a color
                             let (color_name, color) = color_picker.pop_color();
-                            println!("Retrieved {} {:?}", color_name, color);
-                            println!("{:#?}", color_picker.colors);
                             // Create the PlayerSetting and add it to the GameSetting
                             game_setting.player_settings.insert(
                                 new_id,
@@ -180,7 +180,7 @@ fn process_game_control_requests(
                     GameControlMsg::Leave {id} => {
                         // your_player_id has no meaning in this response, so we set it to the
                         // invalid id.
-                        remove_player(id, game_setting, player_states, color_picker);
+                        remove_player(id, game_setting, player_states, color_picker, false);
                         // Per ZMQ REQ/REP protocol we must respond no matter what, so even invalid
                         // requests get the game settings back.
                         game_control_server_socket.send(&serialize(&game_setting).unwrap(), 0).unwrap();
@@ -203,18 +203,47 @@ fn process_game_control_requests(
 fn process_player_input(
     player_input_server_socket : &mut Socket,
     player_states : &mut HashMap<u8, PlayerState>,
-    game_settings : &GameSetting,
-    delta : Duration,
+    player_inputs : &mut HashMap<u8, PlayerInput>,
 ) {
     while let Ok(bytes) = player_input_server_socket.recv_bytes(0) {
         let player_input : PlayerInput = deserialize(&bytes[..]).unwrap();
+        if let Some(player_state) = player_states.get_mut(&player_input.id) {
+            player_state.disconnect_timer.reset();
+        }
+        if player_inputs.contains_key(&player_input.id) {
+            player_inputs.get_mut(&player_input.id).unwrap().coalesce(player_input);
+        } else {
+            player_inputs.insert(player_input.id, player_input);
+        }
+    }
+}
 
+fn update_state(
+    player_states : &mut HashMap<u8, PlayerState>,
+    player_inputs : &mut HashMap<u8, PlayerInput>,
+    game_setting : &mut GameSetting,
+    color_picker : &mut ColorPicker,
+    delta : Duration,
+) {
+    let delta_f32 = delta.f32();
+    for (id, player_input) in &mut player_inputs.iter() {
         if let Some(player_state) = player_states.get_mut(&player_input.id) {
             // TODO: do something with player_input.attack
             player_state.angle = player_input.turn_angle;
-            player_state.pos.x += game_settings.move_speed * player_input.horiz_axis;
-            player_state.pos.y += game_settings.move_speed * player_input.vert_axis;
+            player_state.pos.x += game_setting.move_speed * player_input.horiz_axis * delta_f32;
+            player_state.pos.y += game_setting.move_speed * player_input.vert_axis * delta_f32;
         }
+    }
+    // See if we need to disconnect anyone
+    let mut players_to_disconnect : Vec<u8> = vec![];
+    for (id, player_state) in player_states.iter_mut() {
+        player_state.update(delta);
+        if player_state.disconnect_timer.ready {
+            players_to_disconnect.push(*id);
+        }
+    }
+    for id in players_to_disconnect {
+        remove_player(id, game_setting, player_states, color_picker, true)
     }
 }
 
@@ -234,15 +263,15 @@ fn main() {
 
     let mut loop_iterations : i64 = 0;
     let mut processed = 0;
-    let mut frame_start = Instant::now();
-    let frame_duration = Duration::new(0, 16666666); // 60 FPS
+    let mut loop_start = Instant::now();
+    let mut frame_timer = timer::Timer::from_nanos(16666666); // 60 FPS
     let mut color_picker = ColorPicker::new();
 
     let mut game_setting = GameSetting {
         your_player_id : 0,
         max_players : 64,
         player_radius : 0.05,
-        move_speed : 0.004,
+        move_speed : 0.4,
         move_dampening : 0.5,
         frame_delay : 0.5,
         respawn_delay : 5.0,
@@ -252,12 +281,16 @@ fn main() {
 
     let mut rng = thread_rng();
     let mut frame_number : u64 = 0;
+    // Persistent player states
     let mut player_states = HashMap::<u8, PlayerState>::new();
-    let mut disconnect_timers = HashMap::<u8, timer::Timer>::new();
+    // Persistent player inputs
+    let mut player_inputs = HashMap::<u8, PlayerInput>::new();
 
     'gameloop:
     loop {
-        let delta = frame_start.elapsed();
+        let delta = loop_start.elapsed();
+        loop_start = Instant::now();
+        frame_timer.update(delta);
         // TODO: Refactor the server to be interrupt-driven, so we don't have to sleep to keep a
         //       busy-loop from sucking up 100% of a CPU
         thread::sleep(Duration::from_micros(100));
@@ -273,23 +306,17 @@ fn main() {
         );
 
         // Handle and process all the player input we've received so far
-        process_player_input(
-            &mut player_input_server_socket,
-            &mut player_states,
-            &game_setting,
-            delta,
-        );
+        process_player_input(&mut player_input_server_socket, &mut player_states,&mut player_inputs);
+
+        update_state(&mut player_states, &mut player_inputs, &mut game_setting, &mut color_picker, delta);
 
         // Process a frame (if it's time)
 
-        if delta >= frame_duration {
-            frame_start = Instant::now();
-            // Convert delta to a float
-            let delta = delta.as_secs() as f32 + delta.subsec_nanos() as f32 * 1e-9;
-
+        if frame_timer.ready {
+            frame_timer.reset();
             // Broadcast new game state computed this frame
             let status = format!("STATUS | Frame: {}, Delta: {:2.3}, Messages Processed: {}, Loops: {}",
-                                 frame_number, delta, processed, loop_iterations);
+                                 frame_number, delta.f32(), processed, loop_iterations);
             let game_state = GameState {
                 frame_number,
                 delta,

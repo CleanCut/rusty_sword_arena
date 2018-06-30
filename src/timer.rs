@@ -17,7 +17,14 @@ impl Timer {
             ready : false,
         }
     }
-
+    pub fn from_nanos(nanos : u64) -> Self {
+        let duration = Duration::from_nanos(nanos);
+        Self {
+            time : duration,
+            time_left : duration,
+            ready : false,
+        }
+    }
     pub fn reset(&mut self) {
         self.ready = false;
         self.time_left = self.time;

@@ -30,7 +30,7 @@ impl Position {
     }
 }
 
-trait Floatable {
+pub trait Floatable {
     fn f32(&self) -> f32;
 }
 
@@ -273,8 +273,8 @@ impl PlayerState {
 pub struct GameState {
     /// Which frame we're on.  Starts at zero and increments by 1 each frame.
     pub frame_number : u64,
-    /// The delta in seconds the server measured since the previous frame
-    pub delta : f32,
+    /// The actual time the server measured since the previous frame.
+    pub delta : Duration,
     /// The hash of the current game setting. Your client should store this somewhere. If it changes
     /// then something has changed (most likely a player has joined or disconnected), so you should
     /// send a GameControlMsg::Fetch to get the new GameSetting from the server and update your
@@ -312,6 +312,15 @@ impl PlayerInput {
             vert_axis : 0.0,
             turn_angle : 0.0,
         }
+    }
+    // Combine successive inputs into one input
+    pub fn coalesce(&mut self, new : PlayerInput) {
+        // Any attack sticks
+        self.attack = self.attack || new.attack;
+        // Anything else the new value wins
+        self.horiz_axis = new.horiz_axis;
+        self.vert_axis = new.vert_axis;
+        self.turn_angle = new.turn_angle;
     }
 }
 
