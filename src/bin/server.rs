@@ -13,11 +13,13 @@ use rusty_sword_arena::{
     GameSetting,
     GameState,
     net,
+    PlayerEvent,
     PlayerInput,
     PlayerSetting,
     PlayerState,
     timer,
 };
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
 use std::thread::{self};
@@ -110,7 +112,7 @@ impl ColorPicker {
 fn remove_player(
     id : u8,
     game_setting : &mut GameSetting,
-    player_states : &mut HashMap<u8, PlayerState>,
+    player_states : &mut HashMap<u8, RefCell<PlayerState>>,
     color_picker : &mut ColorPicker,
     forced : bool,
 ) {
@@ -127,7 +129,7 @@ fn remove_player(
 fn process_game_control_requests(
     game_control_server_socket : &mut Socket,
     game_setting : &mut GameSetting,
-    player_states : &mut HashMap<u8, PlayerState>,
+    player_states : &mut HashMap<u8, RefCell<PlayerState>>,
     rng : &mut ThreadRng,
     color_picker : &mut ColorPicker,
 ) {
@@ -167,7 +169,7 @@ fn process_game_control_requests(
                             // Create the new player state
                             let mut player_state = PlayerState::new();
                             player_state.id = new_id;
-                            player_states.insert(new_id, player_state);
+                            player_states.insert(new_id, RefCell::new(player_state));
                             println!("Joined: {} (id {}, {})", new_name, new_id, color_name);
                         } else {
                             // Use the invalid player ID to let the client know they didn't get
@@ -202,13 +204,13 @@ fn process_game_control_requests(
 
 fn process_player_input(
     player_input_server_socket : &mut Socket,
-    player_states : &mut HashMap<u8, PlayerState>,
+    player_states : &mut HashMap<u8, RefCell<PlayerState>>,
     player_inputs : &mut HashMap<u8, PlayerInput>,
 ) {
     while let Ok(bytes) = player_input_server_socket.recv_bytes(0) {
         let player_input : PlayerInput = deserialize(&bytes[..]).unwrap();
-        if let Some(player_state) = player_states.get_mut(&player_input.id) {
-            player_state.disconnect_timer.reset();
+        if let Some(player_state) = player_states.get(&player_input.id) {
+            player_state.borrow_mut().disconnect_timer.reset();
         }
         if player_inputs.contains_key(&player_input.id) {
             player_inputs.get_mut(&player_input.id).unwrap().coalesce(player_input);
@@ -219,29 +221,68 @@ fn process_player_input(
 }
 
 fn update_state(
-    player_states : &mut HashMap<u8, PlayerState>,
+    player_states : &mut HashMap<u8, RefCell<PlayerState>>,
     player_inputs : &mut HashMap<u8, PlayerInput>,
     game_setting : &mut GameSetting,
     color_picker : &mut ColorPicker,
     delta : Duration,
 ) {
     let delta_f32 = delta.f32();
+    // Everyone Turns & Moves
     for (id, player_input) in &mut player_inputs.iter() {
-        if let Some(player_state) = player_states.get_mut(&player_input.id) {
-            // TODO: do something with player_input.attack
+        if let Some(player_state) = player_states.get(&player_input.id) {
+            let mut player_state = player_state.borrow_mut();
             player_state.angle = player_input.turn_angle;
             player_state.pos.x += game_setting.move_speed * player_input.horiz_axis * delta_f32;
             player_state.pos.y += game_setting.move_speed * player_input.vert_axis * delta_f32;
         }
     }
-    // See if we need to disconnect anyone
+    // Everyone attacks
+    let mut attacking_ids : Vec<u8> = vec![];
+    for (id, player_input) in player_inputs.iter_mut() {
+        // first we need to figure out who is trying to attack, and turn off their sticky attack bool
+        if player_input.attack {
+            attacking_ids.push(*id);
+            player_input.attack = false;
+        }
+    }
+    for id in attacking_ids {
+        let other_ids : Vec<u8> = player_states.keys().filter_map(|&x| if x == id {None} else {Some(x)}).collect();
+        let mut attacker = player_states.get(&id).unwrap().borrow_mut();
+        // TODO: Move attack_timer from player to weapon
+        if !attacker.attack_timer.ready {
+            continue;
+        }
+        let mut missed = true;
+        for other_id in other_ids {
+            let mut defender = player_states.get(&other_id).unwrap().borrow_mut();
+            println!("Distance: {:2.2}, Weapon Radius: {:2.2}", attacker.pos.distance_between(defender.pos), attacker.weapon.radius + game_setting.player_radius);
+            if attacker.pos.distance_between(defender.pos) <= attacker.weapon.radius + game_setting.player_radius {
+                missed = false;
+                defender.health -= attacker.weapon.damage;
+                attacker.player_events.push(PlayerEvent::AttackHit { id: other_id });
+                defender.player_events.push(PlayerEvent::TookDamage);
+                println!("({}) hit ({}) for {:2.1} damage bringing him to {} health.", id, other_id, attacker.weapon.damage, defender.health);
+            }
+            if missed {
+                attacker.player_events.push(PlayerEvent::AttackMiss);
+            }
+        }
+    }
+
+    // See if we need to disconnect, kill, or spawn anyone
     let mut players_to_disconnect : Vec<u8> = vec![];
     for (id, player_state) in player_states.iter_mut() {
+        let mut player_state = player_state.borrow_mut();
+        // First update any delta-dependent state
         player_state.update(delta);
+        // Mark any player for disconnection who stopped sending us input for too long
         if player_state.disconnect_timer.ready {
             players_to_disconnect.push(*id);
         }
+        //
     }
+    // Actually disconnect
     for id in players_to_disconnect {
         remove_player(id, game_setting, player_states, color_picker, true)
     }
@@ -281,9 +322,7 @@ fn main() {
 
     let mut rng = thread_rng();
     let mut frame_number : u64 = 0;
-    // Persistent player states
-    let mut player_states = HashMap::<u8, PlayerState>::new();
-    // Persistent player inputs
+    let mut player_states = HashMap::<u8, RefCell<PlayerState>>::new();
     let mut player_inputs = HashMap::<u8, PlayerInput>::new();
 
     'gameloop:
@@ -321,7 +360,7 @@ fn main() {
                 frame_number,
                 delta,
                 game_setting_hash : game_setting.get_hash(),
-                player_states : player_states.clone(),
+                player_states : player_states.iter().map(|(&k, ref v)| (k, v.borrow().clone())).collect::<HashMap<u8, PlayerState>>(),
             };
             game_state_server_socket.send(&serialize(&game_state).unwrap(), 0).unwrap();
             processed = 0;

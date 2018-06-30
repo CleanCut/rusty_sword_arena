@@ -28,6 +28,9 @@ impl Position {
     pub fn new() -> Self {
         Self { x: 0.0, y: 0.0 }
     }
+    pub fn distance_between(&self, pos : Position) -> f32 {
+        ((self.x - pos.x).powi(2) + (self.y - pos.y).powi(2)).sqrt()
+    }
 }
 
 pub trait Floatable {
@@ -167,7 +170,7 @@ impl Hash for GameSetting {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub enum PlayerEvent {
     /// Player has attacked and hit player id.
-    AttackHit { id : u32 },
+    AttackHit { id : u8 },
     /// Player has attacked, but not hit anyone.
     AttackMiss,
     /// Player has changed to a new weapon
@@ -207,7 +210,7 @@ impl Weapon {
             description : "Rusty Sword".to_string(),
             damage : 10.0,
             delay : 1.0,
-            radius : 0.035,
+            radius : 0.1,
         }
     }
 }
@@ -252,13 +255,13 @@ impl PlayerState {
             pos : Position { x: 0.0, y: 0.0 },
             angle : 0.0,
             velocity : 0.0,
-            health : 0.0,
+            health : 100.0,
             regen : 0.0,
             weapon : Weapon::new(),
             player_events : Vec::<PlayerEvent>::new(),
             horiz_axis: 0.0,
             vert_axis : 0.0,
-            attack_timer : Timer::from_millis(100000),
+            attack_timer : Timer::from_millis(500),
             disconnect_timer : Timer::from_millis(5000),
         }
     }
