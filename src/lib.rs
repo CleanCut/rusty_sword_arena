@@ -17,7 +17,8 @@ extern crate zmq;
 extern crate serde_derive;
 extern crate bincode;
 
-/// Represents (x, y) coordinates in OpenGL space that fill your window.
+/// Represents (x, y) coordinates in OpenGL space that fill your window.  The OpenGL window is
+/// (-1.0, -1.0) in the bottom left to (1.0, 1.0) in the top right.
 #[derive(Copy, Clone, Debug, Deserialize, Serialize, PartialEq)]
 pub struct Position {
     pub x : f32,
@@ -33,6 +34,8 @@ impl Position {
     }
 }
 
+/// Convenience trait that adds an `.f32()` method that returns a 32-bit float representation of
+/// something.  Implemented for std::time::Duration and rusty_sword_arena::timer::Timer.
 pub trait Floatable {
     fn f32(&self) -> f32;
 }

@@ -84,17 +84,13 @@ pub struct Display {
     events_loop : glutin::EventsLoop,
     pub display : glium::Display,
     program : glium::Program,
-    horiz_axis : f32,
-    vert_axis : f32,
-    mouse_pos : Position,
     screen_to_opengl : Box<FnMut((f64, f64)) -> Position>,
-    game_settings : GameSetting,
     target : Option<Frame>,
 }
 
 
 impl Display {
-    pub fn new(width : u32, height : u32, game_settings : &GameSetting) -> Self {
+    pub fn new(width : u32, height : u32) -> Self {
         let events_loop = glutin::EventsLoop::new();
         let window = glutin::WindowBuilder::new()
             .with_dimensions(width, height)
@@ -144,11 +140,7 @@ impl Display {
             events_loop,
             display,
             program,
-            horiz_axis : 0.0,
-            vert_axis : 0.0,
-            mouse_pos : Position { x : 0.0, y : 0.0 },
             screen_to_opengl,
-            game_settings : game_settings.clone(),
             target : None,
         }
     }

@@ -20,7 +20,7 @@ pub const GAME_CONTROL_PORT: i32 = 8003;
 
 
 /// Represents a client's connection *to* a server, and methods to abstract away all the actual
-/// network communication. Weee!
+/// network communication. Hooray for encapsulation!
 pub struct ServerConnection {
     _context : zmq::Context,
     game_control_socket : zmq::Socket,

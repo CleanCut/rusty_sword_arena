@@ -4,7 +4,6 @@ extern crate glium;
 use rusty_sword_arena::{Event, ButtonState, ButtonValue, GameControlMsg, PlayerInput, PlayerState, Position};
 use rusty_sword_arena::net::{ServerConnection};
 use rusty_sword_arena::gfx::{angle_between, Display, Shape};
-use std::thread;
 use std::time::{Duration, Instant};
 use std::collections::HashMap;
 
@@ -16,7 +15,7 @@ fn main() {
     let my_id = game_setting.your_player_id;
     println!("{:#?}", game_setting);
 
-    let mut display = Display::new(1024, 1024, &game_setting);
+    let mut display = Display::new(1024, 1024);
 
     let mut circles = HashMap::<u8, Shape>::new();
     let mut player_states = HashMap::<u8, PlayerState>::new();
@@ -73,16 +72,15 @@ fn main() {
         }
 
         // Any new game states?
-        let mut new_game_states = server_conn.recv_game_states();
+        let new_game_states = server_conn.recv_game_states();
         if !new_game_states.is_empty() {
             for mut game_state in new_game_states {
                 if game_state.game_setting_hash != game_setting_hash {
                     let msg = GameControlMsg::Fetch { id : my_id };
                     game_setting = server_conn.send_game_control(msg).unwrap();
                     game_setting_hash = game_state.game_setting_hash;
-                    println!("{:#?}", game_setting);
                     // Remove circles for any players who left
-                    circles.retain(|k, v| {game_setting.player_settings.contains_key(k)});
+                    circles.retain(|k, _v| {game_setting.player_settings.contains_key(k)});
                 }
                 player_states.clear();
                 player_states.extend(game_state.player_states.drain());

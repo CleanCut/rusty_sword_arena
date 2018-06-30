@@ -1,8 +1,6 @@
 extern crate bincode;
 extern crate rand;
 extern crate rusty_sword_arena;
-#[macro_use]
-extern crate serde_derive;
 extern crate zmq;
 
 use rand::prelude::{Rng, thread_rng, ThreadRng};
@@ -229,7 +227,7 @@ fn update_state(
     let delta_f32 = delta.f32();
     // Everyone Turns & Moves
     for (id, player_input) in &mut player_inputs.iter() {
-        if let Some(player_state) = player_states.get_mut(&player_input.id) {
+        if let Some(player_state) = player_states.get_mut(id) {
             player_state.angle = player_input.turn_angle;
             player_state.pos.x += game_setting.move_speed * player_input.horiz_axis * delta_f32;
             player_state.pos.y += game_setting.move_speed * player_input.vert_axis * delta_f32;
@@ -294,7 +292,7 @@ fn main() {
     game_control_server_socket.set_rcvtimeo(0).unwrap();
     game_control_server_socket.bind(&format!("tcp://*:{}", net::GAME_CONTROL_PORT)).unwrap();
 
-    let mut game_state_server_socket = ctx.socket(zmq::PUB).unwrap();
+    let game_state_server_socket = ctx.socket(zmq::PUB).unwrap();
     game_state_server_socket.bind(&format!("tcp://*:{}", net::GAME_STATE_PORT)).unwrap();
 
     let mut player_input_server_socket = ctx.socket(zmq::PULL).unwrap();
@@ -302,7 +300,6 @@ fn main() {
     player_input_server_socket.bind(&format!("tcp://*:{}", net::PLAYER_INPUT_PORT)).unwrap();
 
     let mut loop_iterations : i64 = 0;
-    let mut processed = 0;
     let mut loop_start = Instant::now();
     let mut frame_timer = timer::Timer::from_nanos(16666666); // 60 FPS
     let mut color_picker = ColorPicker::new();
@@ -355,8 +352,7 @@ fn main() {
             // Broadcast new game state computed this frame
             if frame_number % 1800 == 0 {
                 let status = format!(
-                    "STATUS | Frame: {}, Messages Processed: {}, Loops/Frame: {}",
-                    frame_number, processed, loop_iterations);
+                    "STATUS: Frame: {}, Loops this frame: {}", frame_number, loop_iterations);
                 println!("{}", status);
             }
             let game_state = GameState {
@@ -366,7 +362,6 @@ fn main() {
                 player_states : player_states.clone(),
             };
             game_state_server_socket.send(&serialize(&game_state).unwrap(), 0).unwrap();
-            processed = 0;
             loop_iterations = 0;
             frame_number += 1;
         }
