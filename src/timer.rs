@@ -25,6 +25,14 @@ impl Timer {
             ready : false,
         }
     }
+    pub fn set_nanos(&mut self, nanos : u64) {
+        self.time = Duration::from_nanos(nanos);
+        self.reset();
+    }
+    pub fn set_millis(&mut self, ms : u64) {
+        self.time = Duration::from_millis(ms);
+        self.reset();
+    }
     pub fn reset(&mut self) {
         self.ready = false;
         self.time_left = self.time;

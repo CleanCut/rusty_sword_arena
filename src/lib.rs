@@ -128,13 +128,10 @@ pub struct GameSetting {
     /// exactly backwards.  Dampening effect is zero when moving exactly forwards, and linearly
     /// scales in movement directions between straight forward and straight backward.
     pub move_dampening : f32,
-    /// Seconds. Server will never _send_ frame updates more frequently than this. When and how far
-    /// apart they arrive is entirely up to the network.
-    pub frame_delay : f32,
     /// Seconds. How long the server will wait to respawn a player who dies.
     pub respawn_delay : f32,
-    /// Seconds. How long the server will allow not receiving input before dropping a player.
-    pub drop_timeout : f32,
+    /// Milliseconds. How long the server will allow not receiving input before dropping a player.
+    pub drop_time: u64,
     /// Map of player id to settings such as names and colors. Note that this includes your own name
     /// _which may not be what you requested originally!_.
     pub player_settings : HashMap<u8, PlayerSetting>,
@@ -155,9 +152,8 @@ impl Hash for GameSetting {
         (self.player_radius as u32).hash(state);
         (self.move_speed as u32).hash(state);
         (self.move_dampening as u32).hash(state);
-        (self.frame_delay as u32).hash(state);
         (self.respawn_delay as u32).hash(state);
-        (self.drop_timeout as u32).hash(state);
+        self.drop_time.hash(state);
         // PlayerSetting entries are assumed to be immutable, so we'll only look at the keys
         let mut sorted_keys : Vec<u8> = self.player_settings.keys().map(|x| {*x}).collect();
         sorted_keys.sort();
@@ -245,11 +241,11 @@ pub struct PlayerState {
     /// How long until the player can attack again
     pub attack_timer : Timer,
     /// How long the server will wait to get input from you before disconnecting you
-    pub disconnect_timer : Timer,
+    pub drop_timer: Timer,
 }
 
 impl PlayerState {
-    pub fn new() -> Self {
+    pub fn new(drop_time : u64) -> Self {
         Self {
             id : 0,
             pos : Position { x: 0.0, y: 0.0 },
@@ -262,12 +258,12 @@ impl PlayerState {
             horiz_axis: 0.0,
             vert_axis : 0.0,
             attack_timer : Timer::from_millis(500),
-            disconnect_timer : Timer::from_millis(5000),
+            drop_timer: Timer::from_millis(drop_time),
         }
     }
     pub fn update(&mut self, delta : Duration) {
         self.attack_timer.update(delta);
-        self.disconnect_timer.update(delta);
+        self.drop_timer.update(delta);
     }
 }
 

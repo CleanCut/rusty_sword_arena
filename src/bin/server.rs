@@ -166,7 +166,7 @@ fn process_game_control_requests(
                                     color_name : color_name.clone(),
                                     color});
                             // Create the new player state
-                            let mut player_state = PlayerState::new();
+                            let mut player_state = PlayerState::new(game_setting.drop_time);
                             player_state.id = new_id;
                             player_states.insert(new_id, player_state);
                             println!("Joined: {} (id {}, {})", new_name, new_id, color_name);
@@ -209,7 +209,7 @@ fn process_player_input(
     while let Ok(bytes) = player_input_server_socket.recv_bytes(0) {
         let player_input : PlayerInput = deserialize(&bytes[..]).unwrap();
         if let Some(player_state) = player_states.get_mut(&player_input.id) {
-            player_state.disconnect_timer.reset();
+            player_state.drop_timer.reset();
         }
         if player_inputs.contains_key(&player_input.id) {
             player_inputs.get_mut(&player_input.id).unwrap().coalesce(player_input);
@@ -276,7 +276,7 @@ fn update_state(
         // First update any delta-dependent state
         player_state.update(delta);
         // Mark any player for disconnection who stopped sending us input for too long
-        if player_state.disconnect_timer.ready {
+        if player_state.drop_timer.ready {
             players_to_disconnect.push(*id);
         }
         //
@@ -309,13 +309,12 @@ fn main() {
 
     let mut game_setting = GameSetting {
         your_player_id : 0,
-        max_players : 64,
+        max_players : 32,
         player_radius : 0.05,
         move_speed : 0.4,
         move_dampening : 0.5,
-        frame_delay : 0.5,
         respawn_delay : 5.0,
-        drop_timeout : 10.0,
+        drop_time: 4000,
         player_settings : HashMap::<u8, PlayerSetting>::new(),
     };
 
@@ -324,6 +323,7 @@ fn main() {
     let mut player_states = HashMap::<u8, PlayerState>::new();
     let mut player_inputs = HashMap::<u8, PlayerInput>::new();
 
+    println!("Server started (Ctrl-C to stop)\n{:#?}", game_setting);
     'gameloop:
     loop {
         let delta = loop_start.elapsed();
