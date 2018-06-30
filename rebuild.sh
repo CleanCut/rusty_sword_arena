@@ -10,6 +10,14 @@ function die {
     exit 2
 }
 
+function banner {
+    echo "------------------------------------------------------------------------"
+    echo "Waiting for new watchfile to appear to indicate it is time to rebuild..."
+    echo "------------------------------------------------------------------------"
+}
+
+banner
+
 while true ; do
     if [ -e ${WATCHFILE} ] ; then
         # Cleanup watchfile
@@ -24,6 +32,7 @@ while true ; do
         # Restart server
         systemctl restart rusty_sword_arena || die "Failed restarting the server"
         echo "Started Rusty Sword Arena server version $(grep version Cargo.toml | cut -d '"' -f 2)"
+        banner
     fi
     sleep 1;
 done
