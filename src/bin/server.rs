@@ -355,8 +355,8 @@ fn main() {
             // Broadcast new game state computed this frame
             if frame_number % 1800 == 0 {
                 let status = format!(
-                    "STATUS | Frame: {}, Delta: {:2.3}, Messages Processed: {}, Loops: {}",
-                    frame_number, delta.f32(), processed, loop_iterations);
+                    "STATUS | Frame: {}, Messages Processed: {}, Loops/Frame: {}",
+                    frame_number, processed, loop_iterations);
                 println!("{}", status);
             }
             let game_state = GameState {
@@ -371,7 +371,4 @@ fn main() {
             frame_number += 1;
         }
     }
-
-    // Time to shut down
-    thread::sleep(Duration::from_secs(1));
 }

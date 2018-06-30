@@ -37,10 +37,23 @@ fn create_circle_vertices(radius : f32, num_vertices : usize, color : Color) -> 
     v
 }
 
+fn create_ring_vertices(radius : f32, num_vertices : usize, color : Color) -> Vec<Vertex> {
+    let mut v = Vec::<Vertex>::with_capacity(num_vertices+1);
+    for x in 0..=num_vertices {
+        let inner : f64 = 2.0 * PI / num_vertices as f64 * x as f64;
+        v.push(Vertex {
+            position: [inner.cos() as f32 * radius, inner.sin() as f32 * radius],
+            color: [color.r, color.g, color.b],
+        });
+    }
+    v
+}
+
 pub struct Shape {
     pub pos : Position,
     pub direction : Angle,
     vertex_buffer : glium::vertex::VertexBuffer<Vertex>,
+    indices : glium::index::NoIndices,
 }
 
 impl Shape {
@@ -50,6 +63,18 @@ impl Shape {
             pos,
             direction,
             vertex_buffer,
+            indices : glium::index::NoIndices(glium::index::PrimitiveType::TriangleFan),
+        }
+    }
+    pub fn new_ring(display : &Display, radius : f32, pos : Position, direction : Angle, color : Color) -> Self {
+        let vertex_buffer = glium::VertexBuffer::new(
+            &display.display,
+            &create_ring_vertices(radius, 32, color)).unwrap();
+        Self {
+            pos,
+            direction,
+            vertex_buffer,
+            indices : glium::index::NoIndices(glium::index::PrimitiveType::LineLoop),
         }
     }
 }
@@ -64,7 +89,6 @@ pub struct Display {
     mouse_pos : Position,
     screen_to_opengl : Box<FnMut((f64, f64)) -> Position>,
     game_settings : GameSetting,
-    indices : glium::index::NoIndices,
     target : Option<Frame>,
 }
 
@@ -115,7 +139,6 @@ impl Display {
 
         let program = glium::Program::from_source(&display, vertex_shader_src, fragment_shader_src, None).unwrap();
 
-        let indices = glium::index::NoIndices(glium::index::PrimitiveType::TriangleFan);
 
         Self {
             events_loop,
@@ -126,7 +149,6 @@ impl Display {
             mouse_pos : Position { x : 0.0, y : 0.0 },
             screen_to_opengl,
             game_settings : game_settings.clone(),
-            indices,
             target : None,
         }
     }
@@ -148,7 +170,7 @@ impl Display {
                     [shape.pos.x, shape.pos.y, 0.0, 1.0f32],
                 ]
             };
-            target.draw(&shape.vertex_buffer, &self.indices, &self.program, &uniforms,
+            target.draw(&shape.vertex_buffer, &shape.indices, &self.program, &uniforms,
                         &Default::default()).unwrap();
         }
     }
