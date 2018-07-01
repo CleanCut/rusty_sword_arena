@@ -5,6 +5,8 @@
 //! cargo doc --lib --no-deps --open
 //! ```
 //!
+//! **Other Tutorial References**
+//!
 //! - [Git repository for Rusty Sword Arena](https://github.com/CleanCut/rusty_sword_arena) repository.
 //! - [How To Learn Rust]() - a handy reference.
 //!
@@ -17,7 +19,7 @@
 //! Note that while significant effort has been put into making the server _robust_ and unlikely to
 //! crash, there has consciously been very little effort towards security, or pretty much any proper
 //! game engine architecture.  In other words, this is a great way to learn Rust and have some fun
-//! at the same time, but this in no way pretends to be a substitute for a _real game engine_™. 😉
+//! at the same time, but this in no way pretends to be a substitute for a _real game engine™._ 😉
 //!
 //! ## Prerequisites
 //!
