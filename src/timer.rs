@@ -1,5 +1,5 @@
 use std::time::Duration;
-use super::Floatable;
+use super::game::Floatable;
 
 /// Doing math with std::time::Duration is sort of a pain, so this wraps it up in an easy package.
 /// Create a timer set how you like it, call `.update(delta)` with a delta duration each time around

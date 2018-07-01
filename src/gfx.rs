@@ -3,7 +3,14 @@ use glium::Surface;
 use glium::glutin::{self, ElementState};
 use std::f64::consts::PI;
 
-use super::*;
+use super::game::{
+    Angle,
+    ButtonState,
+    ButtonValue,
+    Color,
+    Event,
+    Position,
+};
 use glium::Frame;
 
 #[derive(Copy, Clone, Debug)]
@@ -12,10 +19,6 @@ struct Vertex {
     color: [f32; 3],
 }
 implement_vertex!(Vertex, position, color);
-
-pub fn angle_between(pos : Position, target_pos : Position) -> Angle {
-    (pos.x - target_pos.x).atan2(pos.y - target_pos.y)
-}
 
 fn create_circle_vertices(radius : f32, num_vertices : usize, color : Color) -> Vec<Vertex> {
     let mut v = Vec::<Vertex>::with_capacity(num_vertices+2);

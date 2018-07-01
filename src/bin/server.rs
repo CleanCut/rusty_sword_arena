@@ -5,18 +5,20 @@ extern crate zmq;
 
 use rand::prelude::{Rng, thread_rng, ThreadRng};
 use rusty_sword_arena::{
+    net,
+    timer,
+    VERSION,
+};
+use rusty_sword_arena::game::{
     Color,
     Floatable,
     GameControlMsg,
     GameSetting,
     GameState,
-    net,
     PlayerEvent,
     PlayerInput,
     PlayerSetting,
     PlayerState,
-    timer,
-    VERSION,
 };
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
@@ -324,6 +326,7 @@ fn main() {
     let mut player_states = HashMap::<u8, PlayerState>::new();
     let mut player_inputs = HashMap::<u8, PlayerInput>::new();
 
+    println!("--------------------------------------------------------------");
     println!("Server started (Ctrl-C to stop)\n{:#?}", game_setting);
     'gameloop:
     loop {

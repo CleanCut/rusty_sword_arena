@@ -1,7 +1,7 @@
 extern crate rusty_sword_arena;
 extern crate glium;
 
-use rusty_sword_arena::{
+use rusty_sword_arena::game::{
     ButtonState,
     ButtonValue,
     Event,
@@ -9,24 +9,29 @@ use rusty_sword_arena::{
     PlayerInput,
     PlayerState,
     Position,
-    VERSION,
 };
 use rusty_sword_arena::net::{ServerConnection};
-use rusty_sword_arena::gfx::{angle_between, Display, Shape};
-use std::time::{Duration, Instant};
+use rusty_sword_arena::gfx::{Display, Shape};
+use rusty_sword_arena::VERSION;
 use std::collections::HashMap;
+use std::env;
+use std::time::{Duration, Instant};
 
 fn main() {
-    let host = "localhost";
-    let mut server_conn = ServerConnection::new(host);
+    let mut args : Vec<String> = env::args().skip(1).collect();
+    if args.len() != 2 {
+        println!("Usage: (prog) name host")
+    }
+    let host = args.pop().unwrap();
+    let name = args.pop().unwrap();
+    let mut server_conn = ServerConnection::new(&host);
 
-    let msg = GameControlMsg::Join {name : "bob".to_string()};
-    let mut game_setting = server_conn.send_game_control(msg).unwrap();
+    let msg = GameControlMsg::Join {name};
+    let mut game_setting = server_conn.send_game_control(msg);
     let my_id = game_setting.your_player_id;
     println!("Client v{} connected to server v{} at {}", VERSION, game_setting.version, host);
 
     let mut display = Display::new(1024, 1024);
-
     let mut circles = HashMap::<u8, Shape>::new();
     let mut player_states = HashMap::<u8, PlayerState>::new();
 
@@ -69,7 +74,7 @@ fn main() {
         // Every 4 milliseconds, send accumulated input and reset attack
         if last_input_sent.elapsed() > Duration::from_millis(4) {
             if let Some(my_state) = player_states.get(&my_id) {
-                my_input.turn_angle = angle_between(my_state.pos, mouse_pos);
+                my_input.turn_angle = my_state.pos.angle_between(mouse_pos);
             }
             server_conn.send_player_input(my_input.clone());
             last_input_sent = Instant::now();
@@ -81,7 +86,7 @@ fn main() {
             for mut game_state in new_game_states {
                 if game_state.game_setting_hash != game_setting_hash {
                     let msg = GameControlMsg::Fetch { id : my_id };
-                    game_setting = server_conn.send_game_control(msg).unwrap();
+                    game_setting = server_conn.send_game_control(msg);
                     game_setting_hash = game_state.game_setting_hash;
                     // Remove circles for any players who left
                     circles.retain(|k, _v| {game_setting.player_settings.contains_key(k)});
@@ -121,5 +126,5 @@ fn main() {
 
     println!("Disconnecting from server.");
     let msg = GameControlMsg::Leave { id : my_id };
-    let _game_setting = server_conn.send_game_control(msg).unwrap();
+    let _game_setting = server_conn.send_game_control(msg);
 }
