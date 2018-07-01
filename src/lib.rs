@@ -1,3 +1,13 @@
+//! 💡 **Did You Know?** You can generate your own, offline version of this document by running this
+//! command in your own clone of the repository.
+//!
+//! ```bash
+//! cargo doc --lib --no-deps --open
+//! ```
+//!
+//! - [Git repository for Rusty Sword Arena](https://github.com/CleanCut/rusty_sword_arena) repository.
+//! - [How To Learn Rust]() - a handy reference.
+//!
 //! # Rusty Sword Arena - Game Design
 //!
 //! Rusty Sword Arena is a networked, 2D, top-down, arena combat game.  A server implementation and
@@ -22,11 +32,6 @@
 //!   the game and save the [GameSetting](game/struct.GameSetting.html) you get back.
 //! - Determine your player's id and save it
 //! - ...
-//!
-//! ## GameControl
-//!
-//! To join a game, leave a game, or just fetch a new [GameSetting](struct.GameSetting.html),
-//!
 //!
 
 
