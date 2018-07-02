@@ -53,7 +53,7 @@ fn main() {
     audio.add_audio("ow", "media/ow.ogg");
     audio.add_audio("startup", "media/startup.ogg");
     audio.play("startup");
-    
+
     'gameloop:
     loop {
         // Accumulate user input into one struct

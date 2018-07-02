@@ -38,7 +38,7 @@ making sure the library portion of it is installed so Rust can find it.
 
 On macOS, make sure you have [Homebrew](https://brew.sh/) installed and then run
 ```bash
-brew install zmq
+brew install pkgconfig zmq
 ```
 
 On CentOS, run: 
