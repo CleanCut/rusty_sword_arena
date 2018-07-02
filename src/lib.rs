@@ -39,12 +39,12 @@
 
 #![doc(html_favicon_url = "https://agileperception.com/static/img/favicon.ico")]
 #![doc(html_logo_url = "https://agileperception.com/static/img/APSwirl200.png")]
+extern crate bincode;
 #[macro_use]
 extern crate glium;
-extern crate zmq;
 #[macro_use]
 extern crate serde_derive;
-extern crate bincode;
+extern crate zmq;
 
 /// The graphics module that will be used by your client
 pub mod gfx;

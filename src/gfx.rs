@@ -85,10 +85,11 @@ impl Shape {
 }
 
 
-///
+/// An OpenGL window for displaying graphics. Also the object through which you'll receive input
+/// events (mouse, keyboard, etc.)
 pub struct Window {
     events_loop : glutin::EventsLoop,
-    pub display : glium::Display,
+    display : glium::Display,
     program : glium::Program,
     screen_to_opengl : Box<FnMut((f64, f64)) -> Position>,
     target : Option<Frame>,
@@ -161,6 +162,8 @@ impl Window {
         }
     }
 
+    /// Call `drawstart()` when you are ready to draw a new frame. It will create the new frame and
+    /// clear it to black.
     pub fn drawstart(&mut self) {
         self.target = Some(self.display.draw());
         if let Some(ref mut target) = self.target {
@@ -168,6 +171,10 @@ impl Window {
         }
     }
 
+    /// Pass `draw()` every shape that you would like to draw.  After the first time they are drawn,
+    /// shapes stay on the GPU and only send updated position/rotation, which is super efficient,
+    /// so keep your shape objects around!  Don't recreate them every frame.  Shapes are drawn in
+    /// order, so the last shape you draw will be on top.
     pub fn draw(&mut self, shape : &Shape) {
         if let Some(ref mut target) = self.target {
             let uniforms = uniform! {
@@ -183,12 +190,14 @@ impl Window {
         }
     }
 
+    /// Call `drawfinish()` when you are ready to finalize the frame and show it.  You will need to
+    /// call `drawstart()` again before you can `draw()` any shapes in a new frame.
     pub fn drawfinish(&mut self) {
         self.target.take().unwrap().finish().unwrap();
     }
 
-    /// Get events that the graphics system may have seen (window, keyboard, mouse) and translate
-    /// them into our own, simpler events.
+    /// Get [events](game/enum.Event.html) that the graphics system may have seen (window, keyboard,
+    /// mouse) and translate them into our own, simpler events.
     pub fn events(&mut self) -> Vec<Event> {
         let screen_to_opengl = &mut (self.screen_to_opengl);
         let mut events = Vec::<Event>::new();

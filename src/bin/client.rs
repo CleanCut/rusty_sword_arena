@@ -1,6 +1,8 @@
-extern crate rusty_sword_arena;
+extern crate impose;
 extern crate glium;
+extern crate rusty_sword_arena;
 
+use impose::Audio;
 use rusty_sword_arena::game::{
     ButtonState,
     ButtonValue,
@@ -40,6 +42,18 @@ fn main() {
     my_input.id = my_id;
     let mut last_input_sent = Instant::now();
     let mut game_setting_hash : u64 = 0;
+
+    let mut audio = Audio::new();
+    audio.add_audio("hit", "media/hit.ogg");
+    audio.add_audio("change_weapon", "media/change_weapon.ogg");
+    audio.add_audio("die", "media/die.ogg");
+    audio.add_audio("spawn", "media/spawn.ogg");
+    audio.add_audio("join", "media/join.ogg");
+    audio.add_audio("leave", "media/leave.ogg");
+    audio.add_audio("ow", "media/ow.ogg");
+    audio.add_audio("startup", "media/startup.ogg");
+    audio.play("startup");
+    
     'gameloop:
     loop {
         // Accumulate user input into one struct

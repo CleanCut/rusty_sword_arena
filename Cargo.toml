@@ -1,15 +1,17 @@
 [package]
 name = "rusty_sword_arena"
-version = "0.2.1"
+version = "0.2.2"
 authors = ["Nathan Stocks <cleancut@github.com>"]
 
 [dependencies]
-# For OpenGL support
+# For OpenGL support 👾 -- maybe try gfx-rs instead in the future?
 glium = "0.21"
 
-# For raw networking
+# For raw networking -- probably need to switch to something else if we want control over client connections
 zmq = "0.8"
 
+# The following three are all so we can send Rust values over the network
+# ----
 # The core serde APIs, including the Serialize and Deserialize traits.
 serde = "1.0"
 # Support for #[derive(Serialize, Deserialize)]. So Serde will work for structs and enums defined in our crate.
@@ -17,5 +19,8 @@ serde_derive = "1.0"
 # The format we want to serialize to/from.
 bincode = "1.0"
 
-# For random numbers!
+# For random numbers! 🎲
 rand = "0.5"
+
+# For playing sound 🔊 - to have the _same_ sound overlap, we'll need to either hack on impose or use "rodio" directly
+impose = "0.2.0"
