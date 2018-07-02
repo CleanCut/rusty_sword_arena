@@ -1,6 +1,7 @@
 extern crate glium;
 use glium::Surface;
 use glium::glutin::{self, ElementState};
+use std::cmp::min;
 use std::f64::consts::PI;
 
 use super::game::{
@@ -61,7 +62,7 @@ pub struct Shape {
 }
 
 impl Shape {
-    pub fn new_circle(display : &Display, radius : f32, pos : Position, direction : Angle, color : Color) -> Self {
+    pub fn new_circle(display : &Window, radius : f32, pos : Position, direction : Angle, color : Color) -> Self {
         let vertex_buffer = glium::VertexBuffer::new(&display.display, &create_circle_vertices(radius, 32, color)).unwrap();
         Self {
             pos,
@@ -70,7 +71,7 @@ impl Shape {
             indices : glium::index::NoIndices(glium::index::PrimitiveType::TriangleFan),
         }
     }
-    pub fn new_ring(display : &Display, radius : f32, pos : Position, direction : Angle, color : Color) -> Self {
+    pub fn new_ring(display : &Window, radius : f32, pos : Position, direction : Angle, color : Color) -> Self {
         let vertex_buffer = glium::VertexBuffer::new(
             &display.display,
             &create_ring_vertices(radius, 32, color)).unwrap();
@@ -84,7 +85,8 @@ impl Shape {
 }
 
 
-pub struct Display {
+///
+pub struct Window {
     events_loop : glutin::EventsLoop,
     pub display : glium::Display,
     program : glium::Program,
@@ -93,11 +95,21 @@ pub struct Display {
 }
 
 
-impl Display {
-    pub fn new(width : u32, height : u32) -> Self {
+impl Window {
+    /// By default, this will be a square window with a dimension of `1024px` or
+    /// `(monitor height - 100px)`, whichever is smaller.  You can override the dimension by
+    /// providing a value for override_dimension, for example: `Some(2048)`.  Note that on hi-dpi
+    /// displays (like Apple Retina Displays) 1 "pixel" is often a square of 4 hi-dpi pixels
+    /// (depending on whether the monitor is set to be scaled or not).
+    pub fn new(override_dimension : Option<u32>) -> Self {
         let events_loop = glutin::EventsLoop::new();
+        let (_, monitor_height) = events_loop.get_primary_monitor().get_dimensions();
+        let dimension : u32 = match override_dimension {
+            Some(x) => x,
+            None => min(monitor_height - 100, 1024),
+        };
         let window = glutin::WindowBuilder::new()
-            .with_dimensions(width, height)
+            .with_dimensions(dimension, dimension)
             .with_title("Rusty Sword Arena!");
         let context = glutin::ContextBuilder::new();
         let display = glium::Display::new(window, context, &events_loop).unwrap();
@@ -106,8 +118,8 @@ impl Display {
         // for us.
         let hidpi_factor = display.gl_window().window().hidpi_factor();
         let screen_to_opengl = Box::new(move |screen_coord : (f64, f64)| -> Position {
-            let x = (screen_coord.0 as f32 / (0.5 * hidpi_factor * width as f32)) - 1.0;
-            let y = 1.0 - (screen_coord.1 as f32 / (0.5 * hidpi_factor * height as f32));
+            let x = (screen_coord.0 as f32 / (0.5 * hidpi_factor * dimension as f32)) - 1.0;
+            let y = 1.0 - (screen_coord.1 as f32 / (0.5 * hidpi_factor * dimension as f32));
             Position { x, y }
         });
 

@@ -11,7 +11,7 @@ use rusty_sword_arena::game::{
     Position,
 };
 use rusty_sword_arena::net::{ServerConnection};
-use rusty_sword_arena::gfx::{Display, Shape};
+use rusty_sword_arena::gfx::{Window, Shape};
 use rusty_sword_arena::VERSION;
 use std::collections::HashMap;
 use std::env;
@@ -31,7 +31,7 @@ fn main() {
     let my_id = game_setting.your_player_id;
     println!("Client v{} connected to server v{} at {}", VERSION, game_setting.version, host);
 
-    let mut display = Display::new(1024, 1024);
+    let mut display = Window::new(None);
     let mut circles = HashMap::<u8, Shape>::new();
     let mut player_states = HashMap::<u8, PlayerState>::new();
 
