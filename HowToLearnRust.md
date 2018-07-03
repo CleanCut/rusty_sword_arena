@@ -4,6 +4,20 @@ Perhaps more important than a crash course tutorial in Rust is learning _how to 
 listen to the tutorial and maybe you will learn a little something.  Learning how to learn Rust will put you on a path
 that will lead to eventual mastery.  It is up to you!
 
+### IDE / Editor
+
+Big, bloated IDE's can actually be really helpful in learning Rust.  IDE support is part of the core Rust project, and
+it is already getting really good.  Much more than just syntax highlighting, an IDE like IntelliJ will integrate with
+the compiler and show you type hints, compiler check errors, and all sorts of good stuff inline. 
+
+- Google: Rust _(your favorite IDE)_
+  - Install Rust support
+  - Install TOML support, which is often separate from Rust support ([TOML](https://github.com/toml-lang/toml)
+    is the config file format that Rust uses)
+  - ...wait...
+  - Be amazed at all the helpful auto-complete, etc. that turns on.  Yay!
+  - Customize your editor to your liking.
+  
 ### Find Answers
 
 You are always going to have questions.  Know how to find the answers.
@@ -38,16 +52,6 @@ Code something.  Don't just sit and watch the tutorial.  Try stuff out!
   - Compare binary size, memory usage, speed, etc.
 - Write a blog post about your experience!
 
-### IDE
-
-Big, bloated IDE's can actually be really helpful in learning Rust.  IDE support is part of the core Rust project, and
-it is already getting really good.  Much more than just syntax highlighting, an IDE like IntelliJ will integrate with
-the compiler and show you type hints, compiler check errors, and all sorts of good stuff inline. 
-
-- Google: Rust _(your favorite IDE)_
-  - Install Rust support
-  - ...wait...
-  - Be amazed at all the helpful auto-complete, etc. that turns on.
 
 ### Tools
 
@@ -64,9 +68,18 @@ Long-format reading is really interesting and informative. You will learn some t
 book that you would never have encountered during years of reading random bits of the standard library reference.  I 
 found these books _especially_ useful and high quality:
 
+**Educational**
+
 - [The Rust Programming Language](https://doc.rust-lang.org/book/), aka "The Book" - the official free online book 
   about the language.  I have read the first _and_ second edition, and they're both great.  At this point in time it
   probably makes more sense to go straight to the second edition.
 - [Programming Rust](https://amzn.to/2KC72XV) - The O'Reilly book by Jim Blandy and Jason Orendorff.  Fantastic book
   focused on using the Rust language.  Much longer and more in depth than you can get elsewhere.
 
+**Informational**
+
+- [Entering the Quantum Era—How Firefox got fast again and where it’s going to get faster](https://hacks.mozilla.org/2017/11/entering-the-quantum-era-how-firefox-got-fast-again-and-where-its-going-to-get-faster/)
+
+**Random References**
+- [TOML Format](https://github.com/toml-lang/toml) - the config file format Rust uses
+- [Semantic Versioning](https://semver.org/)

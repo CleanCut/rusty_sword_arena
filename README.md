@@ -31,23 +31,39 @@ cargo 1.27.0 (1e95190e5 2018-05-27)
 If you have any trouble with installation or running the commands above, please
 [contact me](mailto:nathan.stocks@gmail.com) before OSCON!!!
 
-### Install ZeroMQ
+### Install Other Dependencies
 
 ZeroMQ is used under-the-hood for networking.  It's abstracted away, so you won't actually deal with it other than
 making sure the library portion of it is installed so Rust can find it.
 
-On macOS, make sure you have [Homebrew](https://brew.sh/) installed and then run
+On Linux, the alsa development libraries are needed for sound.
+
+**macOS**
+
+Make sure you have [Homebrew](https://brew.sh/) installed and then run
 ```bash
 brew install pkgconfig zmq
 ```
 
-On CentOS, run: 
+**CentOS**
+
 ```bash
-yum install -y czmq-devel
+sudo yum install -y czmq-devel alsa-lib-devel
 ```
 
-For all other operating systems, please see
-[ZeroMQ's download documentation](http://zeromq.org/area:download)
+**Debian**
+Run the following AND follow the instructions for Debian in the
+[ZeroMQ's download documentation](http://zeromq.org/area:download) (you might need to create an
+`/etc/apt/sources.list.d/zeromq.list` file if you don't have a `sources.list` file on Debian 9) :
+
+```bash
+sudo apt install libasound2-dev
+```
+
+**Other Operating Systems**
+
+Follow the instructions in
+[ZeroMQ's download documentation](http://zeromq.org/area:download) for your operating system.
 
 ### See if everything is working
 
@@ -73,10 +89,28 @@ cargo run --bin client -- yourname localhost
 
 If you got through all those steps without anything crashing, then you're all ready for OSCON. ✨🎉✨
 
+# Prepare to Learn
+
+Please do all of the following (see the 
+[How To Learn Rust](https://github.com/CleanCut/rusty_sword_arena/blob/master/HowToLearnRust.md) page)
+- [ ] Choose an IDE (or Editor) and configure it with Rust support and customize it to your liking
+- [ ] Choose one place to "find answers" and either introduce yourself (if it's a forum, IRC, etc.) or find the answer
+      to one question you have.
+- [ ] Try doing something in Rust!  If you don't have a better idea, then just do this:
+  - `cargo new say`
+  - `cd say`
+  - `cargo run`
+  - Edit `src/main.rs` and change the message.
+  - `cargo run` again to see your new message.
+- [ ] Check out the descriptions of the tools and books. 
+
 # Tutorial!
 
-For the tutorial, you are going to make your own game client far Rusty Sword Arena!
+Now you are ready for the tutorial! You are going to make your own game client far Rusty Sword Arena!
 
-Next:
-- [How To Learn Rust](https://github.com/CleanCut/rusty_sword_arena/blob/master/HowToLearnRust.md)
+Your resources will be:
+
+- Presentation & walk-through by the instructor (Nathan Stocks)
 - [Rusty Sword Arena Crate Docs](https://agileperception.com/doc/rusty_sword_arena/)
+- [How To Learn Rust](https://github.com/CleanCut/rusty_sword_arena/blob/master/HowToLearnRust.md)
+- [The Rust Standard Library](https://doc.rust-lang.org/std/)
