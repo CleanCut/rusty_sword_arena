@@ -21,7 +21,7 @@ addons:
     - libzmq-dev
 
 before_install:
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install zmq
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install zmq ; fi
 
 # If I get to the point where I want to auto-publish versions...
 
