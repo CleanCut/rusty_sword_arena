@@ -1,0 +1,24 @@
+sudo: false
+
+language: rust
+rust:
+    - stable
+    - beta
+    - nightly
+
+os:
+  - linux
+  - osx
+
+matrix:
+  allow_failures:
+    - rust: nightly
+
+
+# If I get to the point where I want to auto-publish versions...
+
+#after_success:
+#    - |
+#        [ $TRAVIS_BRANCH = master ] &&
+#        [ $TRAVIS_PULL_REQUEST = false ] &&
+#        cargo publish --no-verify --token ${CRATESIO_TOKEN}
