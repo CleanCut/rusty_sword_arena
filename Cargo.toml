@@ -2,6 +2,15 @@
 name = "rusty_sword_arena"
 version = "0.2.2"
 authors = ["Nathan Stocks <cleancut@github.com>"]
+description = "Library/repository for the half-day Rust tutorial teaching you how to make a game client in Rust."
+documentation = "https://agileperception.com/doc/rusty_sword_arena/"
+homepage = "https://conferences.oreilly.com/oscon/oscon-or/public/schedule/detail/67116"
+repository = "https://github.com/CleanCut/rusty_sword_arena"
+readme = "README.md"
+keywords = ["tutorial", "rusty", "sword", "arena", "learn"]
+license = "MIT"
+license-file = "LICENSE"
+
 
 [dependencies]
 # For OpenGL support 👾 -- maybe try gfx-rs instead in the future?

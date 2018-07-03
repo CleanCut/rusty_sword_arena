@@ -17,7 +17,7 @@ the compiler and show you type hints, compiler check errors, and all sorts of go
   - ...wait...
   - Be amazed at all the helpful auto-complete, etc. that turns on.  Yay!
   - Customize your editor to your liking.
-  
+
 ### Find Answers
 
 You are always going to have questions.  Know how to find the answers.
@@ -61,7 +61,7 @@ There are tools that help you learn as well.
   working code into _idiomatic_ and _high-performing_ code.
 - [rustfmt](https://github.com/rust-lang-nursery/rustfmt) will format your code according to Rust style guidelines.
   There's only one set of Rust style guidelines...so there's nothing to argue about!
-  
+
 ### Reading
 
 Long-format reading is really interesting and informative. You will learn some things plowing through a comprehensive
@@ -82,4 +82,4 @@ found these books _especially_ useful and high quality:
 
 **Random References**
 - [TOML Format](https://github.com/toml-lang/toml) - the config file format Rust uses
-- [Semantic Versioning](https://semver.org/)
+- [Semantic Versioning](https://semver.org/) and [Cargo's Version Field Rules](https://doc.rust-lang.org/cargo/reference/manifest.html#the-version-field)
