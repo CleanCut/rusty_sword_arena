@@ -21,10 +21,27 @@
 //! game engine architecture.  In other words, this is a great way to learn Rust and have some fun
 //! at the same time, but this in no way pretends to be a substitute for a _real game engine™._ 😉
 //!
-//! ## Prerequisites
+//! The basic idea of the game is you are presented with the top-down view of a person (circle) in
+//! an arena (your window) who can swing his weapon (probably a rusty sword) around a certain
+//! distance (a larger [concentric] circle than the person himself).  You can face any direction you
+//! like, in fact turning is instant as far as the server is concerned.  You can move in any
+//! direction (which is _not_ instant) and attempt to attack other players with your sword which may
+//! hit or miss, or you may try to parry, which if successful greatly increases the timeout for the
+//! attacking player's next attack or parry.
 //!
-//! First you should follow the [instructions on the readme](https://github.com/cleancut/rusty_sword_arena)
+//! You start with some health. When you are hit, you lose health. When you successfully parry a
+//! hit, you do not lose health.  When the health runs out, you die.  After a respawn delay, you
+//! respawn with full health.  If you do not fight, you are likely to be eaten by a grue.
+//!
+//! ## Preparation
+//!
+//! First, you should follow the [instructions on the readme](https://github.com/cleancut/rusty_sword_arena)
 //! to install some prerequisites.  Then come back here and keep going.
+//!
+//! ## Basics
+//!
+//! - You need to pick a name for your client and create a Rust crate.  Hint: use `cargo`
+//! - You need to list `rusty_sword_arena` as a dependency in your `Cargo.toml` file.
 //!
 //! ## Game Client Responsibilities
 //!
