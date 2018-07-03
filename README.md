@@ -1,3 +1,7 @@
+[![Build Status](https://travis-ci.org/CleanCut/rusty_sword_arena.svg?branch=master)](https://travis-ci.org/CleanCut/rusty_sword_arena)
+[![](http://meritbadge.herokuapp.com/rusty_sword_arena)](https://crates.io/crates/rusty_sword_arena)
+
+
 # Rusty Sword Arena: A Crash Course in Rust
 
 This is the companion repository to the half-day tutorial for OSCON 2018.
