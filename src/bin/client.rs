@@ -10,7 +10,7 @@ use rusty_sword_arena::game::{
     GameControlMsg,
     PlayerInput,
     PlayerState,
-    Position,
+    Vector2,
 };
 use rusty_sword_arena::net::{ServerConnection};
 use rusty_sword_arena::gfx::{Window, Shape};
@@ -37,7 +37,7 @@ fn main() {
     let mut circles = HashMap::<u8, Shape>::new();
     let mut player_states = HashMap::<u8, PlayerState>::new();
 
-    let mut mouse_pos = Position { x : 0.0, y : 0.0 };
+    let mut mouse_pos = Vector2 { x : 0.0, y : 0.0 };
     let mut my_input = PlayerInput::new();
     my_input.id = my_id;
     let mut last_input_sent = Instant::now();
@@ -69,10 +69,10 @@ fn main() {
                         ButtonState::Released => { 0.0 },
                     };
                     match button_value {
-                        ButtonValue::Up    => my_input.vert_axis  = axis_amount,
-                        ButtonValue::Down  => my_input.vert_axis  = -axis_amount,
-                        ButtonValue::Left  => my_input.horiz_axis = -axis_amount,
-                        ButtonValue::Right => my_input.horiz_axis = axis_amount,
+                        ButtonValue::Up    => my_input.move_amount.y  = axis_amount,
+                        ButtonValue::Down  => my_input.move_amount.y  = -axis_amount,
+                        ButtonValue::Left  => my_input.move_amount.x = -axis_amount,
+                        ButtonValue::Right => my_input.move_amount.x = axis_amount,
                         ButtonValue::Attack => {
                             my_input.attack = match button_state {
                                 ButtonState::Pressed => { true },
@@ -88,7 +88,7 @@ fn main() {
         // Every 4 milliseconds, send accumulated input and reset attack
         if last_input_sent.elapsed() > Duration::from_millis(4) {
             if let Some(my_state) = player_states.get(&my_id) {
-                my_input.turn_angle = my_state.pos.angle_between(mouse_pos);
+                my_input.direction = my_state.pos.angle_between(mouse_pos);
             }
             server_conn.send_player_input(my_input.clone());
             last_input_sent = Instant::now();
@@ -114,7 +114,7 @@ fn main() {
             // Update existing circles for existing players
             if circles.contains_key(id) {
                 let circle = circles.get_mut(id).unwrap();
-                circle.direction = player_state.angle;
+                circle.direction = player_state.direction;
                 circle.pos = player_state.pos;
             // Add new circles for new players
             } else {
@@ -125,7 +125,7 @@ fn main() {
                             &display,
                             game_setting.player_radius,
                             player_state.pos,
-                            player_state.angle,
+                            player_state.direction,
                             player_setting.color));
                 }
             }

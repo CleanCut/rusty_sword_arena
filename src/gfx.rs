@@ -5,12 +5,11 @@ use std::cmp::min;
 use std::f64::consts::PI;
 
 use super::game::{
-    Angle,
     ButtonState,
     ButtonValue,
     Color,
     Event,
-    Position,
+    Vector2,
 };
 use glium::Frame;
 
@@ -55,14 +54,14 @@ fn create_ring_vertices(radius : f32, num_vertices : usize, color : Color) -> Ve
 
 /// A `Shape` can be drawn by a `Display`.  Use the provided `new_*` methods to construct a shape.
 pub struct Shape {
-    pub pos : Position,
-    pub direction : Angle,
+    pub pos : Vector2,
+    pub direction : f32,
     vertex_buffer : glium::vertex::VertexBuffer<Vertex>,
     indices : glium::index::NoIndices,
 }
 
 impl Shape {
-    pub fn new_circle(display : &Window, radius : f32, pos : Position, direction : Angle, color : Color) -> Self {
+    pub fn new_circle(display : &Window, radius : f32, pos : Vector2, direction : f32, color : Color) -> Self {
         let vertex_buffer = glium::VertexBuffer::new(&display.display, &create_circle_vertices(radius, 32, color)).unwrap();
         Self {
             pos,
@@ -71,7 +70,7 @@ impl Shape {
             indices : glium::index::NoIndices(glium::index::PrimitiveType::TriangleFan),
         }
     }
-    pub fn new_ring(display : &Window, radius : f32, pos : Position, direction : Angle, color : Color) -> Self {
+    pub fn new_ring(display : &Window, radius : f32, pos : Vector2, direction : f32, color : Color) -> Self {
         let vertex_buffer = glium::VertexBuffer::new(
             &display.display,
             &create_ring_vertices(radius, 32, color)).unwrap();
@@ -91,7 +90,7 @@ pub struct Window {
     events_loop : glutin::EventsLoop,
     display : glium::Display,
     program : glium::Program,
-    screen_to_opengl : Box<FnMut((f64, f64)) -> Position>,
+    screen_to_opengl : Box<FnMut((f64, f64)) -> Vector2>,
     target : Option<Frame>,
 }
 
@@ -118,10 +117,10 @@ impl Window {
         // Create a closure that captures the hidpi_factor to do local screen coordinate conversion
         // for us.
         let hidpi_factor = display.gl_window().window().hidpi_factor();
-        let screen_to_opengl = Box::new(move |screen_coord : (f64, f64)| -> Position {
+        let screen_to_opengl = Box::new(move |screen_coord : (f64, f64)| -> Vector2 {
             let x = (screen_coord.0 as f32 / (0.5 * hidpi_factor * dimension as f32)) - 1.0;
             let y = 1.0 - (screen_coord.1 as f32 / (0.5 * hidpi_factor * dimension as f32));
-            Position { x, y }
+            Vector2 { x, y }
         });
 
         let vertex_shader_src = r#"

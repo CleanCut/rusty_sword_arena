@@ -6,23 +6,37 @@ use std::hash::{Hash, Hasher};
 use std::time::Duration;
 
 
-/// Represents (x, y) coordinates in OpenGL space that fill your window.  The OpenGL window is
-/// (-1.0, -1.0) in the bottom left to (1.0, 1.0) in the top right.
+/// 2D Vector (x, y) that can represent coordinates in OpenGL space that fill your window, or
+/// velocity, or whatever other two f32 values you need.  The OpenGL window is (-1.0, -1.0) in
+/// the bottom left to (1.0, 1.0) in the top right.
 #[derive(Copy, Clone, Debug, Deserialize, Serialize, PartialEq)]
-pub struct Position {
+pub struct Vector2 {
     pub x : f32,
     pub y : f32,
 }
 
-impl Position {
+impl Vector2 {
     pub fn new() -> Self {
         Self { x: 0.0, y: 0.0 }
     }
-    pub fn distance_between(&self, pos : Position) -> f32 {
-        ((self.x - pos.x).powi(2) + (self.y - pos.y).powi(2)).sqrt()
+    pub fn distance_between(&self, other : Vector2) -> f32 {
+        ((self.x - other.x).powi(2) + (self.y - other.y).powi(2)).sqrt()
     }
-    pub fn angle_between(&self, pos : Position) -> Angle {
-        (self.x - pos.x).atan2(self.y - pos.y)
+    pub fn angle_between(&self, other : Vector2) -> f32 {
+        (self.x - other.x).atan2(self.y - other.y)
+    }
+    pub fn magnitude(&self) -> f32 {
+        (self.x.powi(2) + self.y.powi(2)).sqrt()
+    }
+    pub fn normalize(&mut self) {
+        let magnitude = self.magnitude();
+        self.x /= magnitude;
+        self.y /= magnitude;
+    }
+    pub fn clamp_to_normal(&mut self) {
+        if self.magnitude() > 1.0 {
+            self.normalize();
+        }
     }
 }
 
@@ -69,7 +83,7 @@ pub enum Event {
     WindowClosed,
     /// The mouse is now at this location (OpenGL coordinates - can extend past what's viewable if
     /// the mouse is outside the window)
-    MouseMoved { position : Position },
+    MouseMoved { position : Vector2 },
     Button {
         button_value : ButtonValue,
         button_state : ButtonState
@@ -83,9 +97,6 @@ pub enum GameControlMsg {
     Leave { id : u8 },
     Fetch { id : u8 },
 }
-
-/// Angle denotes a direction something is facing, in radians.
-pub type Angle = f32;
 
 /// A color with 32-bit float parts from `[0.0, 1.0]` suitable for OpenGL.
 #[derive(Copy, Clone, Debug, Serialize, Deserialize, PartialEq)]
@@ -216,11 +227,11 @@ pub struct PlayerState {
     /// The ID of the player
     pub id : u8,
     /// The position of the player in OpenGL units.
-    pub pos : Position,
-    /// The angle of your player, aka the player is facing
-    pub angle : Angle,
+    pub pos : Vector2,
+    /// The direction the player is facing, in radians
+    pub direction: f32,
     /// Current velocity of the player
-    pub velocity : f32,
+    pub velocity : Vector2,
     /// Current health of the player [0.0, 100.0]
     pub health : f32,
     /// Current regen rate of the player
@@ -229,12 +240,6 @@ pub struct PlayerState {
     pub weapon : Weapon,
     /// Any player events that have occurred to the player this frame
     pub player_events : Vec<PlayerEvent>,
-    /// What the server considers the player's horizontal axis input. Note this can be quite
-    /// different from the input the player sent to the server.
-    pub horiz_axis : f32,
-    /// What the server considers the player's vertical axis input. Note this can be quite
-    /// different from the input the player sent to the server.
-    pub vert_axis : f32,
     /// How long until the player can attack again
     pub attack_timer : Timer,
     /// How long the server will wait to get input from you before disconnecting you
@@ -245,15 +250,13 @@ impl PlayerState {
     pub fn new(drop_time : u64) -> Self {
         Self {
             id : 0,
-            pos : Position { x: 0.0, y: 0.0 },
-            angle : 0.0,
-            velocity : 0.0,
+            pos : Vector2::new(),
+            direction: 0.0,
+            velocity : Vector2::new(),
             health : 100.0,
             regen : 0.0,
             weapon : Weapon::new(),
             player_events : Vec::<PlayerEvent>::new(),
-            horiz_axis: 0.0,
-            vert_axis : 0.0,
             attack_timer : Timer::from_millis(500),
             drop_timer: Timer::from_millis(drop_time),
         }
@@ -296,12 +299,11 @@ pub struct PlayerInput {
     /// Whether you are attempting to attack (actual attack will occur if the server-side attack
     /// timer has reached 0)
     pub attack : bool,
-    /// How much your player is attempting to move horizontally [-1.0, 1.0]. Positive is right.
-    pub horiz_axis : f32,
-    /// How much your player is attempting to move vertically [-1.0, 1.0]. Positive is up.
-    pub vert_axis : f32,
-    /// What angle your player is facing. You can turn instantly, you lucky dog.
-    pub turn_angle : Angle,
+    /// How much your player is attempting to move horizontally (x) and vertically (y) [-1.0, 1.0].
+    /// Positive is right and up for x and y, respectively.
+    pub move_amount : Vector2,
+    /// What direction your player is facing. You can turn instantly, you lucky dog.
+    pub direction: f32,
 }
 
 impl PlayerInput {
@@ -309,9 +311,8 @@ impl PlayerInput {
         Self {
             id : 0,
             attack : false,
-            horiz_axis : 0.0,
-            vert_axis : 0.0,
-            turn_angle : 0.0,
+            move_amount : Vector2::new(),
+            direction: 0.0,
         }
     }
     // Combine successive inputs into one input
@@ -319,9 +320,8 @@ impl PlayerInput {
         // Any attack sticks
         self.attack = self.attack || new.attack;
         // Anything else the new value wins
-        self.horiz_axis = new.horiz_axis;
-        self.vert_axis = new.vert_axis;
-        self.turn_angle = new.turn_angle;
+        self.move_amount = new.move_amount;
+        self.direction = new.direction;
     }
 }
 

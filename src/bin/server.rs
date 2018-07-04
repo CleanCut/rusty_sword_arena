@@ -19,6 +19,7 @@ use rusty_sword_arena::game::{
     PlayerInput,
     PlayerSetting,
     PlayerState,
+    Vector2,
 };
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
@@ -231,9 +232,14 @@ fn update_state(
     // Everyone Turns & Moves
     for (id, player_input) in &mut player_inputs.iter() {
         if let Some(player_state) = player_states.get_mut(id) {
-            player_state.angle = player_input.turn_angle;
-            player_state.pos.x += game_setting.move_speed * player_input.horiz_axis * delta_f32;
-            player_state.pos.y += game_setting.move_speed * player_input.vert_axis * delta_f32;
+            // If magnitude of input is > 1, then normalize vector to 1.
+            // If magnitude of input is above movement threshold, Add input to current velocity
+            // else apply drag.
+            // If velocity is > 1, normalize vector to 1
+            // Apply velocity to position
+            player_state.direction = player_input.direction;
+            player_state.pos.x += game_setting.move_speed * player_input.move_amount.x * delta_f32;
+            player_state.pos.y += game_setting.move_speed * player_input.move_amount.y * delta_f32;
         }
     }
     // Get everyone who wants to attack
@@ -291,6 +297,12 @@ fn update_state(
 }
 
 fn main() {
+    let mut v = Vector2::new();
+    v.x = 1.0;
+    v.y = 1.0;
+    println!("{}", v.magnitude());
+    v.clamp_to_normal();
+    println!("{}", v.magnitude());
     let ctx = zmq::Context::new();
 
     let mut game_control_server_socket = ctx.socket(zmq::REP).unwrap();
