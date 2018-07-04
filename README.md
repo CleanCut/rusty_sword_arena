@@ -96,7 +96,8 @@ If you got through all those steps without anything crashing, then you're all re
 # Prepare to Learn
 
 Please do all of the following (see the 
-[How To Learn Rust](https://github.com/CleanCut/rusty_sword_arena/blob/master/HowToLearnRust.md) page)
+[How To Learn Rust](https://github.com/CleanCut/rusty_sword_arena/blob/master/HowToLearnRust.md) page for details on all
+of these)
 - [ ] Choose an IDE (or Editor) and configure it with Rust support and customize it to your liking
 - [ ] Choose one place to "find answers" and either introduce yourself (if it's a forum, IRC, etc.) or find the answer
       to one question you have.
