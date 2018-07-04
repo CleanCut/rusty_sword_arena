@@ -284,6 +284,10 @@ pub enum PlayerEvent {
     Spawn,
     /// Player has received damage
     TookDamage,
+    /// Player has joined the game
+    Join,
+    /// Player has left the game
+    Leave,
 }
 
 /// A weapon a player may hold

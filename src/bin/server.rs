@@ -320,10 +320,10 @@ fn update_state(
                 defender.player_events.push(PlayerEvent::TookDamage);
                 println!("Player {} swings and hits ({}) for {:2.1} damage bringing him to {} health.", id, defender_id, attacker.weapon.damage, defender.health);
             }
-            if missed {
-                attacker.player_events.push(PlayerEvent::AttackMiss);
-                println!("Player {} swings...and MISSES!", id);
-            }
+        }
+        if missed {
+            attacker.player_events.push(PlayerEvent::AttackMiss);
+            println!("Player {} swings...and MISSES!", id);
         }
         player_states.insert(id, attacker);
     }

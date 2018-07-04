@@ -8,6 +8,7 @@ use rusty_sword_arena::game::{
     ButtonValue,
     Event,
     GameControlMsg,
+    PlayerEvent,
     PlayerInput,
     PlayerState,
     Vector2,
@@ -44,15 +45,13 @@ fn main() {
     let mut game_setting_hash : u64 = 0;
 
     let mut audio = Audio::new();
-    audio.add_audio("hit", "media/hit.ogg");
+    audio.add_audio("miss", "media/miss.ogg");
     audio.add_audio("change_weapon", "media/change_weapon.ogg");
     audio.add_audio("die", "media/die.ogg");
     audio.add_audio("spawn", "media/spawn.ogg");
     audio.add_audio("join", "media/join.ogg");
     audio.add_audio("leave", "media/leave.ogg");
     audio.add_audio("ow", "media/ow.ogg");
-    audio.add_audio("startup", "media/startup.ogg");
-    audio.play("startup");
 
     'gameloop:
     loop {
@@ -110,7 +109,20 @@ fn main() {
             }
         }
         // Update the circles
-        for (id, player_state) in &player_states {
+        for (id, player_state) in &mut player_states {
+            // Process player events
+            for player_event in &mut player_state.player_events {
+                match player_event {
+                    PlayerEvent::AttackMiss => audio.play("miss"),
+                    PlayerEvent::Die => audio.play("die"),
+                    PlayerEvent::Spawn => audio.play("spawn"),
+                    PlayerEvent::Join => audio.play("join"),
+                    PlayerEvent::Leave => audio.play("leave"),
+                    PlayerEvent::TookDamage => audio.play("ow"),
+                    PlayerEvent::ChangeWeapon => audio.play("change_weapon"),
+                    _ => (),
+                }
+            }
             // If a player is dead, try to remove his circle
             if player_state.dead {
                 let _ = circles.remove(id);
