@@ -9,8 +9,6 @@ repository = "https://github.com/CleanCut/rusty_sword_arena"
 readme = "README.md"
 keywords = ["tutorial", "rusty", "sword", "arena", "learn"]
 license = "MIT"
-license-file = "LICENSE"
-
 
 [dependencies]
 # For OpenGL support 👾 -- maybe try gfx-rs instead in the future?
