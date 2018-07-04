@@ -18,8 +18,7 @@ addons:
   apt:
     packages:
     - libasound2-dev
-    - libzmq3-dev
-    - libsodium-dev
+    - libzmq4-dev
 
 before_install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install zmq ; fi
