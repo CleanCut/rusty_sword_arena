@@ -40,6 +40,12 @@ impl Timer {
         self.time_left = self.time;
     }
 
+    /// Sets the timer to a value, but will still reset back to the initial value
+    pub fn set_millis_transient(&mut self, ms : u64) {
+        self.ready = false;
+        self.time_left = Duration::from_millis(ms);
+    }
+
     /// This is how the timer counts-down. You have got to call this repeatedly as time passes.
     pub fn update(&mut self, delta : Duration) {
         if self.ready {

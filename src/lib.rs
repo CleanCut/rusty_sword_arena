@@ -59,6 +59,7 @@
 extern crate bincode;
 #[macro_use]
 extern crate glium;
+extern crate rand;
 #[macro_use]
 extern crate serde_derive;
 extern crate zmq;

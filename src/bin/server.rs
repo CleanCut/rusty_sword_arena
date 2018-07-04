@@ -7,7 +7,6 @@ use rand::prelude::{Rng, thread_rng, ThreadRng};
 use rusty_sword_arena::{
     net,
     timer,
-    VERSION,
 };
 use rusty_sword_arena::game::{
     Color,
@@ -25,7 +24,6 @@ use std::collections::HashMap;
 use std::time::{Duration, Instant};
 use std::thread::{self};
 use zmq::Socket;
-
 
 use bincode::{serialize, deserialize};
 
@@ -168,8 +166,9 @@ fn process_game_control_requests(
                                     color_name : color_name.clone(),
                                     color});
                             // Create the new player state
-                            let mut player_state = PlayerState::new(game_setting.drop_time);
+                            let mut player_state = PlayerState::new(&game_setting);
                             player_state.id = new_id;
+                            player_state.pos = Vector2::new_in_square(0.7, rng);
                             player_states.insert(new_id, player_state);
                             println!("Joined: {} (id {}, {})", new_name, new_id, color_name);
                         } else {
@@ -227,21 +226,59 @@ fn update_state(
     game_setting : &mut GameSetting,
     color_picker : &mut ColorPicker,
     delta : Duration,
+    rng : &mut ThreadRng,
 ) {
     let delta_f32 = delta.f32();
-    // Everyone Turns & Moves
-    for (id, player_input) in &mut player_inputs.iter() {
-        if let Some(player_state) = player_states.get_mut(id) {
-            // If magnitude of input is > 1, then normalize vector to 1.
-            // If magnitude of input is above movement threshold, Add input to current velocity
-            // else apply drag.
-            // If velocity is > 1, normalize vector to 1
-            // Apply velocity to position
-            player_state.direction = player_input.direction;
-            player_state.pos.x += game_setting.move_speed * player_input.move_amount.x * delta_f32;
-            player_state.pos.y += game_setting.move_speed * player_input.move_amount.y * delta_f32;
+
+    // Update player timers, spawn anyone who is ready
+    // See if any players disconnect, die, or spawn
+    for (id, player_state) in player_states.iter_mut() {
+        // First update any delta-dependent state
+        player_state.update(delta);
+        // Anyone ready to spawn?
+        if player_state.dead && player_state.respawn_timer.ready {
+            player_state.respawn(
+                Vector2::new_in_square(0.9, rng),
+                &format!("Player {} spawns", id));
         }
     }
+
+    // Process input to affect velocities
+    for (id, player_input) in &mut player_inputs.iter() {
+        if let Some(player_state) = player_states.get_mut(id) {
+            // Ignore input from dead players
+            if player_state.dead {
+                continue;
+            }
+            // Instantaneously face a direction
+            player_state.direction = player_input.direction;
+            // Update current velocity
+            let clamped_move_amount = player_input.move_amount.clamped_to_normal();
+            if clamped_move_amount.magnitude() > game_setting.move_threshold {
+                // Player is moving -- add input to current velocity
+                player_state.velocity = player_state.velocity + (clamped_move_amount * game_setting.acceleration * delta_f32);
+            } else {
+                // Player is holding still, apply drag to current velocity
+                player_state.velocity = player_state.velocity * (1.0 - (game_setting.drag * delta_f32));
+            }
+            player_state.velocity = player_state.velocity.clamped_to(game_setting.max_velocity);
+        }
+    }
+    // Process all the velocities to affect position (not just the players who had input this loop)
+    for (id, player_state) in player_states.iter_mut() {
+        // Dead players don't move
+        if player_state.dead { continue; }
+        // Apply velocity to position
+        player_state.pos = player_state.pos + (player_state.velocity * delta_f32);
+        // Don't go into the dark!
+        if player_state.pos.x < -1.0
+            || player_state.pos.x > 1.0
+            || player_state.pos.y < -1.0
+            || player_state.pos.y > 1.0 {
+            player_state.die(&format!("Player {} was eaten by a grue.  Should have stayed in the light.", id));
+        }
+    }
+
     // Get everyone who wants to attack
     let mut attacking_ids : Vec<u8> = vec![];
     for (id, player_input) in player_inputs.iter_mut() {
@@ -253,56 +290,61 @@ fn update_state(
     }
     // Try to attack
     for id in attacking_ids {
-        let mut attacker = player_states.remove(&id).unwrap();
+        let mut attacker : PlayerState;
+        if let Some(maybe_attacker) = player_states.remove(&id) {
+            attacker = maybe_attacker;
+        } else {
+            // ZeroMQ lets clients that were connected to a previous server keep sending input. /facepalm
+            continue;
+        }
+        // Dead players don't attack
+        if attacker.dead {
+            player_states.insert(id, attacker);
+            continue
+        }
         // TODO: Move attack_timer from player to weapon
         if !attacker.attack_timer.ready {
             player_states.insert(id, attacker);
             continue;
         }
         // Actually attack defenders
-        println!("Player {} swings his weapon!", id);
         attacker.attack_timer.reset();
         let mut missed = true;
         for (&defender_id, defender) in player_states.iter_mut() {
-            println!("Distance: {:2.2}, Weapon Radius: {:2.2}", attacker.pos.distance_between(defender.pos), attacker.weapon.radius + game_setting.player_radius);
+            // Dead players don't defend
+            if defender.dead { continue }
             if attacker.pos.distance_between(defender.pos) <= attacker.weapon.radius + game_setting.player_radius {
                 missed = false;
                 defender.health -= attacker.weapon.damage;
                 attacker.player_events.push(PlayerEvent::AttackHit { id: defender_id });
                 defender.player_events.push(PlayerEvent::TookDamage);
-                println!("({}) hit ({}) for {:2.1} damage bringing him to {} health.", id, defender_id, attacker.weapon.damage, defender.health);
+                println!("Player {} swings and hits ({}) for {:2.1} damage bringing him to {} health.", id, defender_id, attacker.weapon.damage, defender.health);
             }
             if missed {
                 attacker.player_events.push(PlayerEvent::AttackMiss);
+                println!("Player {} swings...and MISSES!", id);
             }
         }
         player_states.insert(id, attacker);
     }
 
-    // See if we need to disconnect, kill, or spawn anyone
-    let mut players_to_disconnect : Vec<u8> = vec![];
-    for (id, player_state) in player_states.iter_mut() {
-        // First update any delta-dependent state
-        player_state.update(delta);
+    // See if any players disconnect or die
+    let to_process = player_states.drain().collect::<Vec<(u8, PlayerState)>>();
+    for (id, mut player_state) in to_process {
         // Mark any player for disconnection who stopped sending us input for too long
         if player_state.drop_timer.ready {
-            players_to_disconnect.push(*id);
+            remove_player(id, game_setting, player_states, color_picker, true);
+            continue;
         }
-        //
-    }
-    // Actually disconnect
-    for id in players_to_disconnect {
-        remove_player(id, game_setting, player_states, color_picker, true)
+        // Anyone alive whose health went negative dies
+        if !player_state.dead && player_state.health < 0.0 {
+            player_state.die(&format!("Player {} dies from his wounds.", id));
+        }
+        player_states.insert(id, player_state);
     }
 }
 
 fn main() {
-    let mut v = Vector2::new();
-    v.x = 1.0;
-    v.y = 1.0;
-    println!("{}", v.magnitude());
-    v.clamp_to_normal();
-    println!("{}", v.magnitude());
     let ctx = zmq::Context::new();
 
     let mut game_control_server_socket = ctx.socket(zmq::REP).unwrap();
@@ -320,19 +362,7 @@ fn main() {
     let mut loop_start = Instant::now();
     let mut frame_timer = timer::Timer::from_nanos(16666666); // 60 FPS
     let mut color_picker = ColorPicker::new();
-
-    let mut game_setting = GameSetting {
-        version : VERSION.to_string(),
-        your_player_id : 0,
-        max_players : 32,
-        player_radius : 0.05,
-        move_speed : 0.4,
-        move_dampening : 0.5,
-        respawn_delay : 5.0,
-        drop_time: 4000,
-        player_settings : HashMap::<u8, PlayerSetting>::new(),
-    };
-
+    let mut game_setting = GameSetting::new();
     let mut rng = thread_rng();
     let mut frame_number : u64 = 0;
     let mut player_states = HashMap::<u8, PlayerState>::new();
@@ -363,7 +393,7 @@ fn main() {
         coalesce_player_input(&mut player_input_server_socket, &mut player_states, &mut player_inputs);
 
         // Move, attack, etc.
-        update_state(&mut player_states, &mut player_inputs, &mut game_setting, &mut color_picker, delta);
+        update_state(&mut player_states, &mut player_inputs, &mut game_setting, &mut color_picker, delta, &mut rng);
 
         // Process a frame (if it's time)
 

@@ -111,6 +111,11 @@ fn main() {
         }
         // Update the circles
         for (id, player_state) in &player_states {
+            // If a player is dead, try to remove his circle
+            if player_state.dead {
+                let _ = circles.remove(id);
+                continue;
+            }
             // Update existing circles for existing players
             if circles.contains_key(id) {
                 let circle = circles.get_mut(id).unwrap();
