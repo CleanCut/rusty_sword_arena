@@ -14,14 +14,14 @@ matrix:
   allow_failures:
     - rust: nightly
 
-addons:
-  apt:
-    packages:
-    - libasound2-dev
-    - libzmq4-dev
 
 before_install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install zmq ; fi
+# The next two lines are so that "libsodium-dev" can be found in the third line
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo add-apt-repository -y ppa:anton+/dnscrypt ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get update ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -y -qq libasound2-dev libzmq3-dev libsodium-dev
+
 
 # If I get to the point where I want to auto-publish versions...
 
