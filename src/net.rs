@@ -75,7 +75,7 @@ impl ServerConnection {
 
     /// Gets all available unprocessed game states.  You should call this often enough that you
     /// usually don't receive more than one.
-    pub fn recv_game_states(&mut self) -> Vec<GameState> {
+    pub fn poll_game_states(&mut self) -> Vec<GameState> {
         let mut game_states = Vec::<GameState>::new();
         while let Ok(bytes) = self.game_state_socket.recv_bytes(0) {
             game_states.push(deserialize(&bytes[..]).unwrap());

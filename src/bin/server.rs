@@ -16,7 +16,6 @@ use rusty_sword_arena::game::{
     GameState,
     PlayerEvent,
     PlayerInput,
-    PlayerSetting,
     PlayerState,
     Vector2,
 };
@@ -28,103 +27,108 @@ use zmq::Socket;
 use bincode::{serialize, deserialize};
 
 struct ColorPicker {
-    colors : HashMap<String, Color>,
+    // Names of the colors
+    color_map : HashMap<Color, String>,
+    // Colors to take
+    available_colors : Vec<Color>,
 }
 
 impl ColorPicker {
     fn new() -> Self {
-        let mut colors = HashMap::<String, Color>::with_capacity(32);
+        let mut color_map = HashMap::<Color, String>::with_capacity(32);
         // 32 of the colors from http://eastfarthing.com/blog/2016-09-19-palette/ on 2018-06-26
-        colors.insert("bright teal".to_string(), Color {r : 0.021, g : 0.992, b : 0.757});
-        colors.insert("earth".to_string(), Color {r : 0.630, g : 0.370, b : 0.189});
-        colors.insert("tree green".to_string(), Color {r : 0.177, g : 0.519, b : 0.189});
-        colors.insert("green".to_string(), Color {r : 0.004, g : 0.718, b : 0.086});
-        colors.insert("poison green".to_string(), Color {r : 0.314, g : 0.992, b : 0.204});
-        colors.insert("aqua blue".to_string(), Color {r : 0.021, g : 0.861, b : 0.865});
-        colors.insert("turquoise blue".to_string(), Color {r : 0.287, g : 0.623, b : 0.666});
-        colors.insert("sea blue".to_string(), Color {r : 0.187, g : 0.429, b : 0.510});
-        colors.insert("azure".to_string(), Color {r : 0.223, g : 0.580, b : 0.842});
-        colors.insert("lightblue".to_string(), Color {r : 0.471, g : 0.805, b : 0.971});
-        colors.insert("light periwinkle".to_string(), Color {r : 0.734, g : 0.774, b : 0.924});
-        colors.insert("lavender blue".to_string(), Color {r : 0.555, g : 0.551, b : 0.989});
-        colors.insert("bright blue".to_string(), Color {r : 0.121, g : 0.393, b : 0.955});
-        colors.insert("heather".to_string(), Color {r : 0.641, g : 0.554, b : 0.708});
-        colors.insert("light lavendar".to_string(), Color {r : 0.961, g : 0.719, b : 0.953});
-        colors.insert("light magenta".to_string(), Color {r : 0.874, g : 0.435, b : 0.945});
-        colors.insert("electric purple".to_string(), Color {r : 0.657, g : 0.194, b : 0.933});
-        colors.insert("strong blue".to_string(), Color {r : 0.212, g : 0.066, b : 0.887});
-        colors.insert("berry".to_string(), Color {r : 0.575, g : 0.153, b : 0.305});
-        colors.insert("dull pink".to_string(), Color {r : 0.897, g : 0.494, b : 0.640});
-        colors.insert("tomato red".to_string(), Color {r : 0.931, g : 0.164, b : 0.069});
-        colors.insert("brownish red".to_string(), Color {r : 0.617, g : 0.158, b : 0.123});
-        colors.insert("ugly brown".to_string(), Color {r : 0.494, g : 0.458, b : 0.104});
-        colors.insert("puke green".to_string(), Color {r : 0.636, g : 0.684, b : 0.135});
-        colors.insert("sickly yellow".to_string(), Color {r : 0.878, g : 0.960, b : 0.247});
-        colors.insert("pinkish grey".to_string(), Color {r : 0.872, g : 0.724, b : 0.728});
-        colors.insert("light peach".to_string(), Color {r : 0.931, g : 0.754, b : 0.569});
-        colors.insert("ochre".to_string(), Color {r : 0.757, g : 0.566, b : 0.162});
-        colors.insert("golden yellow".to_string(), Color {r : 0.972, g : 0.794, b : 0.102});
-        colors.insert("orange".to_string(), Color {r : 0.917, g : 0.475, b : 0.143});
-        colors.insert("eggshell blue".to_string(), Color {r : 0.804, g : 100.0, b : 0.942});
-        colors.insert("egg shell".to_string(), Color {r : 1.000, g : 0.982, b : 0.776});
+        color_map.insert(Color {r : 0.021, g : 0.992, b : 0.757}, "bright teal".to_string());
+        color_map.insert(Color {r : 0.630, g : 0.370, b : 0.189}, "earth".to_string());
+        color_map.insert(Color {r : 0.177, g : 0.519, b : 0.189}, "tree green".to_string());
+        color_map.insert(Color {r : 0.004, g : 0.718, b : 0.086}, "green".to_string());
+        color_map.insert(Color {r : 0.314, g : 0.992, b : 0.204}, "poison green".to_string());
+        color_map.insert(Color {r : 0.021, g : 0.861, b : 0.865}, "aqua blue".to_string());
+        color_map.insert(Color {r : 0.287, g : 0.623, b : 0.666}, "turquoise blue".to_string());
+        color_map.insert(Color {r : 0.187, g : 0.429, b : 0.510}, "sea blue".to_string());
+        color_map.insert(Color {r : 0.223, g : 0.580, b : 0.842}, "azure".to_string());
+        color_map.insert(Color {r : 0.471, g : 0.805, b : 0.971}, "lightblue".to_string());
+        color_map.insert(Color {r : 0.734, g : 0.774, b : 0.924}, "light periwinkle".to_string());
+        color_map.insert(Color {r : 0.555, g : 0.551, b : 0.989}, "lavender blue".to_string());
+        color_map.insert(Color {r : 0.121, g : 0.393, b : 0.955}, "bright blue".to_string());
+        color_map.insert(Color {r : 0.641, g : 0.554, b : 0.708}, "heather".to_string());
+        color_map.insert(Color {r : 0.961, g : 0.719, b : 0.953}, "light lavendar".to_string());
+        color_map.insert(Color {r : 0.874, g : 0.435, b : 0.945}, "light magenta".to_string());
+        color_map.insert(Color {r : 0.657, g : 0.194, b : 0.933}, "electric purple".to_string());
+        color_map.insert(Color {r : 0.212, g : 0.066, b : 0.887}, "strong blue".to_string());
+        color_map.insert(Color {r : 0.575, g : 0.153, b : 0.305}, "berry".to_string());
+        color_map.insert(Color {r : 0.897, g : 0.494, b : 0.640}, "dull pink".to_string());
+        color_map.insert(Color {r : 0.931, g : 0.164, b : 0.069}, "tomato red".to_string());
+        color_map.insert(Color {r : 0.617, g : 0.158, b : 0.123}, "brownish red".to_string());
+        color_map.insert(Color {r : 0.494, g : 0.458, b : 0.104}, "ugly brown".to_string());
+        color_map.insert(Color {r : 0.636, g : 0.684, b : 0.135}, "puke green".to_string());
+        color_map.insert(Color {r : 0.878, g : 0.960, b : 0.247}, "sickly yellow".to_string());
+        color_map.insert(Color {r : 0.872, g : 0.724, b : 0.728}, "pinkish grey".to_string());
+        color_map.insert(Color {r : 0.931, g : 0.754, b : 0.569}, "light peach".to_string());
+        color_map.insert(Color {r : 0.757, g : 0.566, b : 0.162}, "ochre".to_string());
+        color_map.insert(Color {r : 0.972, g : 0.794, b : 0.102}, "golden yellow".to_string());
+        color_map.insert(Color {r : 0.917, g : 0.475, b : 0.143}, "orange".to_string());
+        color_map.insert(Color {r : 0.804, g : 100.0, b : 0.942}, "eggshell blue".to_string());
+        color_map.insert(Color {r : 1.000, g : 0.982, b : 0.776}, "egg shell".to_string());
 
         /* Too dark, too close to another color, too gray, or I just didn't like it.
-        colors.insert("black".to_string(), Color {r : 0.000, g : 0.000, b : 0.000});
-        colors.insert("green blue".to_string(), Color {r : 0.198, g : 0.684, b : 0.531});
-        colors.insert("charcoal".to_string(), Color {r : 0.110, g : 0.203, b : 0.167});
-        colors.insert("navy green".to_string(), Color {r : 0.167, g : 0.323, b : 0.100});
-        colors.insert("cobalt".to_string(), Color {r : 0.147, g : 0.279, b : 0.494});
-        colors.insert("dark lavender".to_string(), Color {r : 0.449, g : 0.385, b : 0.623});
-        colors.insert("dark indigo".to_string(), Color {r : 0.142, g : 0.072, b : 0.404});
-        colors.insert("darkish purple".to_string(), Color {r : 0.498, g : 0.139, b : 0.528});
-        colors.insert("aubergine".to_string(), Color {r : 0.278, g : 0.105, b : 0.228});
-        colors.insert("chocolate brown".to_string(), Color {r : 0.306, g : 0.130, b : 0.102});
-        colors.insert("purplish brown".to_string(), Color {r : 0.356, g : 0.316, b : 0.348});
-        colors.insert("mud brown".to_string(), Color {r : 0.371, g : 0.303, b : 0.159});
-        colors.insert("pale brown".to_string(), Color {r : 0.671, g : 0.548, b : 0.462});
-        colors.insert("silver".to_string(), Color {r : 0.668, g : 0.730, b : 0.702});
-        colors.insert("green grey".to_string(), Color {r : 0.519, g : 0.574, b : 0.425});
-        colors.insert("blue green".to_string(), Color {r : 0.219, g : 0.447, b : 0.382});
-        colors.insert("mauve".to_string(), Color {r : 0.593, g : 0.407, b : 0.466});
-        colors.insert("pink red".to_string(), Color {r : 0.866, g : 0.219, b : 0.355});
-        colors.insert("salmon".to_string(), Color {r : 0.945, g : 0.503, b : 0.443});
-        colors.insert("purpley pink".to_string(), Color {r : 0.835, g : 0.188, b : 0.615});
-        colors.insert("light grey green".to_string(), Color {r : 0.634, g : 0.819, b : 0.558});
-        colors.insert("white".to_string(), Color {r : 1.000, g : 1.000, b : 1.000});
+        color_map.insert(Color {r : 0.000, g : 0.000, b : 0.000}, "black".to_string());
+        color_map.insert(Color {r : 0.198, g : 0.684, b : 0.531}, "green blue".to_string());
+        color_map.insert(Color {r : 0.110, g : 0.203, b : 0.167}, "charcoal".to_string());
+        color_map.insert(Color {r : 0.167, g : 0.323, b : 0.100}, "navy green".to_string());
+        color_map.insert(Color {r : 0.147, g : 0.279, b : 0.494}, "cobalt".to_string());
+        color_map.insert(Color {r : 0.449, g : 0.385, b : 0.623}, "dark lavender".to_string());
+        color_map.insert(Color {r : 0.142, g : 0.072, b : 0.404}, "dark indigo".to_string());
+        color_map.insert(Color {r : 0.498, g : 0.139, b : 0.528}, "darkish purple".to_string());
+        color_map.insert(Color {r : 0.278, g : 0.105, b : 0.228}, "aubergine".to_string());
+        color_map.insert(Color {r : 0.306, g : 0.130, b : 0.102}, "chocolate brown".to_string());
+        color_map.insert(Color {r : 0.356, g : 0.316, b : 0.348}, "purplish brown".to_string());
+        color_map.insert(Color {r : 0.371, g : 0.303, b : 0.159}, "mud brown".to_string());
+        color_map.insert(Color {r : 0.671, g : 0.548, b : 0.462}, "pale brown".to_string());
+        color_map.insert(Color {r : 0.668, g : 0.730, b : 0.702}, "silver".to_string());
+        color_map.insert(Color {r : 0.519, g : 0.574, b : 0.425}, "green grey".to_string());
+        color_map.insert(Color {r : 0.219, g : 0.447, b : 0.382}, "blue green".to_string());
+        color_map.insert(Color {r : 0.593, g : 0.407, b : 0.466}, "mauve".to_string());
+        color_map.insert(Color {r : 0.866, g : 0.219, b : 0.355}, "pink red".to_string());
+        color_map.insert(Color {r : 0.945, g : 0.503, b : 0.443}, "salmon".to_string());
+        color_map.insert(Color {r : 0.835, g : 0.188, b : 0.615}, "purpley pink".to_string());
+        color_map.insert(Color {r : 0.634, g : 0.819, b : 0.558}, "light grey green".to_string());
+        color_map.insert(Color {r : 1.000, g : 1.000, b : 1.000}, "white".to_string());
         */
-        Self { colors }
+
+        // Who knows what order we'll get stuff!  How exciting!
+        let available_colors : Vec<Color> = color_map.keys().map(|&k| k.clone()).collect();
+
+        Self { color_map, available_colors }
     }
-    fn pop_color(&mut self) -> (String, Color) {
-        // Lets not crash if we get emptied
-        if self.colors.len() == 0 {
-            return ("overflow white".to_string(), Color {r : 1.0, g : 1.0, b : 1.0});
+    fn pop_color(&mut self) -> Color {
+        self.available_colors.pop().unwrap()
+    }
+    fn push_color(&mut self, color : Color) {
+        self.available_colors.push(color)
+    }
+    fn name_of(&self, color : Color) -> String {
+        if let Some(name) = self.color_map.get(&color) {
+            return name.clone();
         }
-        // Who knows what order we'll get stuff in.  How exciting!
-        let key = self.colors.keys().nth(0).unwrap().clone();
-        self.colors.remove_entry(&key).unwrap()
-    }
-    fn push_color(&mut self, name : String, color : Color) {
-        self.colors.insert(name, color);
+        "Unknown color".to_string()
     }
 }
 
 // Returns whether or not the player was actually there to be removed
 fn remove_player(
     id : u8,
-    game_setting : &mut GameSetting,
     player_states : &mut HashMap<u8, PlayerState>,
     color_picker : &mut ColorPicker,
     forced : bool,
 ) -> bool {
     let mut msg = format!("Player {} {}", id, if forced {"kicked for idling"} else {"left"});
-    if let Some(player_setting) = game_setting.player_settings.remove(&id) {
-        msg.push_str(&format!(", name: {}", player_setting.name));
-        color_picker.push_color(player_setting.name.clone(), player_setting.color);
-    }
-    println!("{}", msg);
-    if let Some(_) = player_states.remove(&id) {
+    if let Some(player_state) = player_states.remove(&id) {
+        msg.push_str(&format!(", name: {}, color: {:?}", player_state.name, player_state.color));
+        color_picker.push_color(player_state.color);
+        println!("{}", msg);
         return true;
     }
+    println!("{}", msg);
     return false;
 }
 
@@ -146,14 +150,14 @@ fn process_game_control_requests(
                         let mut id : u8 = 0;
                         loop {
                             // Is the game full?
-                            if game_setting.player_settings.len() >= game_setting.max_players as usize {
+                            if player_states.len() >= game_setting.max_players as usize {
                                 println!("Join Failed: No room for for {} - max players reached.", name);
                                 break;
                             }
                             // Is the name already taken?
-                            if game_setting.player_settings
+                            if player_states
                                 .values()
-                                .map(|player_setting | {&player_setting.name})
+                                .map(|player_state | {&player_state.name})
                                 .any(|x| { x == &name }) {
                                 println!("Join Failed: Name \"{}\" is already taken.", name);
                                 break;
@@ -164,21 +168,16 @@ fn process_game_control_requests(
                                 if (id != 0) && !player_states.contains_key(&id) { break }
                             }
                             // Assign player a color
-                            let (color_name, color) = color_picker.pop_color();
-                            // Create the PlayerSetting and add it to the GameSetting
-                            game_setting.player_settings.insert(
-                                id,
-                                PlayerSetting {
-                                    name : name.clone(),
-                                    color_name : color_name.clone(),
-                                    color});
+                            let color = color_picker.pop_color();
                             // Create the new player state
                             let mut player_state = PlayerState::new(
                                 &game_setting,
                                 id,
+                                name.clone(),
+                                color,
                                 Vector2::new_in_square(0.6, rng));
                             player_states.insert(id, player_state);
-                            println!("Joined: {} (id {}, {})", name, id, color_name);
+                            println!("Joined: {} (id {}, {})", name, id, color_picker.name_of(color));
                             break;
                         }
                         game_control_server_socket.send(&serialize(&id).unwrap(), 0).unwrap();
@@ -186,7 +185,7 @@ fn process_game_control_requests(
                     GameControlMsg::Leave {id} => {
                         // your_player_id has no meaning in this response, so we set it to the
                         // invalid id.
-                        let succeeded = remove_player(id, game_setting, player_states, color_picker, false);
+                        let succeeded = remove_player(id, player_states, color_picker, false);
                         // Per ZMQ REQ/REP protocol we must respond no matter what, so even invalid
                         // requests get the game settings back.
                         game_control_server_socket.send(&serialize(&succeeded).unwrap(), 0).unwrap();
@@ -332,7 +331,7 @@ fn update_state(
     for (id, mut player_state) in to_process {
         // Mark any player for disconnection who stopped sending us input for too long
         if player_state.drop_timer.ready {
-            remove_player(id, game_setting, player_states, color_picker, true);
+            remove_player(id, player_states, color_picker, true);
             continue;
         }
         // Anyone alive whose health went negative dies

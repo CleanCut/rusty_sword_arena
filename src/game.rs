@@ -185,13 +185,15 @@ impl Color {
     }
 }
 
-/// Player settings that only change when someone joins/leaves the game, as opposed to every frame.
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
-pub struct PlayerSetting {
-    pub name : String,
-    pub color_name : String,
-    pub color : Color,
+impl Hash for Color {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        (self.r as u32).hash(state);
+        (self.g as u32).hash(state);
+        (self.b as u32).hash(state);
+    }
 }
+
+impl Eq for Color {}
 
 /// Server returns a GameSetting in response to receiving a PlayerSync
 /// Game settings and player names and colors (including your own) are all in there.  You will
@@ -217,9 +219,6 @@ pub struct GameSetting {
     pub respawn_delay : u64,
     /// Milliseconds. How long the server will allow not receiving input before dropping a player.
     pub drop_delay : u64,
-    /// Map of player id to settings such as names and colors. Note that this includes your own name
-    /// _which may not be what you requested originally!_.
-    pub player_settings : HashMap<u8, PlayerSetting>,
 }
 
 impl GameSetting {
@@ -234,7 +233,6 @@ impl GameSetting {
             move_threshold : 0.05,
             respawn_delay : 5000,
             drop_delay : 4000,
-            player_settings : HashMap::<u8, PlayerSetting>::new(),
         }
     }
     pub fn get_hash(&self) -> u64 {
@@ -246,16 +244,14 @@ impl GameSetting {
 
 impl Hash for GameSetting {
     fn hash<H: Hasher>(&self, state: &mut H) {
+        self.version.hash(state);
         self.max_players.hash(state);
         (self.player_radius as u32).hash(state);
         (self.acceleration as u32).hash(state);
         (self.drag as u32).hash(state);
-        (self.respawn_delay as u32).hash(state);
+        (self.move_threshold as u32).hash(state);
+        self.respawn_delay.hash(state);
         self.drop_delay.hash(state);
-        // PlayerSetting entries are assumed to be immutable, so we'll only look at the keys
-        let mut sorted_keys : Vec<u8> = self.player_settings.keys().map(|x| {*x}).collect();
-        sorted_keys.sort();
-        sorted_keys.hash(state);
     }
 }
 
@@ -320,6 +316,10 @@ impl Weapon {
 pub struct PlayerState {
     /// The ID of the player
     pub id : u8,
+    /// The name of the player
+    pub name : String,
+    /// The color of the player
+    pub color : Color,
     /// The position of the player in OpenGL units.
     pub pos : Vector2,
     /// The direction the player is facing, in radians
@@ -353,12 +353,13 @@ pub struct PlayerState {
 /// typically look at the fields and events, and don't use any of the methods.
 impl PlayerState {
     /// The client should never create a `PlayerState` -- the server will do that.
-    pub fn new(game_setting : &GameSetting, id : u8, pos : Vector2) -> Self {
-        // Manually pump the respawn timer so it's wound-down.
+    pub fn new(game_setting : &GameSetting, id : u8, name : String, color : Color, pos : Vector2) -> Self {
         let mut respawn_timer = Timer::from_millis(game_setting.respawn_delay);
         respawn_timer.set_millis_transient(1000); // spawn more quickly on initial connect
         Self {
             id,
+            name,
+            color,
             pos,
             direction: 0.0,
             velocity : Vector2::new(),

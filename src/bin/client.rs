@@ -6,7 +6,7 @@ use impose::Audio;
 use rusty_sword_arena::game::{
     ButtonState,
     ButtonValue,
-    Color,
+//    Color,
     Event,
     PlayerEvent,
     PlayerInput,
@@ -15,7 +15,7 @@ use rusty_sword_arena::game::{
 };
 use rusty_sword_arena::gfx::{Window, Shape};
 use rusty_sword_arena::net::{ServerConnection};
-use rusty_sword_arena::timer::Timer;
+//use rusty_sword_arena::timer::Timer;
 use rusty_sword_arena::VERSION;
 use std::collections::HashMap;
 use std::env;
@@ -49,7 +49,7 @@ fn main() {
     let name = args.pop().unwrap();
     let mut server_conn = ServerConnection::new(&host);
 
-    let mut my_id = server_conn.join(&name);
+    let my_id = server_conn.join(&name);
     let mut game_setting = server_conn.get_game_setting();
     println!("Client v{} connected to server v{} at {}", VERSION, game_setting.version, host);
 
@@ -112,19 +112,19 @@ fn main() {
             last_input_sent = Instant::now();
         }
 
-        // Any new game states?
-        let new_game_states = server_conn.recv_game_states();
-        if !new_game_states.is_empty() {
-            for mut game_state in new_game_states {
-                if game_state.game_setting_hash != game_setting_hash {
-                    game_setting = server_conn.get_game_setting();
-                    game_setting_hash = game_setting.get_hash();
-                    // Remove circles for any players who left
-                    circles.retain(|k, _v| {game_setting.player_settings.contains_key(k)});
-                }
-                player_states.clear();
-                player_states.extend(game_state.player_states.drain());
+        // Process any new game states
+        let new_game_states = server_conn.poll_game_states();
+        for mut game_state in new_game_states {
+            // Get all the new player states
+            player_states.clear();
+            player_states.extend(game_state.player_states.drain());
+            // See if we need to update the game setting
+            if game_state.game_setting_hash != game_setting_hash {
+                game_setting = server_conn.get_game_setting();
+                game_setting_hash = game_setting.get_hash();
             }
+            // Remove circles for any players who left
+            circles.retain(|k, _v| {player_states.contains_key(k)});
         }
         // Update the circles
         for (id, player_state) in &mut player_states {
@@ -153,16 +153,14 @@ fn main() {
                 circle.pos = player_state.pos;
             // Add new circles for new players
             } else {
-                if let Some(player_setting) = game_setting.player_settings.get(id) {
-                    circles.insert(
-                        *id,
-                        Shape::new_circle(
-                            &display,
-                            game_setting.player_radius,
-                            player_state.pos,
-                            player_state.direction,
-                            player_setting.color));
-                }
+                circles.insert(
+                    *id,
+                    Shape::new_circle(
+                        &display,
+                        game_setting.player_radius,
+                        player_state.pos,
+                        player_state.direction,
+                        player_state.color));
             }
         }
 
