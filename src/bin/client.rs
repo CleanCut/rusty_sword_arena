@@ -6,14 +6,15 @@ use impose::Audio;
 use rusty_sword_arena::game::{
     ButtonState,
     ButtonValue,
-//    Color,
+    Color,
     Event,
+    GameSetting,
     PlayerEvent,
     PlayerInput,
     PlayerState,
     Vector2,
 };
-use rusty_sword_arena::gfx::{Window, Shape};
+use rusty_sword_arena::gfx::{Shape, Window};
 use rusty_sword_arena::net::{ServerConnection};
 //use rusty_sword_arena::timer::Timer;
 use rusty_sword_arena::VERSION;
@@ -21,24 +22,40 @@ use std::collections::HashMap;
 use std::env;
 use std::time::{Duration, Instant};
 
-//struct Player {
-//    input : PlayerInput,
-//    state : PlayerState,
-//    body_shape : Shape,
-//    sword_shape : Shape,
-//    attack_shape : Shape,
-//    attack_shape_timer : Timer,
-//}
-//
-//impl Player {
-//    fn new(color : Color, state) -> Self {
-//
-//        Self {
-//            input : PlayerInput::new(),
-//            state,
-//        }
-//    }
-//}
+struct Player {
+    player_state : PlayerState,
+    body_shape : Shape,
+    sword_shape : Shape,
+}
+
+impl Player {
+    fn new(window : &Window, player_state : PlayerState) -> Self {
+        let body_shape = Shape::new_circle(
+            window,
+            player_state.radius,
+            player_state.pos,
+            player_state.direction,
+            player_state.color);
+        let sword_shape = Shape::new_ring(
+            window,
+            player_state.weapon.radius,
+            player_state.pos,
+            player_state.direction,
+            Color::new(1.0,0.0,0.0));
+        Self {
+            player_state,
+            body_shape,
+            sword_shape,
+        }
+    }
+    fn update_state(&mut self, player_state : PlayerState) {
+        self.body_shape.pos = player_state.pos;
+        self.body_shape.direction = player_state.direction;
+        self.sword_shape.pos = player_state.pos;
+        self.sword_shape.direction = player_state.direction;
+        self.player_state = player_state;
+    }
+}
 
 fn main() {
     let mut args : Vec<String> = env::args().skip(1).collect();
@@ -53,15 +70,13 @@ fn main() {
     let mut game_setting = server_conn.get_game_setting();
     println!("Client v{} connected to server v{} at {}", VERSION, game_setting.version, host);
 
-    let mut display = Window::new(None);
-    let mut circles = HashMap::<u8, Shape>::new();
-    let mut player_states = HashMap::<u8, PlayerState>::new();
+    let mut window = Window::new(None);
+    let mut players = HashMap::<u8, Player>::new();
 
     let mut mouse_pos = Vector2 { x : 0.0, y : 0.0 };
     let mut my_input = PlayerInput::new();
     my_input.id = my_id;
     let mut last_input_sent = Instant::now();
-    let mut game_setting_hash : u64 = 0;
 
     let mut audio = Audio::new();
     audio.add_audio("miss", "media/miss.ogg");
@@ -75,7 +90,7 @@ fn main() {
     'gameloop:
     loop {
         // Accumulate user input into one struct
-        for event in display.events() {
+        for event in window.events() {
             match event {
                 Event::WindowClosed => break 'gameloop,
                 Event::MouseMoved { position } => {
@@ -105,8 +120,8 @@ fn main() {
 
         // Every 4 milliseconds, send accumulated input and reset attack
         if last_input_sent.elapsed() > Duration::from_millis(4) {
-            if let Some(my_state) = player_states.get(&my_id) {
-                my_input.direction = my_state.pos.angle_between(mouse_pos);
+            if let Some(my_player) = players.get(&my_id) {
+                my_input.direction = my_player.player_state.pos.angle_between(mouse_pos);
             }
             server_conn.send_player_input(my_input.clone());
             last_input_sent = Instant::now();
@@ -115,21 +130,20 @@ fn main() {
         // Process any new game states
         let new_game_states = server_conn.poll_game_states();
         for mut game_state in new_game_states {
-            // Get all the new player states
-            player_states.clear();
-            player_states.extend(game_state.player_states.drain());
-            // See if we need to update the game setting
-            if game_state.game_setting_hash != game_setting_hash {
-                game_setting = server_conn.get_game_setting();
-                game_setting_hash = game_setting.get_hash();
+            // Remove any players who are no longer in the game
+            players.retain(|k, _v| game_state.player_states.contains_key(k));
+            // Update or add all players that have states
+            for (id, player_state) in game_state.player_states {
+                if players.contains_key(&id) {
+                    players.get_mut(&id).unwrap().update_state(player_state);
+                } else {
+                    players.insert(id, Player::new(&window, player_state));
+                }
             }
-            // Remove circles for any players who left
-            circles.retain(|k, _v| {player_states.contains_key(k)});
         }
-        // Update the circles
-        for (id, player_state) in &mut player_states {
-            // Process player events
-            for player_event in &mut player_state.player_events {
+        // Process Player Events
+        for (id, player) in &mut players {
+            for player_event in &mut player.player_state.player_events {
                 match player_event {
                     PlayerEvent::AttackMiss => audio.play("miss"),
                     PlayerEvent::Die => audio.play("die"),
@@ -141,34 +155,30 @@ fn main() {
                     _ => (),
                 }
             }
-            // If a player is dead, try to remove his circle
-            if player_state.dead {
-                let _ = circles.remove(id);
-                continue;
-            }
-            // Update existing circles for existing players
-            if circles.contains_key(id) {
-                let circle = circles.get_mut(id).unwrap();
-                circle.direction = player_state.direction;
-                circle.pos = player_state.pos;
-            // Add new circles for new players
-            } else {
-                circles.insert(
-                    *id,
-                    Shape::new_circle(
-                        &display,
-                        game_setting.player_radius,
-                        player_state.pos,
-                        player_state.direction,
-                        player_state.color));
-            }
         }
 
-        display.drawstart();
-        for circle in circles.values() {
-            display.draw(&circle);
+        // Draw a frame - I think this blocks until the next frame is ready at 60fps on most displays
+        window.drawstart();
+        // Draw all the bodies
+        for (id, player) in &players {
+            if *id == my_id { continue }
+            if player.player_state.dead { continue }
+            window.draw(&player.body_shape);
         }
-        display.drawfinish();
+        // Draw all the swords
+        for (id, player) in &players {
+            if *id == my_id { continue }
+            if player.player_state.dead { continue }
+            window.draw(&player.sword_shape);
+        }
+        // Draw my own body & sword last, so I can always see myself
+        if let Some(player) = players.get(&my_id) {
+            if !player.player_state.dead {
+                window.draw(&player.body_shape);
+                window.draw(&player.sword_shape);
+            }
+        }
+        window.drawfinish();
     }
 
     println!("Leaving the game.");

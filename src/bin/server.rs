@@ -175,7 +175,9 @@ fn process_game_control_requests(
                                 id,
                                 name.clone(),
                                 color,
-                                Vector2::new_in_square(0.6, rng));
+                                Vector2::new_in_square(0.6, rng),
+                                0.05,
+                            );
                             player_states.insert(id, player_state);
                             println!("Joined: {} (id {}, {})", name, id, color_picker.name_of(color));
                             break;
@@ -311,7 +313,7 @@ fn update_state(
         for (&defender_id, defender) in player_states.iter_mut() {
             // Dead players don't defend
             if defender.dead { continue }
-            if attacker.pos.distance_between(defender.pos) <= attacker.weapon.radius + game_setting.player_radius {
+            if attacker.pos.distance_between(defender.pos) <= attacker.weapon.radius + attacker.radius {
                 missed = false;
                 defender.health -= attacker.weapon.damage;
                 attacker.player_events.push(PlayerEvent::AttackHit { id: defender_id });

@@ -52,7 +52,8 @@ fn create_ring_vertices(radius : f32, num_vertices : usize, color : Color) -> Ve
     v
 }
 
-/// A `Shape` can be drawn by a `Display`.  Use the provided `new_*` methods to construct a shape.
+/// A `Shape` can be drawn by a [Window](gfx/struct.Window.html).  Use the provided `new_*` methods
+/// to make a `Shape`.
 pub struct Shape {
     pub pos : Vector2,
     pub direction : f32,
@@ -61,8 +62,8 @@ pub struct Shape {
 }
 
 impl Shape {
-    pub fn new_circle(display : &Window, radius : f32, pos : Vector2, direction : f32, color : Color) -> Self {
-        let vertex_buffer = glium::VertexBuffer::new(&display.display, &create_circle_vertices(radius, 32, color)).unwrap();
+    pub fn new_circle(window : &Window, radius : f32, pos : Vector2, direction : f32, color : Color) -> Self {
+        let vertex_buffer = glium::VertexBuffer::new(&window.display, &create_circle_vertices(radius, 32, color)).unwrap();
         Self {
             pos,
             direction,
@@ -70,9 +71,9 @@ impl Shape {
             indices : glium::index::NoIndices(glium::index::PrimitiveType::TriangleFan),
         }
     }
-    pub fn new_ring(display : &Window, radius : f32, pos : Vector2, direction : f32, color : Color) -> Self {
+    pub fn new_ring(window : &Window, radius : f32, pos : Vector2, direction : f32, color : Color) -> Self {
         let vertex_buffer = glium::VertexBuffer::new(
-            &display.display,
+            &window.display,
             &create_ring_vertices(radius, 32, color)).unwrap();
         Self {
             pos,

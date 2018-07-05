@@ -204,8 +204,6 @@ pub struct GameSetting {
     pub version : String,
     /// The maximum amount of players this server will allow
     pub max_players : u8,
-    /// OpenGL units. Collision radius of players (size of a player)
-    pub player_radius : f32,
     /// How quickly a player can get moving (magnitude in OpenGL units per second^2)
     pub acceleration : f32,
     /// Maximum velocity of a player (magnitude in OpenGL units per second)
@@ -226,7 +224,6 @@ impl GameSetting {
         GameSetting {
             version : VERSION.to_string(),
             max_players : 32,
-            player_radius : 0.05,
             acceleration : 1.5,
             max_velocity : 0.25,
             drag : 5.0,
@@ -246,7 +243,6 @@ impl Hash for GameSetting {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.version.hash(state);
         self.max_players.hash(state);
-        (self.player_radius as u32).hash(state);
         (self.acceleration as u32).hash(state);
         (self.drag as u32).hash(state);
         (self.move_threshold as u32).hash(state);
@@ -294,7 +290,7 @@ pub struct Weapon {
     pub damage : f32,
     /// How long until the player can attack again
     pub attack_timer : Timer,
-    /// How far attacks reach from your player
+    /// How far attacks reach from your player, in OpenGL units.
     pub radius : f32,
 }
 
@@ -323,7 +319,9 @@ pub struct PlayerState {
     /// The position of the player in OpenGL units.
     pub pos : Vector2,
     /// The direction the player is facing, in radians
-    pub direction: f32,
+    pub direction : f32,
+    /// Your player occupies a circle of this radius, in OpenGL units.
+    pub radius : f32,
     /// Current velocity of the player
     pub velocity : Vector2,
     /// Current health of the player [0.0, 100.0]
@@ -353,7 +351,7 @@ pub struct PlayerState {
 /// typically look at the fields and events, and don't use any of the methods.
 impl PlayerState {
     /// The client should never create a `PlayerState` -- the server will do that.
-    pub fn new(game_setting : &GameSetting, id : u8, name : String, color : Color, pos : Vector2) -> Self {
+    pub fn new(game_setting : &GameSetting, id : u8, name : String, color : Color, pos : Vector2, radius : f32) -> Self {
         let mut respawn_timer = Timer::from_millis(game_setting.respawn_delay);
         respawn_timer.set_millis_transient(1000); // spawn more quickly on initial connect
         Self {
@@ -361,7 +359,8 @@ impl PlayerState {
             name,
             color,
             pos,
-            direction: 0.0,
+            direction : 0.0,
+            radius,
             velocity : Vector2::new(),
             health : 100.0,
             starting_health : 100.0,
