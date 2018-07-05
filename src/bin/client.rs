@@ -6,6 +6,7 @@ use impose::Audio;
 use rusty_sword_arena::game::{
     ButtonState,
     ButtonValue,
+    Color,
     Event,
     GameControlMsg,
     PlayerEvent,
@@ -13,12 +14,32 @@ use rusty_sword_arena::game::{
     PlayerState,
     Vector2,
 };
-use rusty_sword_arena::net::{ServerConnection};
 use rusty_sword_arena::gfx::{Window, Shape};
+use rusty_sword_arena::net::{ServerConnection};
+use rusty_sword_arena::timer::Timer;
 use rusty_sword_arena::VERSION;
 use std::collections::HashMap;
 use std::env;
 use std::time::{Duration, Instant};
+
+//struct Player {
+//    input : PlayerInput,
+//    state : PlayerState,
+//    body_shape : Shape,
+//    sword_shape : Shape,
+//    attack_shape : Shape,
+//    attack_shape_timer : Timer,
+//}
+//
+//impl Player {
+//    fn new(color : Color, state) -> Self {
+//
+//        Self {
+//            input : PlayerInput::new(),
+//            state,
+//        }
+//    }
+//}
 
 fn main() {
     let mut args : Vec<String> = env::args().skip(1).collect();

@@ -179,6 +179,12 @@ pub struct Color {
     pub b : f32,
 }
 
+impl Color {
+    pub fn new(r : f32, g : f32, b : f32) -> Self {
+        Self { r, g, b }
+    }
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 /// Player settings that only change when someone joins/leaves the game, as opposed to every frame.
 pub struct PlayerSetting {
@@ -213,8 +219,6 @@ pub struct GameSetting {
     pub respawn_delay : u64,
     /// Milliseconds. How long the server will allow not receiving input before dropping a player.
     pub drop_delay : u64,
-    /// Milliseconds. How long you have to wait before the server will let you perform another attack.
-    pub attack_delay : u64,
     /// Map of player id to settings such as names and colors. Note that this includes your own name
     /// _which may not be what you requested originally!_.
     pub player_settings : HashMap<u8, PlayerSetting>,
@@ -233,7 +237,6 @@ impl GameSetting {
             move_threshold : 0.05,
             respawn_delay : 5000,
             drop_delay : 4000,
-            attack_delay : 500,
             player_settings : HashMap::<u8, PlayerSetting>::new(),
         }
     }
@@ -297,8 +300,8 @@ pub struct Weapon {
     pub description : String,
     /// How much damage the weapon can cause
     pub damage : f32,
-    /// How long between attacks
-    pub delay : f32,
+    /// How long until the player can attack again
+    pub attack_timer : Timer,
     /// How far attacks reach from your player
     pub radius : f32,
 }
@@ -308,8 +311,8 @@ impl Weapon {
         Self {
             description : "Rusty Sword".to_string(),
             damage : 17.0,
-            delay : 1.0,
             radius : 0.1,
+            attack_timer : Timer::from_millis(500),
         }
     }
 }
@@ -329,15 +332,12 @@ pub struct PlayerState {
     pub velocity : Vector2,
     /// Current health of the player [0.0, 100.0]
     pub health : f32,
+    // Private! Does it show up in docs?
     starting_health : f32,
-    /// Current regen rate of the player
-    pub regen : f32,
     /// Current weapon of the player
     pub weapon : Weapon,
     /// Any player events that have occurred to the player this frame
     pub player_events : Vec<PlayerEvent>,
-    /// How long until the player can attack again
-    pub attack_timer : Timer,
     /// How long the server will wait to get input from you before disconnecting you
     pub drop_timer : Timer,
     /// How long until the player respawns.  If respawn_timer.ready == false, then the player is
@@ -349,7 +349,14 @@ pub struct PlayerState {
     pub dead : bool,
 }
 
+/// Represents the state of the player on the server for the current frame.  Always delivered by the
+/// server to the client inside a [GameState](game/struct.GameState.html).  The server always
+/// creates `PlayeState`s, updates them, and sends them to the client each frame. The client is free
+/// to modify its local copy (for example, to remove [PlayerEvent](game/enum.PlayerEvent.html)s it
+/// has processed) -- a new set of `PlayerStates` will be delivered the next frame. Clients
+/// typically look at the fields and events, and don't use any of the methods.
 impl PlayerState {
+    /// The client should never create a `PlayerState` -- the server will do that.
     pub fn new(game_setting : &GameSetting) -> Self {
         // Manually pump the respawn timer so it's wound-down.
         let mut respawn_timer = Timer::from_millis(game_setting.respawn_delay);
@@ -361,17 +368,17 @@ impl PlayerState {
             velocity : Vector2::new(),
             health : 100.0,
             starting_health : 100.0,
-            regen : 0.0,
             weapon : Weapon::new(),
             player_events : Vec::<PlayerEvent>::new(),
-            attack_timer : Timer::from_millis(game_setting.attack_delay),
             drop_timer: Timer::from_millis(game_setting.drop_delay),
             respawn_timer,
             dead : true,
         }
     }
+    /// Clients never need to call update. The server calls it each time it processes some amount of
+    /// time.
     pub fn update(&mut self, delta : Duration) {
-        self.attack_timer.update(delta);
+        self.weapon.attack_timer.update(delta);
         self.drop_timer.update(delta);
         self.respawn_timer.update(delta);
     }

@@ -302,13 +302,13 @@ fn update_state(
             player_states.insert(id, attacker);
             continue
         }
-        // TODO: Move attack_timer from player to weapon
-        if !attacker.attack_timer.ready {
+        // You can only attack so often
+        if !attacker.weapon.attack_timer.ready {
             player_states.insert(id, attacker);
             continue;
         }
         // Actually attack defenders
-        attacker.attack_timer.reset();
+        attacker.weapon.attack_timer.reset();
         let mut missed = true;
         for (&defender_id, defender) in player_states.iter_mut() {
             // Dead players don't defend

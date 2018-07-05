@@ -1,6 +1,6 @@
 [package]
 name = "rusty_sword_arena"
-version = "0.3.1"
+version = "0.3.2"
 authors = ["Nathan Stocks <cleancut@github.com>"]
 description = "Library/repository for the half-day Rust tutorial teaching you how to make a game client in Rust."
 documentation = "https://agileperception.com/doc/rusty_sword_arena/"
@@ -11,7 +11,7 @@ keywords = ["tutorial", "rusty", "sword", "arena", "learn"]
 license = "MIT"
 
 [dependencies]
-# For OpenGL support 👾 -- maybe try gfx-rs instead in the future?
+# For graphics support 👾 (OpenGL) -- maybe try gfx-rs (Vulkan) instead in the future?
 glium = "0.21"
 
 # For raw networking -- need to switch to something that deals better with disconnects in the future, maybe nanomsg?
