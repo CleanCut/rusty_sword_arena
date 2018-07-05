@@ -520,7 +520,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "rusty_sword_arena"
-version = "0.3.5"
+version = "0.3.6"
 dependencies = [
  "bincode 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "glium 0.21.0 (registry+https://github.com/rust-lang/crates.io-index)",

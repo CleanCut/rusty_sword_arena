@@ -31,7 +31,7 @@ fn create_circle_vertices(radius : f32, num_vertices : usize, color : Color) -> 
         let inner : f64 = 2.0 * PI / num_vertices as f64 * x as f64;
         // Color the forward-facing vertex of the circle differently so we can have a small "sword"
         // indicator of our forward-facing direction
-        let color = if x == (num_vertices * 3)/4 { Color { r: 0.0, g: 0.0, b: 0.0 } } else { color };
+        let color = if x == 0 || x == num_vertices { Color { r: 0.0, g: 0.0, b: 0.0 } } else { color };
         v.push(Vertex {
             position: [inner.cos() as f32 * radius, inner.sin() as f32 * radius],
             color: [color.r, color.g, color.b],
@@ -177,13 +177,24 @@ impl Window {
     /// order, so the last shape you draw will be on top.
     pub fn draw(&mut self, shape : &Shape) {
         if let Some(ref mut target) = self.target {
+
             let uniforms = uniform! {
+            // CAUTION: The inner arrays are COLUMNS not ROWS (left to right actually is top to bottom)
                 matrix: [
-                    [shape.direction.cos() as f32, -shape.direction.sin() as f32, 0.0, 0.0],
-                    [shape.direction.sin() as f32, shape.direction.cos() as f32, 0.0, 0.0],
+                    [shape.direction.cos() as f32, shape.direction.sin() as f32, 0.0, 0.0],
+                    [-shape.direction.sin() as f32, shape.direction.cos() as f32, 0.0, 0.0],
                     [0.0, 0.0, 1.0, 0.0],
                     [shape.pos.x, shape.pos.y, 0.0, 1.0f32],
                 ]
+// Failed attempt at adding scaling into the mix
+//                let sx = 1.0f32;
+//                let sy = 1.0f32;
+//                matrix: [
+//                    [sx*shape.direction.cos() as f32, sx*shape.direction.sin() as f32, 0.0, 0.0],
+//                    [-sy * shape.direction.sin() as f32, sy *shape.direction.cos() as f32, 0.0, 0.0],
+//                    [0.0, 0.0, 1.0, 0.0],
+//                    [shape.pos.x*shape.direction.cos()-shape.pos.y*shape.direction.sin(), shape.pos.x*shape.direction.sin()+shape.pos.y*shape.direction.cos(), 0.0, 1.0f32],
+//                ]
             };
             target.draw(&shape.vertex_buffer, &shape.indices, &self.program, &uniforms,
                         &Default::default()).unwrap();
@@ -191,7 +202,8 @@ impl Window {
     }
 
     /// Call `drawfinish()` when you are ready to finalize the frame and show it.  You will need to
-    /// call `drawstart()` again before you can `draw()` any shapes in a new frame.
+    /// call `drawstart()` again before you can `draw()` any shapes in a new frame.  I think this
+    /// method blocks until the hardware is ready for a frame. 60fps on most displays.
     pub fn drawfinish(&mut self) {
         self.target.take().unwrap().finish().unwrap();
     }

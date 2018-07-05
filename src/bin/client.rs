@@ -157,7 +157,7 @@ fn main() {
             }
         }
 
-        // Draw a frame - I think this blocks until the next frame is ready at 60fps on most displays
+        // Draw a frame!
         window.drawstart();
         // Draw all the bodies
         for (id, player) in &players {

@@ -37,8 +37,11 @@ impl Vector2 {
         ((self.x - other.x).powi(2) + (self.y - other.y).powi(2)).sqrt()
     }
     /// Calculate the angle between two Vector2's -- useful when they represent coordinates
+//    pub fn angle_between(&self, other : Self) -> f32 {
+//        (self.x - other.x).atan2(self.y - other.y)
+//    }
     pub fn angle_between(&self, other : Self) -> f32 {
-        (self.x - other.x).atan2(self.y - other.y)
+        (other.y - self.y).atan2(other.x - self.x)
     }
     /// Calculate the magnitude of the Vector2 -- useful when it represents a vector (such as
     /// velocity)
