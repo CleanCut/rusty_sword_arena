@@ -165,7 +165,7 @@ pub enum Event {
 pub enum GameControlMsg {
     Join  { name : String },
     Leave { id : u8 },
-    Fetch { id : u8 },
+    Fetch,
 }
 
 /// A color with 32-bit float parts from `[0.0, 1.0]` suitable for OpenGL.
@@ -185,8 +185,8 @@ impl Color {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 /// Player settings that only change when someone joins/leaves the game, as opposed to every frame.
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct PlayerSetting {
     pub name : String,
     pub color_name : String,
@@ -200,8 +200,6 @@ pub struct PlayerSetting {
 pub struct GameSetting {
     /// Version number of the server you are connecting to. Compare to rusty_sword_arena::version
     pub version : String,
-    /// The ID of your player.
-    pub your_player_id : u8,
     /// The maximum amount of players this server will allow
     pub max_players : u8,
     /// OpenGL units. Collision radius of players (size of a player)
@@ -228,7 +226,6 @@ impl GameSetting {
     pub fn new() -> Self {
         GameSetting {
             version : VERSION.to_string(),
-            your_player_id : 0,
             max_players : 32,
             player_radius : 0.05,
             acceleration : 1.5,
@@ -249,7 +246,6 @@ impl GameSetting {
 
 impl Hash for GameSetting {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.your_player_id.hash(state);
         self.max_players.hash(state);
         (self.player_radius as u32).hash(state);
         (self.acceleration as u32).hash(state);
@@ -357,13 +353,13 @@ pub struct PlayerState {
 /// typically look at the fields and events, and don't use any of the methods.
 impl PlayerState {
     /// The client should never create a `PlayerState` -- the server will do that.
-    pub fn new(game_setting : &GameSetting) -> Self {
+    pub fn new(game_setting : &GameSetting, id : u8, pos : Vector2) -> Self {
         // Manually pump the respawn timer so it's wound-down.
         let mut respawn_timer = Timer::from_millis(game_setting.respawn_delay);
         respawn_timer.set_millis_transient(1000); // spawn more quickly on initial connect
         Self {
-            id : 0,
-            pos : Vector2::new(),
+            id,
+            pos,
             direction: 0.0,
             velocity : Vector2::new(),
             health : 100.0,

@@ -43,12 +43,34 @@ impl ServerConnection {
         }
     }
 
-    /// Send a control message to join, leave, or sync a game. Get back GameSetting.
-    pub fn send_game_control(&mut self, msg : GameControlMsg) -> GameSetting {
+    /// Join a game.  If successful, you'll get a non-zero player id back.  If not successful,
+    /// there was probably a name collision, so change your name and try again.  If changing the
+    /// name still doesn't work, then the server is probably full.
+    pub fn join(&mut self, name : &str) -> u8 {
+        let msg = GameControlMsg::Join {name : name.to_string()};
+        self.game_control_socket.send(&serialize(&msg).unwrap(), 0).unwrap();
+        let bytes = self.game_control_socket.recv_bytes(0).unwrap();
+        let new_id : u8 = deserialize(&bytes[..]).unwrap();
+        new_id
+    }
+
+    /// Get the current GameSetting.  The most important thing about the GameSetting is checking
+    /// that you are connecting to a version of the server you expect.
+    pub fn get_game_setting(&mut self) -> GameSetting {
+        let msg = GameControlMsg::Fetch;
         self.game_control_socket.send(&serialize(&msg).unwrap(), 0).unwrap();
         let bytes = self.game_control_socket.recv_bytes(0).unwrap();
         let game_setting : GameSetting = deserialize(&bytes[..]).unwrap();
         game_setting
+    }
+
+    /// Leave the game.
+    pub fn leave(&mut self, id : u8) -> bool {
+        let msg = GameControlMsg::Leave {id};
+        self.game_control_socket.send(&serialize(&msg).unwrap(), 0).unwrap();
+        let bytes = self.game_control_socket.recv_bytes(0).unwrap();
+        let succeeded : bool = deserialize(&bytes[..]).unwrap();
+        succeeded
     }
 
     /// Gets all available unprocessed game states.  You should call this often enough that you

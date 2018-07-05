@@ -108,21 +108,24 @@ impl ColorPicker {
     }
 }
 
+// Returns whether or not the player was actually there to be removed
 fn remove_player(
     id : u8,
     game_setting : &mut GameSetting,
     player_states : &mut HashMap<u8, PlayerState>,
     color_picker : &mut ColorPicker,
     forced : bool,
-) {
-    game_setting.your_player_id = 0;
+) -> bool {
     let mut msg = format!("Player {} {}", id, if forced {"kicked for idling"} else {"left"});
     if let Some(player_setting) = game_setting.player_settings.remove(&id) {
         msg.push_str(&format!(", name: {}", player_setting.name));
         color_picker.push_color(player_setting.name.clone(), player_setting.color);
     }
-    player_states.remove(&id);
     println!("{}", msg);
+    if let Some(_) = player_states.remove(&id) {
+        return true;
+    }
+    return false;
 }
 
 fn process_game_control_requests(
@@ -140,61 +143,57 @@ fn process_game_control_requests(
                 let msg: GameControlMsg = deserialize(&bytes[..]).unwrap();
                 match msg {
                     GameControlMsg::Join {name} => {
-                        if game_setting.player_settings.len() < game_setting.max_players as usize {
-                            // Find an unused, non-zero id
-                            let mut new_id : u8;
-                            loop {
-                                new_id = rng.gen::<u8>();
-                                if (new_id != 0) && !player_states.contains_key(&new_id) { break }
+                        let mut id : u8 = 0;
+                        loop {
+                            // Is the game full?
+                            if game_setting.player_settings.len() >= game_setting.max_players as usize {
+                                println!("Join Failed: No room for for {} - max players reached.", name);
+                                break;
                             }
-                            game_setting.your_player_id = new_id;
-                            // Make sure player name is unique, and then store it.
-                            let mut new_name = name.clone();
-                            while game_setting.player_settings
+                            // Is the name already taken?
+                            if game_setting.player_settings
                                 .values()
                                 .map(|player_setting | {&player_setting.name})
-                                .any(|x| { x == &new_name }) {
-                                new_name.push_str("_");
+                                .any(|x| { x == &name }) {
+                                println!("Join Failed: Name \"{}\" is already taken.", name);
+                                break;
+                            }
+                            // Find an unused, non-zero id
+                            loop {
+                                id = rng.gen::<u8>();
+                                if (id != 0) && !player_states.contains_key(&id) { break }
                             }
                             // Assign player a color
                             let (color_name, color) = color_picker.pop_color();
                             // Create the PlayerSetting and add it to the GameSetting
                             game_setting.player_settings.insert(
-                                new_id,
+                                id,
                                 PlayerSetting {
-                                    name : new_name.clone(),
+                                    name : name.clone(),
                                     color_name : color_name.clone(),
                                     color});
                             // Create the new player state
-                            let mut player_state = PlayerState::new(&game_setting);
-                            player_state.id = new_id;
-                            player_state.pos = Vector2::new_in_square(0.7, rng);
-                            player_states.insert(new_id, player_state);
-                            println!("Joined: {} (id {}, {})", new_name, new_id, color_name);
-                        } else {
-                            // Use the invalid player ID to let the client know they didn't get
-                            // to join. Lame.
-                            game_setting.your_player_id = 0;
-                            println!("Denied entrance for {}", name)
+                            let mut player_state = PlayerState::new(
+                                &game_setting,
+                                id,
+                                Vector2::new_in_square(0.6, rng));
+                            player_states.insert(id, player_state);
+                            println!("Joined: {} (id {}, {})", name, id, color_name);
+                            break;
                         }
-                        game_control_server_socket.send(&serialize(&game_setting).unwrap(), 0).unwrap();
+                        game_control_server_socket.send(&serialize(&id).unwrap(), 0).unwrap();
                     },
                     GameControlMsg::Leave {id} => {
                         // your_player_id has no meaning in this response, so we set it to the
                         // invalid id.
-                        remove_player(id, game_setting, player_states, color_picker, false);
+                        let succeeded = remove_player(id, game_setting, player_states, color_picker, false);
                         // Per ZMQ REQ/REP protocol we must respond no matter what, so even invalid
                         // requests get the game settings back.
-                        game_control_server_socket.send(&serialize(&game_setting).unwrap(), 0).unwrap();
+                        game_control_server_socket.send(&serialize(&succeeded).unwrap(), 0).unwrap();
                     },
-                    GameControlMsg::Fetch {id} => {
-                        // your_player_id has no meaning in this response, so we make sure it
-                        // is the invalid id.
-                        if { game_setting.your_player_id != 0 } {
-                            game_setting.your_player_id = 0;
-                        }
+                    GameControlMsg::Fetch => {
                         game_control_server_socket.send(&serialize(&game_setting).unwrap(), 0).unwrap();
-                        println!("Player {} fetches new settings.", id);
+                        println!("A player fetches new settings.");
                     },
                 }
             },

@@ -8,7 +8,6 @@ use rusty_sword_arena::game::{
     ButtonValue,
     Color,
     Event,
-    GameControlMsg,
     PlayerEvent,
     PlayerInput,
     PlayerState,
@@ -50,9 +49,8 @@ fn main() {
     let name = args.pop().unwrap();
     let mut server_conn = ServerConnection::new(&host);
 
-    let msg = GameControlMsg::Join {name};
-    let mut game_setting = server_conn.send_game_control(msg);
-    let my_id = game_setting.your_player_id;
+    let mut my_id = server_conn.join(&name);
+    let mut game_setting = server_conn.get_game_setting();
     println!("Client v{} connected to server v{} at {}", VERSION, game_setting.version, host);
 
     let mut display = Window::new(None);
@@ -119,9 +117,8 @@ fn main() {
         if !new_game_states.is_empty() {
             for mut game_state in new_game_states {
                 if game_state.game_setting_hash != game_setting_hash {
-                    let msg = GameControlMsg::Fetch { id : my_id };
-                    game_setting = server_conn.send_game_control(msg);
-                    game_setting_hash = game_state.game_setting_hash;
+                    game_setting = server_conn.get_game_setting();
+                    game_setting_hash = game_setting.get_hash();
                     // Remove circles for any players who left
                     circles.retain(|k, _v| {game_setting.player_settings.contains_key(k)});
                 }
@@ -176,7 +173,7 @@ fn main() {
         display.drawfinish();
     }
 
-    println!("Disconnecting from server.");
-    let msg = GameControlMsg::Leave { id : my_id };
-    let _game_setting = server_conn.send_game_control(msg);
+    println!("Leaving the game.");
+    let succeeded = server_conn.leave(my_id);
+    println!("Server reports disconnection {}", if succeeded {"successful"} else {"failed"});
 }
