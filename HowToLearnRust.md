@@ -60,7 +60,8 @@ There are tools that help you learn as well.
 - [Clippy](https://github.com/rust-lang-nursery/rust-clippy) is a super-amazing linter.  It will tell you how to change
   working code into _idiomatic_ and _high-performing_ code.
 - [rustfmt](https://github.com/rust-lang-nursery/rustfmt) will format your code according to Rust style guidelines.
-  There's only one set of Rust style guidelines...so there's nothing to argue about!
+  There's only one set of Rust style guidelines...so there's nothing to argue about!  Unfortunately, the project is 
+  right in the middle of a major overhaul...so it pretty much only works if you're using the nightly compiler (sigh).
 
 ### Reading
 

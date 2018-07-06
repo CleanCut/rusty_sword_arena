@@ -29,9 +29,9 @@
 //! hit or miss, or you may try to parry, which if successful greatly increases the timeout for the
 //! attacking player's next attack or parry.
 //!
-//! You start with some health. When you are hit, you lose health. When you successfully parry a
-//! hit, you do not lose health.  When the health runs out, you die.  After a respawn delay, you
-//! respawn with full health.  If you do not fight, you are likely to be eaten by a grue.
+//! You start with some health. When you are hit, you lose health.  When the health runs out, you
+//! die.  After a respawn delay, you! respawn with full health.  If you attempt to run from the
+//! arena, you are likely to be eaten by a grue.
 //!
 //! ## Preparation
 //!
@@ -53,7 +53,6 @@
 //! - ...
 //!
 
-
 #![doc(html_favicon_url = "https://agileperception.com/static/img/favicon.ico")]
 #![doc(html_logo_url = "https://agileperception.com/static/img/APSwirl200.png")]
 extern crate bincode;
@@ -64,14 +63,14 @@ extern crate rand;
 extern crate serde_derive;
 extern crate zmq;
 
+/// Everything in the game module is shared by the server _and_ the client
+pub mod game;
 /// The graphics module that will be used by your client
 pub mod gfx;
 /// The networking module that will be used by your client
 pub mod net;
 /// A timer module for general use
 pub mod timer;
-/// Everything in the game module is shared by the server _and_ the client
-pub mod game;
 
 /// The current version number. Your client should check this against the version the server sends
 /// in [GameSettings]()

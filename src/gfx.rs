@@ -1,16 +1,10 @@
 extern crate glium;
-use glium::Surface;
 use glium::glutin::{self, ElementState};
+use glium::Surface;
 use std::cmp::min;
 use std::f64::consts::PI;
 
-use super::game::{
-    ButtonState,
-    ButtonValue,
-    Color,
-    Event,
-    Vector2,
-};
+use super::game::{ButtonState, ButtonValue, Color, Event, Vector2};
 use glium::Frame;
 
 #[derive(Copy, Clone, Debug)]
@@ -20,18 +14,26 @@ struct Vertex {
 }
 implement_vertex!(Vertex, position, color);
 
-fn create_circle_vertices(radius : f32, num_vertices : usize, color : Color) -> Vec<Vertex> {
-    let mut v = Vec::<Vertex>::with_capacity(num_vertices+2);
+fn create_circle_vertices(radius: f32, num_vertices: usize, color: Color) -> Vec<Vertex> {
+    let mut v = Vec::<Vertex>::with_capacity(num_vertices + 2);
     // The center of the circle/fan
     v.push(Vertex {
         position: [0.0, 0.0],
         color: [color.r, color.g, color.b],
     });
     for x in 0..=num_vertices {
-        let inner : f64 = 2.0 * PI / num_vertices as f64 * x as f64;
+        let inner: f64 = 2.0 * PI / num_vertices as f64 * x as f64;
         // Color the forward-facing vertex of the circle differently so we can have a small "sword"
         // indicator of our forward-facing direction
-        let color = if x == 0 || x == num_vertices { Color { r: 0.0, g: 0.0, b: 0.0 } } else { color };
+        let color = if x == 0 || x == num_vertices {
+            Color {
+                r: 0.0,
+                g: 0.0,
+                b: 0.0,
+            }
+        } else {
+            color
+        };
         v.push(Vertex {
             position: [inner.cos() as f32 * radius, inner.sin() as f32 * radius],
             color: [color.r, color.g, color.b],
@@ -40,10 +42,10 @@ fn create_circle_vertices(radius : f32, num_vertices : usize, color : Color) -> 
     v
 }
 
-fn create_ring_vertices(radius : f32, num_vertices : usize, color : Color) -> Vec<Vertex> {
-    let mut v = Vec::<Vertex>::with_capacity(num_vertices+1);
+fn create_ring_vertices(radius: f32, num_vertices: usize, color: Color) -> Vec<Vertex> {
+    let mut v = Vec::<Vertex>::with_capacity(num_vertices + 1);
     for x in 0..=num_vertices {
-        let inner : f64 = 2.0 * PI / num_vertices as f64 * x as f64;
+        let inner: f64 = 2.0 * PI / num_vertices as f64 * x as f64;
         v.push(Vertex {
             position: [inner.cos() as f32 * radius, inner.sin() as f32 * radius],
             color: [color.r, color.g, color.b],
@@ -55,46 +57,58 @@ fn create_ring_vertices(radius : f32, num_vertices : usize, color : Color) -> Ve
 /// A `Shape` can be drawn by a [Window](gfx/struct.Window.html).  Use the provided `new_*` methods
 /// to make a `Shape`.
 pub struct Shape {
-    pub pos : Vector2,
-    pub direction : f32,
-    vertex_buffer : glium::vertex::VertexBuffer<Vertex>,
-    indices : glium::index::NoIndices,
+    pub pos: Vector2,
+    pub direction: f32,
+    vertex_buffer: glium::vertex::VertexBuffer<Vertex>,
+    indices: glium::index::NoIndices,
 }
 
 impl Shape {
-    pub fn new_circle(window : &Window, radius : f32, pos : Vector2, direction : f32, color : Color) -> Self {
-        let vertex_buffer = glium::VertexBuffer::new(&window.display, &create_circle_vertices(radius, 32, color)).unwrap();
+    pub fn new_circle(
+        window: &Window,
+        radius: f32,
+        pos: Vector2,
+        direction: f32,
+        color: Color,
+    ) -> Self {
+        let vertex_buffer =
+            glium::VertexBuffer::new(&window.display, &create_circle_vertices(radius, 32, color))
+                .unwrap();
         Self {
             pos,
             direction,
             vertex_buffer,
-            indices : glium::index::NoIndices(glium::index::PrimitiveType::TriangleFan),
+            indices: glium::index::NoIndices(glium::index::PrimitiveType::TriangleFan),
         }
     }
-    pub fn new_ring(window : &Window, radius : f32, pos : Vector2, direction : f32, color : Color) -> Self {
-        let vertex_buffer = glium::VertexBuffer::new(
-            &window.display,
-            &create_ring_vertices(radius, 32, color)).unwrap();
+    pub fn new_ring(
+        window: &Window,
+        radius: f32,
+        pos: Vector2,
+        direction: f32,
+        color: Color,
+    ) -> Self {
+        let vertex_buffer =
+            glium::VertexBuffer::new(&window.display, &create_ring_vertices(radius, 32, color))
+                .unwrap();
         Self {
             pos,
             direction,
             vertex_buffer,
-            indices : glium::index::NoIndices(glium::index::PrimitiveType::LineLoop),
+            indices: glium::index::NoIndices(glium::index::PrimitiveType::LineLoop),
         }
     }
 }
-
 
 /// An OpenGL window for displaying graphics. Also the object through which you'll receive input
 /// events (mouse, keyboard, etc.)
 pub struct Window {
-    events_loop : glutin::EventsLoop,
-    display : glium::Display,
-    program : glium::Program,
-    screen_to_opengl : Box<FnMut((f64, f64)) -> Vector2>,
-    target : Option<Frame>,
+    events_loop: glutin::EventsLoop,
+    display: glium::Display,
+    program: glium::Program,
+    screen_to_opengl: Box<FnMut((f64, f64)) -> Vector2>,
+    target: Option<Frame>,
 }
-
 
 impl Window {
     /// By default, this will be a square window with a dimension of `1024px` or
@@ -102,10 +116,10 @@ impl Window {
     /// providing a value for override_dimension, for example: `Some(2048)`.  Note that on hi-dpi
     /// displays (like Apple Retina Displays) 1 "pixel" is often a square of 4 hi-dpi pixels
     /// (depending on whether the monitor is set to be scaled or not).
-    pub fn new(override_dimension : Option<u32>) -> Self {
+    pub fn new(override_dimension: Option<u32>) -> Self {
         let events_loop = glutin::EventsLoop::new();
         let (_, monitor_height) = events_loop.get_primary_monitor().get_dimensions();
-        let dimension : u32 = match override_dimension {
+        let dimension: u32 = match override_dimension {
             Some(x) => x,
             None => min(monitor_height - 100, 1024),
         };
@@ -118,7 +132,7 @@ impl Window {
         // Create a closure that captures the hidpi_factor to do local screen coordinate conversion
         // for us.
         let hidpi_factor = display.gl_window().window().hidpi_factor();
-        let screen_to_opengl = Box::new(move |screen_coord : (f64, f64)| -> Vector2 {
+        let screen_to_opengl = Box::new(move |screen_coord: (f64, f64)| -> Vector2 {
             let x = (screen_coord.0 as f32 / (0.5 * hidpi_factor * dimension as f32)) - 1.0;
             let y = 1.0 - (screen_coord.1 as f32 / (0.5 * hidpi_factor * dimension as f32));
             Vector2 { x, y }
@@ -150,15 +164,16 @@ impl Window {
             }
         "#;
 
-        let program = glium::Program::from_source(&display, vertex_shader_src, fragment_shader_src, None).unwrap();
-
+        let program =
+            glium::Program::from_source(&display, vertex_shader_src, fragment_shader_src, None)
+                .unwrap();
 
         Self {
             events_loop,
             display,
             program,
             screen_to_opengl,
-            target : None,
+            target: None,
         }
     }
 
@@ -175,29 +190,35 @@ impl Window {
     /// shapes stay on the GPU and only send updated position/rotation, which is super efficient,
     /// so keep your shape objects around!  Don't recreate them every frame.  Shapes are drawn in
     /// order, so the last shape you draw will be on top.
-    pub fn draw(&mut self, shape : &Shape) {
+    pub fn draw(&mut self, shape: &Shape) {
         if let Some(ref mut target) = self.target {
-
             let uniforms = uniform! {
-            // CAUTION: The inner arrays are COLUMNS not ROWS (left to right actually is top to bottom)
-                matrix: [
-                    [shape.direction.cos() as f32, shape.direction.sin() as f32, 0.0, 0.0],
-                    [-shape.direction.sin() as f32, shape.direction.cos() as f32, 0.0, 0.0],
-                    [0.0, 0.0, 1.0, 0.0],
-                    [shape.pos.x, shape.pos.y, 0.0, 1.0f32],
-                ]
-// Failed attempt at adding scaling into the mix
-//                let sx = 1.0f32;
-//                let sy = 1.0f32;
-//                matrix: [
-//                    [sx*shape.direction.cos() as f32, sx*shape.direction.sin() as f32, 0.0, 0.0],
-//                    [-sy * shape.direction.sin() as f32, sy *shape.direction.cos() as f32, 0.0, 0.0],
-//                    [0.0, 0.0, 1.0, 0.0],
-//                    [shape.pos.x*shape.direction.cos()-shape.pos.y*shape.direction.sin(), shape.pos.x*shape.direction.sin()+shape.pos.y*shape.direction.cos(), 0.0, 1.0f32],
-//                ]
-            };
-            target.draw(&shape.vertex_buffer, &shape.indices, &self.program, &uniforms,
-                        &Default::default()).unwrap();
+                        // CAUTION: The inner arrays are COLUMNS not ROWS (left to right actually is top to bottom)
+                            matrix: [
+                                [shape.direction.cos() as f32, shape.direction.sin() as f32, 0.0, 0.0],
+                                [-shape.direction.sin() as f32, shape.direction.cos() as f32, 0.0, 0.0],
+                                [0.0, 0.0, 1.0, 0.0],
+                                [shape.pos.x, shape.pos.y, 0.0, 1.0f32],
+                            ]
+            // Failed attempt at adding scaling into the mix
+            //                let sx = 1.0f32;
+            //                let sy = 1.0f32;
+            //                matrix: [
+            //                    [sx*shape.direction.cos() as f32, sx*shape.direction.sin() as f32, 0.0, 0.0],
+            //                    [-sy * shape.direction.sin() as f32, sy *shape.direction.cos() as f32, 0.0, 0.0],
+            //                    [0.0, 0.0, 1.0, 0.0],
+            //                    [shape.pos.x*shape.direction.cos()-shape.pos.y*shape.direction.sin(), shape.pos.x*shape.direction.sin()+shape.pos.y*shape.direction.cos(), 0.0, 1.0f32],
+            //                ]
+                        };
+            target
+                .draw(
+                    &shape.vertex_buffer,
+                    &shape.indices,
+                    &self.program,
+                    &uniforms,
+                    &Default::default(),
+                )
+                .unwrap();
         }
     }
 
@@ -214,51 +235,82 @@ impl Window {
         let screen_to_opengl = &mut (self.screen_to_opengl);
         let mut events = Vec::<Event>::new();
         self.events_loop.poll_events(|ev| {
-            if let glium::glutin::Event::WindowEvent {event, ..} = ev {
+            if let glium::glutin::Event::WindowEvent { event, .. } = ev {
                 match event {
                     // Time to close the app?
                     glutin::WindowEvent::Closed => events.push(Event::WindowClosed),
                     // Mouse moved
-                    glutin::WindowEvent::CursorMoved { device_id : _, position, modifiers : _ } => {
+                    glutin::WindowEvent::CursorMoved {
+                        device_id: _,
+                        position,
+                        modifiers: _,
+                    } => {
                         let mouse_pos = screen_to_opengl(position);
-                        events.push(Event::MouseMoved { position : mouse_pos });
-                    },
+                        events.push(Event::MouseMoved {
+                            position: mouse_pos,
+                        });
+                    }
                     // Keyboard button
-                    glutin::WindowEvent::KeyboardInput { device_id : _, input } => {
+                    glutin::WindowEvent::KeyboardInput {
+                        device_id: _,
+                        input,
+                    } => {
                         let button_state = match input.state {
-                            ElementState::Pressed => { ButtonState::Pressed },
-                            ElementState::Released => { ButtonState::Released },
+                            ElementState::Pressed => ButtonState::Pressed,
+                            ElementState::Released => ButtonState::Released,
                         };
                         use glium::glutin::VirtualKeyCode::*;
                         if let Some(vkey) = input.virtual_keycode {
                             match vkey {
-                                W | Up | Comma => { events.push(Event::Button { button_state, button_value : ButtonValue::Up }) },
-                                S | Down | O   => { events.push(Event::Button { button_state, button_value : ButtonValue::Down }) },
-                                A | Left       => { events.push(Event::Button { button_state, button_value : ButtonValue::Left }) },
-                                D | Right | E  => { events.push(Event::Button { button_state, button_value : ButtonValue::Right }) },
-                                Escape         => { events.push(Event::Button { button_state, button_value : ButtonValue::Quit }) },
-                                Space | Delete => { events.push(Event::Button { button_state, button_value : ButtonValue::Attack }) },
+                                W | Up | Comma => events.push(Event::Button {
+                                    button_state,
+                                    button_value: ButtonValue::Up,
+                                }),
+                                S | Down | O => events.push(Event::Button {
+                                    button_state,
+                                    button_value: ButtonValue::Down,
+                                }),
+                                A | Left => events.push(Event::Button {
+                                    button_state,
+                                    button_value: ButtonValue::Left,
+                                }),
+                                D | Right | E => events.push(Event::Button {
+                                    button_state,
+                                    button_value: ButtonValue::Right,
+                                }),
+                                Escape => events.push(Event::Button {
+                                    button_state,
+                                    button_value: ButtonValue::Quit,
+                                }),
+                                Space | Delete => events.push(Event::Button {
+                                    button_state,
+                                    button_value: ButtonValue::Attack,
+                                }),
                                 _ => (),
                             }
                         }
-                    },
-                    glutin::WindowEvent::MouseInput { device_id : _, state, button, modifiers : _ } => {
+                    }
+                    glutin::WindowEvent::MouseInput {
+                        device_id: _,
+                        state,
+                        button,
+                        modifiers: _,
+                    } => {
                         if button == glium::glutin::MouseButton::Left {
                             let button_state = match state {
-                                ElementState::Pressed => { ButtonState::Pressed },
-                                ElementState::Released => { ButtonState::Released },
+                                ElementState::Pressed => ButtonState::Pressed,
+                                ElementState::Released => ButtonState::Released,
                             };
-                            events.push(Event::Button { button_state, button_value : ButtonValue::Attack });
+                            events.push(Event::Button {
+                                button_state,
+                                button_value: ButtonValue::Attack,
+                            });
                         }
-                    },
+                    }
                     _ => (),
                 }
             }
         });
         events
     }
-
 }
-
-
-

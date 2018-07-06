@@ -1,21 +1,14 @@
-extern crate impose;
 extern crate glium;
+extern crate impose;
 extern crate rusty_sword_arena;
 
 use impose::Audio;
 use rusty_sword_arena::game::{
-    ButtonState,
-    ButtonValue,
-    Color,
-    Event,
-    GameSetting,
-    PlayerEvent,
-    PlayerInput,
-    PlayerState,
+    ButtonState, ButtonValue, Color, Event, GameSetting, PlayerEvent, PlayerInput, PlayerState,
     Vector2,
 };
 use rusty_sword_arena::gfx::{Shape, Window};
-use rusty_sword_arena::net::{ServerConnection};
+use rusty_sword_arena::net::ServerConnection;
 //use rusty_sword_arena::timer::Timer;
 use rusty_sword_arena::VERSION;
 use std::collections::HashMap;
@@ -23,32 +16,34 @@ use std::env;
 use std::time::{Duration, Instant};
 
 struct Player {
-    player_state : PlayerState,
-    body_shape : Shape,
-    sword_shape : Shape,
+    player_state: PlayerState,
+    body_shape: Shape,
+    sword_shape: Shape,
 }
 
 impl Player {
-    fn new(window : &Window, player_state : PlayerState) -> Self {
+    fn new(window: &Window, player_state: PlayerState) -> Self {
         let body_shape = Shape::new_circle(
             window,
             player_state.radius,
             player_state.pos,
             player_state.direction,
-            player_state.color);
+            player_state.color,
+        );
         let sword_shape = Shape::new_ring(
             window,
             player_state.weapon.radius,
             player_state.pos,
             player_state.direction,
-            Color::new(1.0,0.0,0.0));
+            Color::new(1.0, 0.0, 0.0),
+        );
         Self {
             player_state,
             body_shape,
             sword_shape,
         }
     }
-    fn update_state(&mut self, player_state : PlayerState) {
+    fn update_state(&mut self, player_state: PlayerState) {
         self.body_shape.pos = player_state.pos;
         self.body_shape.direction = player_state.direction;
         self.sword_shape.pos = player_state.pos;
@@ -58,7 +53,7 @@ impl Player {
 }
 
 fn main() {
-    let mut args : Vec<String> = env::args().skip(1).collect();
+    let mut args: Vec<String> = env::args().skip(1).collect();
     if args.len() != 2 {
         println!("Usage: (prog) name host")
     }
@@ -68,12 +63,15 @@ fn main() {
 
     let my_id = server_conn.join(&name);
     let mut game_setting = server_conn.get_game_setting();
-    println!("Client v{} connected to server v{} at {}", VERSION, game_setting.version, host);
+    println!(
+        "Client v{} connected to server v{} at {}",
+        VERSION, game_setting.version, host
+    );
 
     let mut window = Window::new(None);
     let mut players = HashMap::<u8, Player>::new();
 
-    let mut mouse_pos = Vector2 { x : 0.0, y : 0.0 };
+    let mut mouse_pos = Vector2 { x: 0.0, y: 0.0 };
     let mut my_input = PlayerInput::new();
     my_input.id = my_id;
     let mut last_input_sent = Instant::now();
@@ -87,34 +85,36 @@ fn main() {
     audio.add_audio("leave", "media/leave.ogg");
     audio.add_audio("ow", "media/ow.ogg");
 
-    'gameloop:
-    loop {
+    'gameloop: loop {
         // Accumulate user input into one struct
         for event in window.events() {
             match event {
                 Event::WindowClosed => break 'gameloop,
                 Event::MouseMoved { position } => {
                     mouse_pos = position;
-                },
-                Event::Button { button_state, button_value } => {
+                }
+                Event::Button {
+                    button_state,
+                    button_value,
+                } => {
                     let axis_amount = match button_state {
-                        ButtonState::Pressed => { 1.0 },
-                        ButtonState::Released => { 0.0 },
+                        ButtonState::Pressed => 1.0,
+                        ButtonState::Released => 0.0,
                     };
                     match button_value {
-                        ButtonValue::Up    => my_input.move_amount.y  = axis_amount,
-                        ButtonValue::Down  => my_input.move_amount.y  = -axis_amount,
-                        ButtonValue::Left  => my_input.move_amount.x = -axis_amount,
+                        ButtonValue::Up => my_input.move_amount.y = axis_amount,
+                        ButtonValue::Down => my_input.move_amount.y = -axis_amount,
+                        ButtonValue::Left => my_input.move_amount.x = -axis_amount,
                         ButtonValue::Right => my_input.move_amount.x = axis_amount,
                         ButtonValue::Attack => {
                             my_input.attack = match button_state {
-                                ButtonState::Pressed => { true },
-                                ButtonState::Released => { false },
+                                ButtonState::Pressed => true,
+                                ButtonState::Released => false,
                             };
                         }
                         ButtonValue::Quit => break 'gameloop,
                     }
-                },
+                }
             }
         }
 
@@ -161,14 +161,22 @@ fn main() {
         window.drawstart();
         // Draw all the bodies
         for (id, player) in &players {
-            if *id == my_id { continue }
-            if player.player_state.dead { continue }
+            if *id == my_id {
+                continue;
+            }
+            if player.player_state.dead {
+                continue;
+            }
             window.draw(&player.body_shape);
         }
         // Draw all the swords
         for (id, player) in &players {
-            if *id == my_id { continue }
-            if player.player_state.dead { continue }
+            if *id == my_id {
+                continue;
+            }
+            if player.player_state.dead {
+                continue;
+            }
             window.draw(&player.sword_shape);
         }
         // Draw my own body & sword last, so I can always see myself
@@ -183,5 +191,8 @@ fn main() {
 
     println!("Leaving the game.");
     let succeeded = server_conn.leave(my_id);
-    println!("Server reports disconnection {}", if succeeded {"successful"} else {"failed"});
+    println!(
+        "Server reports disconnection {}",
+        if succeeded { "successful" } else { "failed" }
+    );
 }

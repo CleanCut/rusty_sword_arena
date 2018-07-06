@@ -1,5 +1,5 @@
-use std::time::Duration;
 use super::game::Floatable;
+use std::time::Duration;
 
 /// Doing math with std::time::Duration is sort of a pain, so this wraps it up in an easy package.
 /// Create a timer set how you like it, call `.update(delta)` with a delta duration each time around
@@ -7,30 +7,30 @@ use super::game::Floatable;
 /// over.
 #[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Timer {
-    time : Duration,
-    time_left : Duration,
+    time: Duration,
+    time_left: Duration,
     /// True if the timer has gone off.  Timer counts down to zero.
-    pub ready : bool,
+    pub ready: bool,
 }
 
 impl Timer {
     /// Set the timer based on milliseconds
-    pub fn from_millis(ms : u64) -> Self {
+    pub fn from_millis(ms: u64) -> Self {
         let duration = Duration::from_millis(ms);
         Self {
-            time : duration,
-            time_left : duration,
-            ready : false,
+            time: duration,
+            time_left: duration,
+            ready: false,
         }
     }
 
     /// Set the timer based on nanoseconds.
-    pub fn from_nanos(nanos : u64) -> Self {
+    pub fn from_nanos(nanos: u64) -> Self {
         let duration = Duration::from_nanos(nanos);
         Self {
-            time : duration,
-            time_left : duration,
-            ready : false,
+            time: duration,
+            time_left: duration,
+            ready: false,
         }
     }
 
@@ -41,13 +41,13 @@ impl Timer {
     }
 
     /// Sets the timer to a value, but will still reset back to the initial value
-    pub fn set_millis_transient(&mut self, ms : u64) {
+    pub fn set_millis_transient(&mut self, ms: u64) {
         self.ready = false;
         self.time_left = Duration::from_millis(ms);
     }
 
     /// This is how the timer counts-down. You have got to call this repeatedly as time passes.
-    pub fn update(&mut self, delta : Duration) {
+    pub fn update(&mut self, delta: Duration) {
         if self.ready {
             return;
         }

@@ -3,21 +3,20 @@ use super::VERSION;
 
 use rand::prelude::Rng;
 use std::cmp::Ordering;
-use std::collections::HashMap;
 use std::collections::hash_map::DefaultHasher;
+use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 use std::ops::Add;
 use std::ops::Mul;
 use std::time::Duration;
-
 
 /// 2D Vector (x, y) that can represent coordinates in OpenGL space that fill your window, or
 /// velocity, or whatever other two f32 values you need.  The OpenGL window is (-1.0, -1.0) in
 /// the bottom left to (1.0, 1.0) in the top right.
 #[derive(Copy, Clone, Debug, Deserialize, Serialize, PartialEq)]
 pub struct Vector2 {
-    pub x : f32,
-    pub y : f32,
+    pub x: f32,
+    pub y: f32,
 }
 
 impl Vector2 {
@@ -26,21 +25,18 @@ impl Vector2 {
         Self { x: 0.0, y: 0.0 }
     }
     /// Create a random Vector2D with x and y both in `[-dimension, dimension]`
-    pub fn new_in_square<T: Rng>(dimension : f32, rng : &mut T) -> Self {
+    pub fn new_in_square<T: Rng>(dimension: f32, rng: &mut T) -> Self {
         Self {
             x: rng.gen_range(-dimension, dimension),
             y: rng.gen_range(-dimension, dimension),
         }
     }
     /// Calculate the distance between two Vector2's -- useful when they represent coordinates
-    pub fn distance_between(&self, other : Self) -> f32 {
+    pub fn distance_between(&self, other: Self) -> f32 {
         ((self.x - other.x).powi(2) + (self.y - other.y).powi(2)).sqrt()
     }
     /// Calculate the angle between two Vector2's -- useful when they represent coordinates
-//    pub fn angle_between(&self, other : Self) -> f32 {
-//        (self.x - other.x).atan2(self.y - other.y)
-//    }
-    pub fn angle_between(&self, other : Self) -> f32 {
+    pub fn angle_between(&self, other: Self) -> f32 {
         (other.y - self.y).atan2(other.x - self.x)
     }
     /// Calculate the magnitude of the Vector2 -- useful when it represents a vector (such as
@@ -65,7 +61,7 @@ impl Vector2 {
         }
     }
     /// Create a new Vector2D clamped to `magnitude`
-    pub fn clamped_to(&self, magnitude : f32) -> Self {
+    pub fn clamped_to(&self, magnitude: f32) -> Self {
         if self.magnitude() > magnitude {
             let ratio = magnitude / self.magnitude();
             Self {
@@ -80,7 +76,7 @@ impl Vector2 {
 
 /// Do docs for trait impls show up???
 impl PartialOrd for Vector2 {
-    fn partial_cmp(&self, other: &Vector2) -> Option<Ordering>{
+    fn partial_cmp(&self, other: &Vector2) -> Option<Ordering> {
         let magnitude = self.magnitude();
         let other_magnitude = other.magnitude();
         return if magnitude < other_magnitude {
@@ -95,7 +91,7 @@ impl PartialOrd for Vector2 {
 
 impl Add for Vector2 {
     type Output = Vector2;
-    fn add(self, other : Vector2) -> Vector2 {
+    fn add(self, other: Vector2) -> Vector2 {
         Vector2 {
             x: self.x + other.x,
             y: self.y + other.y,
@@ -105,7 +101,7 @@ impl Add for Vector2 {
 
 impl Mul<f32> for Vector2 {
     type Output = Vector2;
-    fn mul(self, other : f32) -> Vector2 {
+    fn mul(self, other: f32) -> Vector2 {
         Vector2 {
             x: self.x * other,
             y: self.y * other,
@@ -125,7 +121,8 @@ impl Floatable for Duration {
     }
 }
 
-/// Abstracted button values you may receive (arrow keys and WASD keys combined into directions, for example)
+/// Abstracted button values you may receive (arrow keys and WASD keys combined into directions, for
+/// example)
 #[derive(Copy, Clone, Debug, Deserialize, Serialize, PartialEq)]
 pub enum ButtonValue {
     /// Arrow Up, W, Comma (Dvorak)
@@ -156,18 +153,18 @@ pub enum Event {
     WindowClosed,
     /// The mouse is now at this location (OpenGL coordinates - can extend past what's viewable if
     /// the mouse is outside the window)
-    MouseMoved { position : Vector2 },
+    MouseMoved { position: Vector2 },
     Button {
-        button_value : ButtonValue,
-        button_state : ButtonState
+        button_value: ButtonValue,
+        button_state: ButtonState,
     },
 }
 
 /// Various game control actions. Join a game, leave a game, just fetch updated game settings.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub enum GameControlMsg {
-    Join  { name : String },
-    Leave { id : u8 },
+    Join { name: String },
+    Leave { id: u8 },
     Fetch,
 }
 
@@ -175,15 +172,15 @@ pub enum GameControlMsg {
 #[derive(Copy, Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Color {
     /// Red
-    pub r : f32,
+    pub r: f32,
     /// Green
-    pub g : f32,
+    pub g: f32,
     /// Blue
-    pub b : f32,
+    pub b: f32,
 }
 
 impl Color {
-    pub fn new(r : f32, g : f32, b : f32) -> Self {
+    pub fn new(r: f32, g: f32, b: f32) -> Self {
         Self { r, g, b }
     }
 }
@@ -204,35 +201,35 @@ impl Eq for Color {}
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct GameSetting {
     /// Version number of the server you are connecting to. Compare to rusty_sword_arena::version
-    pub version : String,
+    pub version: String,
     /// The maximum amount of players this server will allow
-    pub max_players : u8,
+    pub max_players: u8,
     /// How quickly a player can get moving (magnitude in OpenGL units per second^2)
-    pub acceleration : f32,
+    pub acceleration: f32,
     /// Maximum velocity of a player (magnitude in OpenGL units per second)
-    pub max_velocity : f32,
+    pub max_velocity: f32,
     /// How much drag there is on movement when the player is _not_ trying to move (how quick you
     /// stop)
-    pub drag : f32,
+    pub drag: f32,
     /// Move threshold. Magnitude of Vector2 below which a move_speed will be considered 0.
-    pub move_threshold : f32,
+    pub move_threshold: f32,
     /// Milliseconds. How long the server will wait to respawn a player who dies.
-    pub respawn_delay : u64,
+    pub respawn_delay: u64,
     /// Milliseconds. How long the server will allow not receiving input before dropping a player.
-    pub drop_delay : u64,
+    pub drop_delay: u64,
 }
 
 impl GameSetting {
     pub fn new() -> Self {
         GameSetting {
-            version : VERSION.to_string(),
-            max_players : 32,
-            acceleration : 1.5,
-            max_velocity : 0.25,
-            drag : 5.0,
-            move_threshold : 0.05,
-            respawn_delay : 5000,
-            drop_delay : 4000,
+            version: VERSION.to_string(),
+            max_players: 32,
+            acceleration: 1.5,
+            max_velocity: 0.25,
+            drag: 5.0,
+            move_threshold: 0.05,
+            respawn_delay: 5000,
+            drop_delay: 4000,
         }
     }
     pub fn get_hash(&self) -> u64 {
@@ -259,7 +256,7 @@ impl Hash for GameSetting {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub enum PlayerEvent {
     /// Player has attacked and hit player id.
-    AttackHit { id : u8 },
+    AttackHit { id: u8 },
     /// Player has attacked, but not hit anyone.
     AttackMiss,
     /// Player has changed to a new weapon
@@ -288,22 +285,22 @@ pub enum PlayerEvent {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Weapon {
     /// Something like "Rusty Sword", "Shiny Sword", "Rusty Spear", etc.
-    pub description : String,
+    pub description: String,
     /// How much damage the weapon can cause
-    pub damage : f32,
+    pub damage: f32,
     /// How long until the player can attack again
-    pub attack_timer : Timer,
+    pub attack_timer: Timer,
     /// How far attacks reach from your player, in OpenGL units.
-    pub radius : f32,
+    pub radius: f32,
 }
 
 impl Weapon {
     pub fn new() -> Self {
         Self {
-            description : "Rusty Sword".to_string(),
-            damage : 17.0,
-            radius : 0.1,
-            attack_timer : Timer::from_millis(500),
+            description: "Rusty Sword".to_string(),
+            damage: 17.0,
+            radius: 0.1,
+            attack_timer: Timer::from_millis(500),
         }
     }
 }
@@ -314,36 +311,36 @@ impl Weapon {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct PlayerState {
     /// The ID of the player
-    pub id : u8,
+    pub id: u8,
     /// The name of the player
-    pub name : String,
+    pub name: String,
     /// The color of the player
-    pub color : Color,
+    pub color: Color,
     /// The position of the player in OpenGL units.
-    pub pos : Vector2,
+    pub pos: Vector2,
     /// The direction the player is facing, in radians
-    pub direction : f32,
+    pub direction: f32,
     /// Your player occupies a circle of this radius, in OpenGL units.
-    pub radius : f32,
+    pub radius: f32,
     /// Current velocity of the player
-    pub velocity : Vector2,
+    pub velocity: Vector2,
     /// Current health of the player [0.0, 100.0]
-    pub health : f32,
+    pub health: f32,
     // Private! Does it show up in docs?
-    starting_health : f32,
+    starting_health: f32,
     /// Current weapon of the player
-    pub weapon : Weapon,
+    pub weapon: Weapon,
     /// Any player events that have occurred to the player this frame
-    pub player_events : Vec<PlayerEvent>,
+    pub player_events: Vec<PlayerEvent>,
     /// How long the server will wait to get input from you before disconnecting you
-    pub drop_timer : Timer,
+    pub drop_timer: Timer,
     /// How long until the player respawns.  If respawn_timer.ready == false, then the player is
     /// dead and you should seriously consider indicating that visually somehow, even if only by not
     /// displaying the player.
-    pub respawn_timer : Timer,
+    pub respawn_timer: Timer,
     /// Are you dead?  Untangling health/respawn_timer dynamics is a pain, so we'll use this much
     /// more convenient boolean.
-    pub dead : bool,
+    pub dead: bool,
 }
 
 /// Represents the state of the player on the server for the current frame.  Always delivered by the
@@ -354,7 +351,14 @@ pub struct PlayerState {
 /// typically look at the fields and events, and don't use any of the methods.
 impl PlayerState {
     /// The client should never create a `PlayerState` -- the server will do that.
-    pub fn new(game_setting : &GameSetting, id : u8, name : String, color : Color, pos : Vector2, radius : f32) -> Self {
+    pub fn new(
+        game_setting: &GameSetting,
+        id: u8,
+        name: String,
+        color: Color,
+        pos: Vector2,
+        radius: f32,
+    ) -> Self {
         let mut respawn_timer = Timer::from_millis(game_setting.respawn_delay);
         respawn_timer.set_millis_transient(1000); // spawn more quickly on initial connect
         Self {
@@ -362,21 +366,21 @@ impl PlayerState {
             name,
             color,
             pos,
-            direction : 0.0,
+            direction: 0.0,
             radius,
-            velocity : Vector2::new(),
-            health : 100.0,
-            starting_health : 100.0,
-            weapon : Weapon::new(),
-            player_events : Vec::<PlayerEvent>::new(),
+            velocity: Vector2::new(),
+            health: 100.0,
+            starting_health: 100.0,
+            weapon: Weapon::new(),
+            player_events: Vec::<PlayerEvent>::new(),
             drop_timer: Timer::from_millis(game_setting.drop_delay),
             respawn_timer,
-            dead : true,
+            dead: true,
         }
     }
     /// Clients never need to call update. The server calls it each time it processes some amount of
     /// time.
-    pub fn update(&mut self, delta : Duration) {
+    pub fn update(&mut self, delta: Duration) {
         self.weapon.attack_timer.update(delta);
         self.drop_timer.update(delta);
         self.respawn_timer.update(delta);
@@ -386,7 +390,7 @@ impl PlayerState {
         self.player_events.clear();
     }
     /// Used by the server when a player needs to die
-    pub fn die(&mut self, msg : &str) {
+    pub fn die(&mut self, msg: &str) {
         println!("{}", msg);
         self.health = -1.0;
         self.respawn_timer.reset();
@@ -394,7 +398,7 @@ impl PlayerState {
         self.dead = true;
     }
     /// Used by the server when a player needs to spawn
-    pub fn respawn(&mut self, pos : Vector2, msg : &str) {
+    pub fn respawn(&mut self, pos: Vector2, msg: &str) {
         println!("{}", msg);
         self.pos = pos;
         self.health = self.starting_health;
@@ -412,16 +416,16 @@ impl PlayerState {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct GameState {
     /// Which frame we're on.  Starts at zero and increments by 1 each frame.
-    pub frame_number : u64,
+    pub frame_number: u64,
     /// The actual time the server measured since the previous frame.
-    pub delta : Duration,
+    pub delta: Duration,
     /// The hash of the current game setting. Your client should store this somewhere. If it changes
     /// then something has changed (most likely a player has joined or disconnected), so you should
     /// send a GameControlMsg::Fetch to get the new GameSetting from the server and update your
     /// client state.
-    pub game_setting_hash : u64,
+    pub game_setting_hash: u64,
     /// All of the player's states, including your own!
-    pub player_states : HashMap<u8, PlayerState>,
+    pub player_states: HashMap<u8, PlayerState>,
 }
 /// Clients should send `PlayerInput`s to the server ASAP.  The quicker the server gets inputs, the
 /// more accurate the simulation will be.  But of course, you also shouldn't overload the server
@@ -431,13 +435,13 @@ pub struct GameState {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct PlayerInput {
     /// The ID of your player
-    pub id : u8,
+    pub id: u8,
     /// Whether you are attempting to attack (actual attack will occur if the server-side attack
     /// timer has reached 0)
-    pub attack : bool,
+    pub attack: bool,
     /// How much your player is attempting to move horizontally (x) and vertically (y) [-1.0, 1.0].
     /// Positive is right and up for x and y, respectively.
-    pub move_amount : Vector2,
+    pub move_amount: Vector2,
     /// What direction your player is facing. You can turn instantly, you lucky dog.
     pub direction: f32,
 }
@@ -445,14 +449,14 @@ pub struct PlayerInput {
 impl PlayerInput {
     pub fn new() -> Self {
         Self {
-            id : 0,
-            attack : false,
-            move_amount : Vector2::new(),
+            id: 0,
+            attack: false,
+            move_amount: Vector2::new(),
             direction: 0.0,
         }
     }
     // Combine successive inputs into one input
-    pub fn coalesce(&mut self, new : PlayerInput) {
+    pub fn coalesce(&mut self, new: PlayerInput) {
         // Any attack sticks
         self.attack = self.attack || new.attack;
         // Anything else the new value wins
@@ -460,4 +464,3 @@ impl PlayerInput {
         self.direction = new.direction;
     }
 }
-
