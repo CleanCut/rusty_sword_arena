@@ -557,7 +557,9 @@ fn update_state(
             }
             // If the player is attacking, then he can only go half as fast
             if player_input.attack {
-                player_state.velocity = player_state.velocity.clamped_to(game_setting.max_velocity * 0.5);
+                player_state.velocity = player_state
+                    .velocity
+                    .clamped_to(game_setting.max_velocity * 0.5);
             }
             player_state.velocity = player_state.velocity.clamped_to(game_setting.max_velocity);
         }

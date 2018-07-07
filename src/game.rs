@@ -315,7 +315,7 @@ impl HighScores {
     pub fn add_player(&mut self, name: &str) {
         // Abort if we've already seen this player.
         if self.scores.iter().any(|x| x.name == name) {
-            return
+            return;
         }
         self.scores.push(Score::new(name, 0));
         self.sort();
@@ -356,7 +356,6 @@ impl fmt::Display for HighScores {
         Ok(())
     }
 }
-
 
 /// An event that has happened to your player this frame!  Note that it's possible to receive a
 /// whole bunch of events in the same frame.
