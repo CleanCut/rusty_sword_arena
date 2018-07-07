@@ -138,7 +138,7 @@ impl Window {
             Vector2 { x, y }
         });
 
-        let vertex_shader_src = r#"
+        let vertex_shader = r#"
         #version 140
 
         in vec2 position;
@@ -153,7 +153,7 @@ impl Window {
         }
         "#;
 
-        let fragment_shader_src = r#"
+        let fragment_shader = r#"
             #version 140
 
             in vec3 v_color;
@@ -164,9 +164,25 @@ impl Window {
             }
         "#;
 
-        let program =
-            glium::Program::from_source(&display, vertex_shader_src, fragment_shader_src, None)
-                .unwrap();
+        //        let program =
+        //            glium::Program::from_source(
+        //                &display,
+        //                vertex_shader, fragment_shader, None)
+        //                .unwrap();
+
+        let program = glium::Program::new(
+            &display,
+            glium::program::ProgramCreationInput::SourceCode {
+                vertex_shader: vertex_shader,
+                tessellation_control_shader: None,
+                tessellation_evaluation_shader: None,
+                geometry_shader: None,
+                fragment_shader: fragment_shader,
+                transform_feedback_varyings: None,
+                outputs_srgb: true,
+                uses_point_size: true,
+            },
+        ).unwrap();
 
         Self {
             events_loop,
@@ -210,6 +226,16 @@ impl Window {
             //                    [shape.pos.x*shape.direction.cos()-shape.pos.y*shape.direction.sin(), shape.pos.x*shape.direction.sin()+shape.pos.y*shape.direction.cos(), 0.0, 1.0f32],
             //                ]
                         };
+
+            // These options don't seem to have any effect at all :-(
+            let draw_parameters = glium::DrawParameters {
+                blend: glium::Blend::alpha_blending(),
+                line_width: Some(5.0),
+                point_size: Some(5.0),
+                smooth: Some(glium::draw_parameters::Smooth::Nicest),
+                ..Default::default()
+            };
+
             target
                 .draw(
                     &shape.vertex_buffer,

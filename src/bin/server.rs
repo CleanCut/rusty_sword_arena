@@ -17,317 +17,358 @@ use zmq::Socket;
 use bincode::{deserialize, serialize};
 
 struct ColorPicker {
-    // Names of the colors
-    color_map: HashMap<Color, String>,
+    index: usize,
     // Colors to take
-    available_colors: Vec<Color>,
+    colors: Vec<Color>,
 }
 
+// Why not just a Vec?  Because I've reimplemented this a half-dozen times...
 impl ColorPicker {
     fn new() -> Self {
-        let mut color_map = HashMap::<Color, String>::with_capacity(32);
-        // 32 of the colors from http://eastfarthing.com/blog/2016-09-19-palette/ on 2018-06-26
-        color_map.insert(
+        let colors = vec![
+            // Darkest
             Color {
-                r: 0.021,
-                g: 0.992,
-                b: 0.757,
+                r: 0.6274510,
+                g: 0.5176471,
+                b: 0.2666667,
             },
-            "bright teal".to_string(),
-        );
-        color_map.insert(
             Color {
-                r: 0.630,
-                g: 0.370,
-                b: 0.189,
+                r: 0.6901961,
+                g: 0.6901961,
+                b: 0.6901961,
             },
-            "earth".to_string(),
-        );
-        color_map.insert(
             Color {
-                r: 0.177,
-                g: 0.519,
-                b: 0.189,
+                r: 0.7215686,
+                g: 0.7215686,
+                b: 0.2509804,
             },
-            "tree green".to_string(),
-        );
-        color_map.insert(
             Color {
-                r: 0.004,
-                g: 0.718,
-                b: 0.086,
+                r: 0.7372549,
+                g: 0.5490196,
+                b: 0.2980392,
             },
-            "green".to_string(),
-        );
-        color_map.insert(
             Color {
-                r: 0.314,
-                g: 0.992,
-                b: 0.204,
+                r: 0.8156863,
+                g: 0.5019608,
+                b: 0.3607843,
             },
-            "poison green".to_string(),
-        );
-        color_map.insert(
             Color {
-                r: 0.021,
-                g: 0.861,
-                b: 0.865,
+                r: 0.8156863,
+                g: 0.4392157,
+                b: 0.4392157,
             },
-            "aqua blue".to_string(),
-        );
-        color_map.insert(
             Color {
-                r: 0.287,
-                g: 0.623,
-                b: 0.666,
+                r: 0.7529412,
+                g: 0.4392157,
+                b: 0.6901961,
             },
-            "turquoise blue".to_string(),
-        );
-        color_map.insert(
             Color {
-                r: 0.187,
-                g: 0.429,
-                b: 0.510,
+                r: 0.6274510,
+                g: 0.4392157,
+                b: 0.8000000,
             },
-            "sea blue".to_string(),
-        );
-        color_map.insert(
             Color {
-                r: 0.223,
-                g: 0.580,
-                b: 0.842,
+                r: 0.4862745,
+                g: 0.4392157,
+                b: 0.8156863,
             },
-            "azure".to_string(),
-        );
-        color_map.insert(
             Color {
-                r: 0.471,
-                g: 0.805,
-                b: 0.971,
+                r: 0.4078431,
+                g: 0.4549020,
+                b: 0.8156863,
             },
-            "lightblue".to_string(),
-        );
-        color_map.insert(
             Color {
-                r: 0.734,
-                g: 0.774,
-                b: 0.924,
+                r: 0.4078431,
+                g: 0.5333334,
+                b: 0.8000000,
             },
-            "light periwinkle".to_string(),
-        );
-        color_map.insert(
             Color {
-                r: 0.555,
-                g: 0.551,
-                b: 0.989,
+                r: 0.4078431,
+                g: 0.6117647,
+                b: 0.7529412,
             },
-            "lavender blue".to_string(),
-        );
-        color_map.insert(
             Color {
-                r: 0.121,
-                g: 0.393,
-                b: 0.955,
+                r: 0.4078431,
+                g: 0.7058824,
+                b: 0.5803922,
             },
-            "bright blue".to_string(),
-        );
-        color_map.insert(
             Color {
-                r: 0.641,
-                g: 0.554,
-                b: 0.708,
+                r: 0.4549020,
+                g: 0.7058824,
+                b: 0.4549020,
             },
-            "heather".to_string(),
-        );
-        color_map.insert(
             Color {
-                r: 0.961,
-                g: 0.719,
-                b: 0.953,
+                r: 0.5176471,
+                g: 0.7058824,
+                b: 0.4078431,
             },
-            "light lavendar".to_string(),
-        );
-        color_map.insert(
             Color {
-                r: 0.874,
-                g: 0.435,
-                b: 0.945,
+                r: 0.6117647,
+                g: 0.6588235,
+                b: 0.3921569,
             },
-            "light magenta".to_string(),
-        );
-        color_map.insert(
+            // Light
             Color {
-                r: 0.657,
-                g: 0.194,
-                b: 0.933,
+                r: 0.8156863,
+                g: 0.7058824,
+                b: 0.4235294,
             },
-            "electric purple".to_string(),
-        );
-        color_map.insert(
             Color {
-                r: 0.212,
-                g: 0.066,
-                b: 0.887,
+                r: 0.8627451,
+                g: 0.8627451,
+                b: 0.8627451,
             },
-            "strong blue".to_string(),
-        );
-        color_map.insert(
             Color {
-                r: 0.575,
-                g: 0.153,
-                b: 0.305,
+                r: 0.9098039,
+                g: 0.9098039,
+                b: 0.3607843,
             },
-            "berry".to_string(),
-        );
-        color_map.insert(
             Color {
-                r: 0.897,
-                g: 0.494,
-                b: 0.640,
+                r: 0.8627451,
+                g: 0.7058824,
+                b: 0.4078431,
             },
-            "dull pink".to_string(),
-        );
-        color_map.insert(
             Color {
-                r: 0.931,
-                g: 0.164,
-                b: 0.069,
+                r: 0.9254902,
+                g: 0.6588235,
+                b: 0.5019608,
             },
-            "tomato red".to_string(),
-        );
-        color_map.insert(
             Color {
-                r: 0.617,
-                g: 0.158,
-                b: 0.123,
+                r: 0.9254902,
+                g: 0.6274510,
+                b: 0.6274510,
             },
-            "brownish red".to_string(),
-        );
-        color_map.insert(
             Color {
-                r: 0.494,
-                g: 0.458,
-                b: 0.104,
+                r: 0.8627451,
+                g: 0.6117647,
+                b: 0.8156863,
             },
-            "ugly brown".to_string(),
-        );
-        color_map.insert(
             Color {
-                r: 0.636,
-                g: 0.684,
-                b: 0.135,
+                r: 0.7686275,
+                g: 0.6117647,
+                b: 0.9254902,
             },
-            "puke green".to_string(),
-        );
-        color_map.insert(
             Color {
-                r: 0.878,
-                g: 0.960,
-                b: 0.247,
+                r: 0.6588235,
+                g: 0.6274510,
+                b: 0.9254902,
             },
-            "sickly yellow".to_string(),
-        );
-        color_map.insert(
             Color {
-                r: 0.872,
-                g: 0.724,
-                b: 0.728,
+                r: 0.5647059,
+                g: 0.6431373,
+                b: 0.9254902,
             },
-            "pinkish grey".to_string(),
-        );
-        color_map.insert(
             Color {
-                r: 0.931,
-                g: 0.754,
-                b: 0.569,
+                r: 0.5647059,
+                g: 0.7058824,
+                b: 0.9254902,
             },
-            "light peach".to_string(),
-        );
-        color_map.insert(
             Color {
-                r: 0.757,
-                g: 0.566,
-                b: 0.162,
+                r: 0.5647059,
+                g: 0.8000000,
+                b: 0.9098039,
             },
-            "ochre".to_string(),
-        );
-        color_map.insert(
             Color {
-                r: 0.972,
-                g: 0.794,
-                b: 0.102,
+                r: 0.5647059,
+                g: 0.8941177,
+                b: 0.7529412,
             },
-            "golden yellow".to_string(),
-        );
-        color_map.insert(
             Color {
-                r: 0.917,
-                g: 0.475,
-                b: 0.143,
+                r: 0.6431373,
+                g: 0.8941177,
+                b: 0.6431373,
             },
-            "orange".to_string(),
-        );
-        color_map.insert(
             Color {
-                r: 0.804,
-                g: 100.0,
-                b: 0.942,
+                r: 0.7058824,
+                g: 0.8941177,
+                b: 0.5647059,
             },
-            "eggshell blue".to_string(),
-        );
-        color_map.insert(
             Color {
-                r: 1.000,
-                g: 0.982,
-                b: 0.776,
+                r: 0.8000000,
+                g: 0.8313726,
+                b: 0.5333334,
             },
-            "egg shell".to_string(),
-        );
-
-        /* Too dark, too close to another color, too gray, or I just didn't like it.
-        color_map.insert(Color {r : 0.000, g : 0.000, b : 0.000}, "black".to_string());
-        color_map.insert(Color {r : 0.198, g : 0.684, b : 0.531}, "green blue".to_string());
-        color_map.insert(Color {r : 0.110, g : 0.203, b : 0.167}, "charcoal".to_string());
-        color_map.insert(Color {r : 0.167, g : 0.323, b : 0.100}, "navy green".to_string());
-        color_map.insert(Color {r : 0.147, g : 0.279, b : 0.494}, "cobalt".to_string());
-        color_map.insert(Color {r : 0.449, g : 0.385, b : 0.623}, "dark lavender".to_string());
-        color_map.insert(Color {r : 0.142, g : 0.072, b : 0.404}, "dark indigo".to_string());
-        color_map.insert(Color {r : 0.498, g : 0.139, b : 0.528}, "darkish purple".to_string());
-        color_map.insert(Color {r : 0.278, g : 0.105, b : 0.228}, "aubergine".to_string());
-        color_map.insert(Color {r : 0.306, g : 0.130, b : 0.102}, "chocolate brown".to_string());
-        color_map.insert(Color {r : 0.356, g : 0.316, b : 0.348}, "purplish brown".to_string());
-        color_map.insert(Color {r : 0.371, g : 0.303, b : 0.159}, "mud brown".to_string());
-        color_map.insert(Color {r : 0.671, g : 0.548, b : 0.462}, "pale brown".to_string());
-        color_map.insert(Color {r : 0.668, g : 0.730, b : 0.702}, "silver".to_string());
-        color_map.insert(Color {r : 0.519, g : 0.574, b : 0.425}, "green grey".to_string());
-        color_map.insert(Color {r : 0.219, g : 0.447, b : 0.382}, "blue green".to_string());
-        color_map.insert(Color {r : 0.593, g : 0.407, b : 0.466}, "mauve".to_string());
-        color_map.insert(Color {r : 0.866, g : 0.219, b : 0.355}, "pink red".to_string());
-        color_map.insert(Color {r : 0.945, g : 0.503, b : 0.443}, "salmon".to_string());
-        color_map.insert(Color {r : 0.835, g : 0.188, b : 0.615}, "purpley pink".to_string());
-        color_map.insert(Color {r : 0.634, g : 0.819, b : 0.558}, "light grey green".to_string());
-        color_map.insert(Color {r : 1.000, g : 1.000, b : 1.000}, "white".to_string());
-        */
-
-        // Who knows what order we'll get stuff!  How exciting!
-        let available_colors: Vec<Color> = color_map.keys().map(|&k| k.clone()).collect();
+            // Dark
+            Color {
+                r: 0.7215686,
+                g: 0.6117647,
+                b: 0.3450980,
+            },
+            Color {
+                r: 0.7843137,
+                g: 0.7843137,
+                b: 0.7843137,
+            },
+            Color {
+                r: 0.8156863,
+                g: 0.8156863,
+                b: 0.3137255,
+            },
+            Color {
+                r: 0.8000000,
+                g: 0.6274510,
+                b: 0.3607843,
+            },
+            Color {
+                r: 0.8784314,
+                g: 0.5803922,
+                b: 0.4392157,
+            },
+            Color {
+                r: 0.8784314,
+                g: 0.5333334,
+                b: 0.5333334,
+            },
+            Color {
+                r: 0.8156863,
+                g: 0.5176471,
+                b: 0.7529412,
+            },
+            Color {
+                r: 0.7058824,
+                g: 0.5176471,
+                b: 0.8627451,
+            },
+            Color {
+                r: 0.5803922,
+                g: 0.5333334,
+                b: 0.8784314,
+            },
+            Color {
+                r: 0.4862745,
+                g: 0.5490196,
+                b: 0.8784314,
+            },
+            Color {
+                r: 0.4862745,
+                g: 0.6117647,
+                b: 0.8627451,
+            },
+            Color {
+                r: 0.4862745,
+                g: 0.7058824,
+                b: 0.8313726,
+            },
+            Color {
+                r: 0.4862745,
+                g: 0.8156863,
+                b: 0.6745098,
+            },
+            Color {
+                r: 0.5490196,
+                g: 0.8156863,
+                b: 0.5490196,
+            },
+            Color {
+                r: 0.6117647,
+                g: 0.8000000,
+                b: 0.4862745,
+            },
+            Color {
+                r: 0.7058824,
+                g: 0.7529412,
+                b: 0.4705882,
+            },
+            // Lightest
+            Color {
+                r: 0.9098039,
+                g: 0.8000000,
+                b: 0.4862745,
+            },
+            Color {
+                r: 0.9254902,
+                g: 0.9254902,
+                b: 0.9254902,
+            },
+            Color {
+                r: 0.9882353,
+                g: 0.9882353,
+                b: 0.4078431,
+            },
+            Color {
+                r: 0.9254902,
+                g: 0.7843137,
+                b: 0.4705882,
+            },
+            Color {
+                r: 0.9882353,
+                g: 0.7372549,
+                b: 0.5803922,
+            },
+            Color {
+                r: 0.9882353,
+                g: 0.7058824,
+                b: 0.7058824,
+            },
+            Color {
+                r: 0.9254902,
+                g: 0.6901961,
+                b: 0.8784314,
+            },
+            Color {
+                r: 0.8313726,
+                g: 0.6901961,
+                b: 0.9882353,
+            },
+            Color {
+                r: 0.7372549,
+                g: 0.7058824,
+                b: 0.9882353,
+            },
+            Color {
+                r: 0.6431373,
+                g: 0.7215686,
+                b: 0.9882353,
+            },
+            Color {
+                r: 0.6431373,
+                g: 0.7843137,
+                b: 0.9882353,
+            },
+            Color {
+                r: 0.6431373,
+                g: 0.8784314,
+                b: 0.9882353,
+            },
+            Color {
+                r: 0.6431373,
+                g: 0.9882353,
+                b: 0.8313726,
+            },
+            Color {
+                r: 0.7215686,
+                g: 0.9882353,
+                b: 0.7215686,
+            },
+            Color {
+                r: 0.7843137,
+                g: 0.9882353,
+                b: 0.6431373,
+            },
+            Color {
+                r: 0.8784314,
+                g: 0.9254902,
+                b: 0.6117647,
+            },
+            Color {
+                r: 0.9882353,
+                g: 0.8784314,
+                b: 0.5490196,
+            },
+        ];
 
         Self {
-            color_map,
-            available_colors,
+            index: 5, // Because I like the color
+            colors,
         }
     }
     fn pop_color(&mut self) -> Color {
-        self.available_colors.pop().unwrap()
+        let color = self.colors.remove(self.index);
+        self.index = (self.index + 1) % self.colors.len();
+        color
     }
     fn push_color(&mut self, color: Color) {
-        self.available_colors.push(color)
-    }
-    fn name_of(&self, color: Color) -> String {
-        if let Some(name) = self.color_map.get(&color) {
-            return name.clone();
-        }
-        "Unknown color".to_string()
+        self.colors.push(color)
     }
 }
 
@@ -364,10 +405,11 @@ fn process_game_control_requests(
     color_picker: &mut ColorPicker,
 ) {
     'gamecontrol: loop {
-        match game_control_server_socket.recv_bytes(0) {
+        match game_control_server_socket.recv_multipart(0) {
             Err(_e) => break 'gamecontrol,
-            Ok(bytes) => {
-                let msg: GameControlMsg = deserialize(&bytes[..]).unwrap();
+            Ok(multipart_message) => {
+                let return_identity = &multipart_message[0];
+                let msg: GameControlMsg = deserialize(&multipart_message[2][..]).unwrap();
                 match msg {
                     GameControlMsg::Join { name } => {
                         let mut id: u8 = 0;
@@ -408,16 +450,14 @@ fn process_game_control_requests(
                                 0.05,
                             );
                             player_states.insert(id, player_state);
-                            println!(
-                                "Joined: {} (id {}, {})",
-                                name,
-                                id,
-                                color_picker.name_of(color)
-                            );
+                            println!("Joined: {} (id {})", name, id,);
                             break;
                         }
                         game_control_server_socket
-                            .send(&serialize(&id).unwrap(), 0)
+                            .send_multipart(
+                                &[&return_identity[..], &[], &serialize(&id).unwrap()],
+                                0,
+                            )
                             .unwrap();
                     }
                     GameControlMsg::Leave { id } => {
@@ -427,12 +467,22 @@ fn process_game_control_requests(
                         // Per ZMQ REQ/REP protocol we must respond no matter what, so even invalid
                         // requests get the game settings back.
                         game_control_server_socket
-                            .send(&serialize(&succeeded).unwrap(), 0)
+                            .send_multipart(
+                                &[&return_identity[..], &[], &serialize(&succeeded).unwrap()],
+                                0,
+                            )
                             .unwrap();
                     }
                     GameControlMsg::Fetch => {
                         game_control_server_socket
-                            .send(&serialize(&game_setting).unwrap(), 0)
+                            .send_multipart(
+                                &[
+                                    &return_identity[..],
+                                    &[],
+                                    &serialize(&game_setting).unwrap(),
+                                ],
+                                0,
+                            )
                             .unwrap();
                         println!("A player fetches new settings.");
                     }
@@ -608,7 +658,7 @@ fn update_state(
 fn main() {
     let ctx = zmq::Context::new();
 
-    let mut game_control_server_socket = ctx.socket(zmq::REP).unwrap();
+    let mut game_control_server_socket = ctx.socket(zmq::ROUTER).unwrap();
     game_control_server_socket.set_rcvtimeo(0).unwrap();
     game_control_server_socket
         .bind(&format!("tcp://*:{}", net::GAME_CONTROL_PORT))
@@ -643,7 +693,7 @@ fn main() {
         frame_timer.update(delta);
         // TODO: Refactor the server to be interrupt-driven, so we don't have to sleep to keep a
         //       busy-loop from sucking up 100% of a CPU
-        thread::sleep(Duration::from_micros(100));
+        thread::sleep(Duration::from_micros(50));
         loop_iterations += 1;
 
         // Handle and reply to all Game Control requests. The game settings might get changed.

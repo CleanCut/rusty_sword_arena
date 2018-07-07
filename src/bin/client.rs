@@ -4,8 +4,7 @@ extern crate rusty_sword_arena;
 
 use impose::Audio;
 use rusty_sword_arena::game::{
-    ButtonState, ButtonValue, Color, Event, GameSetting, PlayerEvent, PlayerInput, PlayerState,
-    Vector2,
+    ButtonState, ButtonValue, Color, Event, PlayerEvent, PlayerInput, PlayerState, Vector2,
 };
 use rusty_sword_arena::gfx::{Shape, Window};
 use rusty_sword_arena::net::ServerConnection;
@@ -62,7 +61,7 @@ fn main() {
     let mut server_conn = ServerConnection::new(&host);
 
     let my_id = server_conn.join(&name);
-    let mut game_setting = server_conn.get_game_setting();
+    let game_setting = server_conn.get_game_setting();
     println!(
         "Client v{} connected to server v{} at {}",
         VERSION, game_setting.version, host
@@ -142,7 +141,7 @@ fn main() {
             }
         }
         // Process Player Events
-        for (id, player) in &mut players {
+        for (_id, player) in &mut players {
             for player_event in &mut player.player_state.player_events {
                 match player_event {
                     PlayerEvent::AttackMiss => audio.play("miss"),

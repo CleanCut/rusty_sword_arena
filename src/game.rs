@@ -223,7 +223,7 @@ impl GameSetting {
     pub fn new() -> Self {
         GameSetting {
             version: VERSION.to_string(),
-            max_players: 32,
+            max_players: 64,
             acceleration: 1.5,
             max_velocity: 0.25,
             drag: 5.0,
