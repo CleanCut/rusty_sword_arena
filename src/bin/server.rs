@@ -5,7 +5,7 @@ extern crate zmq;
 
 use rand::prelude::{thread_rng, Rng, ThreadRng};
 use rusty_sword_arena::game::{
-    Color, Floatable, GameControlMsg, GameSetting, GameState, PlayerEvent, PlayerInput,
+    Color, Floatable, GameControlMsg, GameSetting, GameState, HighScores, PlayerEvent, PlayerInput,
     PlayerState, Vector2,
 };
 use rusty_sword_arena::{net, timer};
@@ -393,7 +393,6 @@ fn remove_player(
         println!("{}", msg);
         return true;
     }
-    println!("{}", msg);
     return false;
 }
 
@@ -403,6 +402,7 @@ fn process_game_control_requests(
     player_states: &mut HashMap<u8, PlayerState>,
     rng: &mut ThreadRng,
     color_picker: &mut ColorPicker,
+    high_scores: &mut HighScores,
 ) {
     'gamecontrol: loop {
         match game_control_server_socket.recv_multipart(0) {
@@ -449,6 +449,7 @@ fn process_game_control_requests(
                                 Vector2::new_in_square(0.6, rng),
                                 0.05,
                             );
+                            high_scores.add_player(&player_state.name);
                             player_states.insert(id, player_state);
                             println!("Joined: {} (id {})", name, id,);
                             break;
@@ -461,11 +462,7 @@ fn process_game_control_requests(
                             .unwrap();
                     }
                     GameControlMsg::Leave { id } => {
-                        // your_player_id has no meaning in this response, so we set it to the
-                        // invalid id.
                         let succeeded = remove_player(id, player_states, color_picker, false);
-                        // Per ZMQ REQ/REP protocol we must respond no matter what, so even invalid
-                        // requests get the game settings back.
                         game_control_server_socket
                             .send_multipart(
                                 &[&return_identity[..], &[], &serialize(&succeeded).unwrap()],
@@ -520,6 +517,7 @@ fn update_state(
     color_picker: &mut ColorPicker,
     delta: Duration,
     rng: &mut ThreadRng,
+    high_scores: &mut HighScores,
 ) {
     let delta_f32 = delta.f32();
 
@@ -557,6 +555,10 @@ fn update_state(
                 player_state.velocity =
                     player_state.velocity * (1.0 - (game_setting.drag * delta_f32));
             }
+            // If the player is attacking, then he can only go half as fast
+            if player_input.attack {
+                player_state.velocity = player_state.velocity.clamped_to(game_setting.max_velocity * 0.5);
+            }
             player_state.velocity = player_state.velocity.clamped_to(game_setting.max_velocity);
         }
     }
@@ -568,14 +570,16 @@ fn update_state(
         }
         // Apply velocity to position
         player_state.pos = player_state.pos + (player_state.velocity * delta_f32);
-        // Don't go into the dark!
-        if player_state.pos.x < -1.0
-            || player_state.pos.x > 1.0
-            || player_state.pos.y < -1.0
-            || player_state.pos.y > 1.0
+        // Don't go all the way into the dark!
+        let boundary = player_state.radius + 1.0;
+        if player_state.pos.x < -boundary
+            || player_state.pos.x > boundary
+            || player_state.pos.y < -boundary
+            || player_state.pos.y > boundary
         {
+            high_scores.penalize(&player_state.name);
             player_state.die(&format!(
-                "Player {} was eaten by a grue.  Should have stayed in the light.",
+                "Player {} was eaten by a grue.  Should have stayed in the light!",
                 id
             ));
         }
@@ -621,6 +625,9 @@ fn update_state(
                 <= attacker.weapon.radius + attacker.radius
             {
                 missed = false;
+                if (defender.health > 0.0) && ((defender.health - attacker.weapon.damage) <= 0.0) {
+                    high_scores.score(&attacker.name);
+                }
                 defender.health -= attacker.weapon.damage;
                 attacker
                     .player_events
@@ -634,7 +641,6 @@ fn update_state(
         }
         if missed {
             attacker.player_events.push(PlayerEvent::AttackMiss);
-            println!("Player {} swings...and MISSES!", id);
         }
         player_states.insert(id, attacker);
     }
@@ -648,7 +654,7 @@ fn update_state(
             continue;
         }
         // Anyone alive whose health went negative dies
-        if !player_state.dead && player_state.health < 0.0 {
+        if !player_state.dead && player_state.health <= 0.0 {
             player_state.die(&format!("Player {} dies from his wounds.", id));
         }
         player_states.insert(id, player_state);
@@ -684,6 +690,7 @@ fn main() {
     let mut frame_number: u64 = 0;
     let mut player_states = HashMap::<u8, PlayerState>::new();
     let mut player_inputs = HashMap::<u8, PlayerInput>::new();
+    let mut high_scores = HighScores::new();
 
     println!("--------------------------------------------------------------");
     println!("Server started (Ctrl-C to stop)\n{:#?}", game_setting);
@@ -703,6 +710,7 @@ fn main() {
             &mut player_states,
             &mut rng,
             &mut color_picker,
+            &mut high_scores,
         );
 
         // Handle and coalesce all the player input we've received so far into player_inputs
@@ -720,17 +728,20 @@ fn main() {
             &mut color_picker,
             delta,
             &mut rng,
+            &mut high_scores,
         );
 
         // Process a frame (if it's time)
 
         if frame_timer.ready {
             frame_timer.reset();
+
+            let top10 = high_scores.top10();
             // Broadcast new game state computed this frame
             if frame_number % 1800 == 0 {
                 let status = format!(
-                    "STATUS: Frame: {}, Loops this frame: {}",
-                    frame_number, loop_iterations
+                    "STATUS: Frame: {}, Loops this frame: {}\n{}",
+                    frame_number, loop_iterations, top10
                 );
                 println!("{}", status);
             }
@@ -739,6 +750,7 @@ fn main() {
                 delta,
                 game_setting_hash: game_setting.get_hash(),
                 player_states: player_states.clone(),
+                high_scores: top10,
             };
             game_state_server_socket
                 .send(&serialize(&game_state).unwrap(), 0)

@@ -78,12 +78,15 @@ impl ServerConnection {
     /// Leave the game.
     pub fn leave(&mut self, id: u8) -> bool {
         let msg = GameControlMsg::Leave { id };
+        self.game_control_socket.set_rcvtimeo(1500).unwrap();
         self.game_control_socket
             .send(&serialize(&msg).unwrap(), 0)
             .unwrap();
-        let bytes = self.game_control_socket.recv_bytes(0).unwrap();
-        let succeeded: bool = deserialize(&bytes[..]).unwrap();
-        succeeded
+        if let Ok(bytes) = self.game_control_socket.recv_bytes(0) {
+            let succeeded: bool = deserialize(&bytes[..]).unwrap();
+            return succeeded;
+        }
+        return false;
     }
 
     /// Gets all available unprocessed game states.  You should call this often enough that you

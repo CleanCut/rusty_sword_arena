@@ -5,6 +5,7 @@ use rand::prelude::Rng;
 use std::cmp::Ordering;
 use std::collections::hash_map::DefaultHasher;
 use std::collections::HashMap;
+use std::fmt;
 use std::hash::{Hash, Hasher};
 use std::ops::Add;
 use std::ops::Mul;
@@ -251,6 +252,112 @@ impl Hash for GameSetting {
     }
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub struct Score {
+    name: String,
+    points: i32,
+}
+
+impl Score {
+    fn new(name: &str, points: i32) -> Self {
+        Self {
+            name: name.to_string(),
+            points: points,
+        }
+    }
+}
+
+impl fmt::Display for Score {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:<4.0} {}", self.points, self.name)
+    }
+}
+
+impl Eq for Score {}
+
+impl Ord for Score {
+    fn cmp(&self, other: &Score) -> Ordering {
+        if self.points < other.points {
+            Ordering::Less
+        } else if self.points == other.points {
+            if self.name < other.name {
+                Ordering::Greater
+            } else if self.name == other.name {
+                Ordering::Equal
+            } else {
+                Ordering::Less
+            }
+        } else {
+            Ordering::Greater
+        }
+    }
+}
+
+impl PartialOrd for Score {
+    fn partial_cmp(&self, other: &Score) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+/// High Scores!  High scores are reset every time the server restarts, but other than that they
+/// are persistent across joins/leaves.
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub struct HighScores {
+    pub scores: Vec<Score>,
+}
+
+impl HighScores {
+    pub fn new() -> Self {
+        Self {
+            scores: Vec::<Score>::new(),
+        }
+    }
+    pub fn add_player(&mut self, name: &str) {
+        // Abort if we've already seen this player.
+        if self.scores.iter().any(|x| x.name == name) {
+            return
+        }
+        self.scores.push(Score::new(name, 0));
+        self.sort();
+    }
+    pub fn score(&mut self, name: &str) {
+        self.add_player(name);
+        if let Some(score) = self.scores.iter_mut().find(|x| x.name == name) {
+            score.points += 1;
+        }
+        self.sort();
+    }
+    pub fn penalize(&mut self, name: &str) {
+        self.add_player(name);
+        if let Some(score) = self.scores.iter_mut().find(|x| x.name == name) {
+            score.points -= 1;
+        }
+        self.sort();
+    }
+    pub fn top10(&self) -> Self {
+        let mut top10 = self.clone();
+        while top10.scores.len() > 10 {
+            top10.scores.pop();
+        }
+        top10
+    }
+    fn sort(&mut self) {
+        self.scores.sort_by(|a, b| b.cmp(a));
+    }
+}
+
+impl fmt::Display for HighScores {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let _ = write!(f, "-----------\nHigh Scores\n-----------");
+        let len = self.scores.len();
+        for (index, score) in self.scores.iter().enumerate() {
+            let _ = write!(f, "\n{}", score);
+        }
+        Ok(())
+    }
+}
+
+
 /// An event that has happened to your player this frame!  Note that it's possible to receive a
 /// whole bunch of events in the same frame.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
@@ -426,6 +533,8 @@ pub struct GameState {
     pub game_setting_hash: u64,
     /// All of the player's states, including your own!
     pub player_states: HashMap<u8, PlayerState>,
+    /// High scores. The server will only send the top 10.
+    pub high_scores: HighScores,
 }
 /// Clients should send `PlayerInput`s to the server ASAP.  The quicker the server gets inputs, the
 /// more accurate the simulation will be.  But of course, you also shouldn't overload the server

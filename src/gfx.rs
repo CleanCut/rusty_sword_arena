@@ -164,12 +164,6 @@ impl Window {
             }
         "#;
 
-        //        let program =
-        //            glium::Program::from_source(
-        //                &display,
-        //                vertex_shader, fragment_shader, None)
-        //                .unwrap();
-
         let program = glium::Program::new(
             &display,
             glium::program::ProgramCreationInput::SourceCode {
@@ -242,7 +236,7 @@ impl Window {
                     &shape.indices,
                     &self.program,
                     &uniforms,
-                    &Default::default(),
+                    &draw_parameters,
                 )
                 .unwrap();
         }
