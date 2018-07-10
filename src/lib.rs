@@ -46,20 +46,65 @@
 //!
 //! ## Creating Your Game Client
 //!
+//! These are all things we will do together in the tutorial.  Feel free to get ahead of the group
+//! if you can!
+//!
 //! - Pick a name for your client and create a Rust crate.  Hint: use `cargo`
-//! - Add `rusty_sword_arena` as a dependency in your `Cargo.toml` file.
 //! - Obtain the player's desired `name` and the `host` to connect to.
 //!   - One easy way is to get the name and host from the command-line.
 //!   - See [args](https://doc.rust-lang.org/std/env/fn.args.html) for the code part.
+//! - Add `rusty_sword_arena` as a dependency in your `Cargo.toml` file.
 //! - Create a [ServerConnection](struct.ServerConnection.html) using the `host`
 //! - Use the [ServerConnection](struct.ServerConnection.html) to join the game
 //!   - You should probably hold onto that ID so you know which player you are.
 //! - Use the [ServerConnection](struct.ServerConnection.html) to get a
-//!   [GameSetting](game/struct.GameSetting.html).  If `version` in game setting doesn't match
+//!   [GameSetting](game/struct.GameSetting.html).  If `version` in game setting does not match
 //!   [VERSION](constant.VERSION.html) in the rusty_sword_arena module you are using, you may want
-//!   to fix your `Cargo.toml`
+//!   to abort the game...and then fix your `Cargo.toml`.
 //! ...
 //!
+//! ## Challenges!
+//!
+//! Here are some things we will NOT do together in the tutorial.  If you are ahead of the class, or
+//! want to keep going after the class, here's some challenges you could take on!
+//!
+//! - **Multiple players from one client** - The server and networking protocol do not prevent a
+//!   single client from adding multiple players to the game. Create some way to divide the
+//!   keyboard/mouse input up among two or more local players who will play through the same client.
+//! - **AI** - Who says a human has to do the playing?  The server is giving you all the information
+//!   about all the players's states.  Use that information to develop an AI player who plays by
+//!   himself.
+//! - **RTS** - Who says you have to control everything yourself?  Combine one or both of the above
+//!   challenges to implement a real-time strategy interface, where you direct one (or more) players
+//!   controlled by your client to achieve a goal (move somewhere, attack things, run away, etc)
+//!   and then your controlled players autonomously attempt to achieve that goal until you specify
+//!   otherwise.
+//! - **Better Graphics** - Improve on the graphics.  Either make better use of the provided
+//!   shapes to indicate more of what is going on, or dig into the RSA `gfx.rs` module and augment
+//!   it with new and better graphical capabilities.  Health indicators sure would be nice.
+//! - **Better Sound** - The sound library we used is pretty limited.  Add new sounds, or improve
+//!   the underlying sound system.  The sound library that `impose` uses is called
+//!   [rodio](https://github.com/tomaka/rodio) -- you could use it directly.  Or you could switch
+//!   to a similar, but better high-level library like [ears](https://github.com/jhasse/ears).
+//! - **Improve Rusty Sword Arena Itself** -- Fork
+//!   [Rusty Sword Arena](https://github.com/CleanCut/rusty_sword_arena).  Add features, or fix
+//!   bugs in the server.
+//!   - Improve the reference client implementation.
+//!   - Port the graphics subsystem from OpenGL to Vulkan.
+//!   - Add more graphics primitives (rectangles for healthbars, for example).
+//!   - Add the ability to render text.
+//!   - Port the network subsystem from ZeroMQ to [nanomsg](https://nanomsg.org/).
+//!   - Port the sound subsystem from `impose` to something better.
+//!   - Update the documentation to be clearer, more comprehensive, and have more useful links.
+//!   - Add support for Game Modes (Teams? Capture the flag?).
+//!   - Add Weapon Drops.
+//!   - Add the ability to Parry (you can try to attack OR parry - a successful parry causes the
+//!     attacking player to have a much larger delay than usual before the next attack attempt).
+//!   - [Create an issue](https://github.com/CleanCut/rusty_sword_arena/issues/new) if you
+//!     have ideas you want to discuss, or need help.
+//!   - [Create a Pull Request](https://github.com/CleanCut/rusty_sword_arena/compare) if you would
+//!     like feedback on your code, or if think your change is ready to contribute back to the main
+//!     project.
 
 #![doc(html_favicon_url = "https://agileperception.com/static/img/favicon.ico")]
 #![doc(html_logo_url = "https://agileperception.com/static/img/APSwirl200.png")]

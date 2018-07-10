@@ -1,3 +1,6 @@
+// THIS IS ONE REFERENCE IMPLEMENTATION
+// IT IS NOT EXACTLY WHAT WE WILL CREATE DURING THE TUTORIAL
+
 extern crate glium;
 extern crate impose;
 extern crate rusty_sword_arena;

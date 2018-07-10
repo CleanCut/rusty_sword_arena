@@ -349,8 +349,7 @@ impl HighScores {
 impl fmt::Display for HighScores {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let _ = write!(f, "-----------\nHigh Scores\n-----------");
-        let len = self.scores.len();
-        for (index, score) in self.scores.iter().enumerate() {
+        for score in self.scores.iter() {
             let _ = write!(f, "\n{}", score);
         }
         Ok(())
