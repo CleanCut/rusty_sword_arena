@@ -1,5 +1,5 @@
-// THIS IS ONE REFERENCE IMPLEMENTATION
-// IT IS NOT EXACTLY WHAT WE WILL CREATE DURING THE TUTORIAL...but it's pretty similar.
+//! Like the client, only it just connects to a server and displays what's happening without
+//! actually joining a game or sending any input.
 
 extern crate glium;
 extern crate impose;
@@ -7,7 +7,7 @@ extern crate rusty_sword_arena;
 
 use impose::Audio;
 use rusty_sword_arena::game::{
-    ButtonState, ButtonValue, Color, Event, PlayerEvent, PlayerInput, PlayerState, Vector2,
+    Color, Event, PlayerEvent, PlayerState,
 };
 use rusty_sword_arena::gfx::{Shape, Window};
 use rusty_sword_arena::net::ServerConnection;
@@ -15,7 +15,6 @@ use rusty_sword_arena::net::ServerConnection;
 use rusty_sword_arena::VERSION;
 use std::collections::HashMap;
 use std::env;
-use std::time::{Duration, Instant};
 
 struct Player {
     player_state: PlayerState,
@@ -56,33 +55,21 @@ impl Player {
 
 fn main() {
     let mut args: Vec<String> = env::args().skip(1).collect();
-    if args.len() != 2 {
-        println!("Usage: (prog) name host");
+    if args.len() != 1 {
+        println!("Usage: (prog) host");
         std::process::exit(2);
     }
     let host = args.pop().unwrap();
-    let name = args.pop().unwrap();
     let mut server_conn = ServerConnection::new(&host);
-    let my_id = server_conn.join(&name);
-    if my_id == 0 {
-        println!("Either name is taken or server is full. Give it another try.");
-        std::process::exit(3);
-    }
     let game_setting = server_conn.get_game_setting();
 
     println!(
-        "Client v{} connected to server v{} at {}",
+        "Monitor v{} connected to server v{} at {}",
         VERSION, game_setting.version, host
     );
 
     let mut window = Window::new(None);
     let mut players = HashMap::<u8, Player>::new();
-
-    let mut mouse_pos = Vector2 { x: 0.0, y: 0.0 };
-    let mut my_input = PlayerInput::new();
-    my_input.id = my_id;
-    let mut last_input_sent = Instant::now();
-
     let mut audio = Audio::new();
     audio.add_audio("miss", "media/miss.ogg");
     audio.add_audio("change_weapon", "media/change_weapon.ogg");
@@ -97,41 +84,8 @@ fn main() {
         for event in window.events() {
             match event {
                 Event::WindowClosed => break 'gameloop,
-                Event::MouseMoved { position } => {
-                    mouse_pos = position;
-                }
-                Event::Button {
-                    button_state,
-                    button_value,
-                } => {
-                    let axis_amount = match button_state {
-                        ButtonState::Pressed => 1.0,
-                        ButtonState::Released => 0.0,
-                    };
-                    match button_value {
-                        ButtonValue::Up => my_input.move_amount.y = axis_amount,
-                        ButtonValue::Down => my_input.move_amount.y = -axis_amount,
-                        ButtonValue::Left => my_input.move_amount.x = -axis_amount,
-                        ButtonValue::Right => my_input.move_amount.x = axis_amount,
-                        ButtonValue::Attack => {
-                            my_input.attack = match button_state {
-                                ButtonState::Pressed => true,
-                                ButtonState::Released => false,
-                            };
-                        }
-                        ButtonValue::Quit => break 'gameloop,
-                    }
-                }
+                _ => (),
             }
-        }
-
-        // Every 4 milliseconds, send accumulated input and reset attack
-        if last_input_sent.elapsed() > Duration::from_millis(4) {
-            if let Some(my_player) = players.get(&my_id) {
-                my_input.direction = my_player.player_state.pos.angle_between(mouse_pos);
-            }
-            server_conn.send_player_input(my_input.clone());
-            last_input_sent = Instant::now();
         }
 
         // Process any new game states
@@ -167,39 +121,21 @@ fn main() {
         // Draw a frame!
         window.drawstart();
         // Draw all the bodies
-        for (id, player) in &players {
-            if *id == my_id {
-                continue;
-            }
+        for (_id, player) in &players {
             if player.player_state.dead {
                 continue;
             }
             window.draw(&player.body_shape);
         }
         // Draw all the swords
-        for (id, player) in &players {
-            if *id == my_id {
-                continue;
-            }
+        for (_id, player) in &players {
             if player.player_state.dead {
                 continue;
             }
             window.draw(&player.sword_shape);
         }
-        // Draw my own body & sword last, so I can always see myself
-        if let Some(player) = players.get(&my_id) {
-            if !player.player_state.dead {
-                window.draw(&player.body_shape);
-                window.draw(&player.sword_shape);
-            }
-        }
         window.drawfinish();
     }
 
-    println!("Leaving the game.");
-    let succeeded = server_conn.leave(my_id);
-    println!(
-        "Server reports disconnection {}",
-        if succeeded { "successful" } else { "failed" }
-    );
+    println!("Shutting down gracefully.");
 }

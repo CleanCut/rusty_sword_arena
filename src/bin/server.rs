@@ -463,6 +463,9 @@ fn process_game_control_requests(
                     }
                     GameControlMsg::Leave { id } => {
                         let succeeded = remove_player(id, player_states, color_picker, false);
+                        if succeeded {
+                            println!("Player {} left voluntarily.", id);
+                        }
                         game_control_server_socket
                             .send_multipart(
                                 &[&return_identity[..], &[], &serialize(&succeeded).unwrap()],
@@ -742,7 +745,7 @@ fn main() {
             // Broadcast new game state computed this frame
             if frame_number % 1800 == 0 {
                 let status = format!(
-                    "STATUS: Frame: {}, Loops this frame: {}\n{}",
+                    "STATUS: Frame: {}, Loops during latest frame: {}\n{}",
                     frame_number, loop_iterations, top10
                 );
                 println!("{}", status);

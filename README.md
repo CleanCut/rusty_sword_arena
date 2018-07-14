@@ -52,6 +52,10 @@ brew install pkgconfig zmq
 **CentOS**
 
 ```bash
+# czmq-devel is in EPEL (Extra Packages for Linux), so if you haven't installed it, do
+sudo yum install -y epel-release
+
+# ...then you can actually install the dependencies
 sudo yum install -y czmq-devel alsa-lib-devel
 ```
 
@@ -102,8 +106,8 @@ of these)
 - [ ] Choose one place to "find answers" and either introduce yourself (if it's a forum, IRC, etc.) or find the answer
       to one question you have.
 - [ ] Try doing something in Rust!  If you don't have a better idea, then just do this:
-  - `cargo new say`
-  - `cd say`
+  - `cargo new message`
+  - `cd message`
   - `cargo run`
   - Edit `src/main.rs` and change the message.
   - `cargo run` again to see your new message.
@@ -119,3 +123,6 @@ Your resources will be:
 - [Rusty Sword Arena Crate Docs](https://agileperception.com/doc/rusty_sword_arena/)
 - [How To Learn Rust](https://github.com/CleanCut/rusty_sword_arena/blob/master/HowToLearnRust.md)
 - [The Rust Standard Library](https://doc.rust-lang.org/std/)
+
+Oh, and if you need to ~~cheat~~ catch up, [here is the "duel" repo](https://github.com/CleanCut/duel) 
+with a tag for each stage of the client we're going to build during the tutorial.

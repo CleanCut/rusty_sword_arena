@@ -431,7 +431,7 @@ pub struct PlayerState {
     pub velocity: Vector2,
     /// Current health of the player [0.0, 100.0]
     pub health: f32,
-    // Private! Does it show up in docs?
+    // Private! No docs for you.  We use this when we respawn.
     starting_health: f32,
     /// Current weapon of the player
     pub weapon: Weapon,
@@ -529,7 +529,11 @@ pub struct GameState {
     /// send a GameControlMsg::Fetch to get the new GameSetting from the server and update your
     /// client state.
     pub game_setting_hash: u64,
-    /// All of the player's states, including your own!
+    /// All of the current player's states, including your own! !!!NOTE!!! The only reliable method
+    /// of knowing that a player is present in the game or not is whether or not a state is in
+    /// player_states.  If there isn't a state, then the player has left or has been kicked/dropped.
+    /// If there is a state, then the player is in the game (and might have joined since the last
+    /// GameState was sent).
     pub player_states: HashMap<u8, PlayerState>,
     /// High scores. The server will only send the top 10.
     pub high_scores: HighScores,

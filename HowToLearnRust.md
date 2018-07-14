@@ -88,20 +88,23 @@ found these books _especially_ useful and high quality:
   how to deal with the format string.
 - Non-Lexical Lifetimes (NLL) - [What it is](http://smallcultfollowing.com/babysteps/blog/2016/04/27/non-lexical-lifetimes-introduction/)
   and [how close it is to becoming real](https://github.com/rust-lang/rust/issues/43234)
+- [Firefox has over a million lines of Rust Code](https://4e6.github.io/firefox-lang-stats/)
   
 **Fundamental Learning References (Things the Tutorial Covered)**
 - [Cargo](https://doc.rust-lang.org/book/second-edition/ch01-03-hello-cargo.html) and
   [dependencies](https://doc.rust-lang.org/book/second-edition/ch02-00-guessing-game-tutorial.html#using-a-crate-to-get-more-functionality)
 - [Variables, Mutability, and Shadowing](https://doc.rust-lang.org/book/second-edition/ch03-01-variables-and-mutability.html)
+- [Functions](https://doc.rust-lang.org/book/second-edition/ch03-03-how-functions-work.html) - fn
 - [Modules](https://doc.rust-lang.org/book/second-edition/ch07-01-mod-and-the-filesystem.html)
   and [pub](https://doc.rust-lang.org/book/second-edition/ch07-02-controlling-visibility-with-pub.html)
   and [use](https://doc.rust-lang.org/book/second-edition/ch07-03-importing-names-with-use.html)
-- [Threads](https://doc.rust-lang.org/book/second-edition/ch16-01-threads.html)
-  and [channels](https://doc.rust-lang.org/book/second-edition/ch16-02-message-passing.html)
 - [Scalar Types](https://doc.rust-lang.org/book/second-edition/ch03-02-data-types.html#scalar-types) - 
   Integers, Floating-point, Boolean, Characters.
 - [Compound Types](https://doc.rust-lang.org/book/second-edition/ch03-02-data-types.html#compound-types) - 
   Tuples, Arrays.
+- [Control Flow](https://doc.rust-lang.org/book/second-edition/ch03-05-control-flow.html) - if, while, for
+- [Threads](https://doc.rust-lang.org/book/second-edition/ch16-01-threads.html)
+  and [channels](https://doc.rust-lang.org/book/second-edition/ch16-02-message-passing.html)
 - [Ownership and Scope](https://doc.rust-lang.org/book/second-edition/ch04-01-what-is-ownership.html)
 - [References & Borrowing](https://doc.rust-lang.org/book/second-edition/ch04-02-references-and-borrowing.html)
 - Common Collections: [Vectors](https://doc.rust-lang.org/book/second-edition/ch08-01-vectors.html),

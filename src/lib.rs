@@ -54,13 +54,32 @@
 //!   - One easy way is to get the name and host from the command-line.
 //!   - See [args](https://doc.rust-lang.org/std/env/fn.args.html) for the code part.
 //! - Add `rusty_sword_arena` as a dependency in your `Cargo.toml` file.
-//! - Create a [ServerConnection](struct.ServerConnection.html) using the `host`
-//! - Use the [ServerConnection](struct.ServerConnection.html) to join the game
-//!   - You should probably hold onto that ID so you know which player you are.
-//! - Use the [ServerConnection](struct.ServerConnection.html) to get a
+//! - Create a [ServerConnection](net/struct.ServerConnection.html) using the `host`
+//! - Use the [ServerConnection](net/struct.ServerConnection.html) to join the game
+//!   - You should hold onto that ID so you know which player you are.
+//!   - You should probably handle the possible didn't-join condition.
+//! - Use the [ServerConnection](net/struct.ServerConnection.html) to get a
 //!   [GameSetting](game/struct.GameSetting.html).  If `version` in game setting does not match
 //!   [VERSION](constant.VERSION.html) in the rusty_sword_arena module you are using, you may want
 //!   to abort the game...and then fix your `Cargo.toml`.
+//! - Add [impose](https://crates.io/crates/impose) as a dependency.
+//! - Use impose to add your audio to an
+//!   [audio system](https://docs.rs/impose/0.2.0/impose/struct.Audio.html).  You can use
+//!   these free placeholder sounds either
+//!   [individually](https://github.com/CleanCut/rusty_sword_arena/tree/master/media)
+//!   or [zipped up](https://agileperception.com/static/media.zip)
+//!   if you like, or [record](https://www.audacityteam.org/) or [create](https://www.bfxr.net/)
+//!   your own sounds!  (Or you can skip sounds altogether, really).
+//! - Create a [Window](gfx/struct.Window.html)
+//! - IN YOUR MAIN GAME LOOP...
+//!     - Gather any keyboard/mouse input, coalesce it to previous input.
+//!         - Every ~4.17ms, send the coalesced input to the server and reset your input
+//!         - If the player wants to quit, here's the place to break out of the game loop
+//!     - Get all the pending [GameState](game/struct.GameState.html)s from the server.
+//!         - FOR EACH GAME STATE (which represents the state of one frame)
+//!         - Process all the [PlayerState](game/struct.PlayerState.html)s into some local storage
+//!         - Play sounds as desired, based on events
+//!     - Loop through your local state storage and draw a frame that represents the latest state.
 //! ...
 //!
 //! ## Challenges!
@@ -94,6 +113,7 @@
 //!   - Add more graphics primitives (rectangles for healthbars, for example).
 //!   - Add the ability to render text.
 //!   - Port the network subsystem from ZeroMQ to [nanomsg](https://nanomsg.org/).
+//!   - Improve the network methods ability to indicate what exactly happened (was the name taken? was the game full?)
 //!   - Port the sound subsystem from `impose` to something better.
 //!   - Update the documentation to be clearer, more comprehensive, and have more useful links.
 //!   - Add support for Game Modes (Teams? Capture the flag?).
