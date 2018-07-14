@@ -56,6 +56,7 @@ fn create_ring_vertices(radius: f32, num_vertices: usize, color: Color) -> Vec<V
 
 /// A `Shape` can be drawn by a [Window](gfx/struct.Window.html).  Use the provided `new_*` methods
 /// to make a `Shape`.
+#[derive(Debug)]
 pub struct Shape {
     pub pos: Vector2,
     pub direction: f32,
