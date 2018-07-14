@@ -4,7 +4,7 @@ use glium::Surface;
 use std::cmp::min;
 use std::f64::consts::PI;
 
-use super::game::{ButtonState, ButtonValue, Color, Event, Vector2};
+use super::game::{ButtonState, ButtonValue, Color, InputEvent, Vector2};
 use glium::Frame;
 
 #[derive(Copy, Clone, Debug)]
@@ -249,16 +249,16 @@ impl Window {
         self.target.take().unwrap().finish().unwrap();
     }
 
-    /// Get [events](game/enum.Event.html) that the graphics system may have seen (window, keyboard,
-    /// mouse) and translate them into our own, simpler events.
-    pub fn events(&mut self) -> Vec<Event> {
+    /// Get [input events](game/enum.InputEvent.html) that the graphics system may have seen
+    /// (window, keyboard, mouse) and translate them into our own, simpler events.
+    pub fn poll_input_events(&mut self) -> Vec<InputEvent> {
         let screen_to_opengl = &mut (self.screen_to_opengl);
-        let mut events = Vec::<Event>::new();
+        let mut events = Vec::<InputEvent>::new();
         self.events_loop.poll_events(|ev| {
             if let glium::glutin::Event::WindowEvent { event, .. } = ev {
                 match event {
                     // Time to close the app?
-                    glutin::WindowEvent::Closed => events.push(Event::WindowClosed),
+                    glutin::WindowEvent::Closed => events.push(InputEvent::WindowClosed),
                     // Mouse moved
                     glutin::WindowEvent::CursorMoved {
                         device_id: _,
@@ -266,7 +266,7 @@ impl Window {
                         modifiers: _,
                     } => {
                         let mouse_pos = screen_to_opengl(position);
-                        events.push(Event::MouseMoved {
+                        events.push(InputEvent::MouseMoved {
                             position: mouse_pos,
                         });
                     }
@@ -282,27 +282,27 @@ impl Window {
                         use glium::glutin::VirtualKeyCode::*;
                         if let Some(vkey) = input.virtual_keycode {
                             match vkey {
-                                W | Up | Comma => events.push(Event::Button {
+                                W | Up | Comma => events.push(InputEvent::Button {
                                     button_state,
                                     button_value: ButtonValue::Up,
                                 }),
-                                S | Down | O => events.push(Event::Button {
+                                S | Down | O => events.push(InputEvent::Button {
                                     button_state,
                                     button_value: ButtonValue::Down,
                                 }),
-                                A | Left => events.push(Event::Button {
+                                A | Left => events.push(InputEvent::Button {
                                     button_state,
                                     button_value: ButtonValue::Left,
                                 }),
-                                D | Right | E => events.push(Event::Button {
+                                D | Right | E => events.push(InputEvent::Button {
                                     button_state,
                                     button_value: ButtonValue::Right,
                                 }),
-                                Escape => events.push(Event::Button {
+                                Escape => events.push(InputEvent::Button {
                                     button_state,
                                     button_value: ButtonValue::Quit,
                                 }),
-                                Space | Delete => events.push(Event::Button {
+                                Space | Delete => events.push(InputEvent::Button {
                                     button_state,
                                     button_value: ButtonValue::Attack,
                                 }),
@@ -321,7 +321,7 @@ impl Window {
                                 ElementState::Pressed => ButtonState::Pressed,
                                 ElementState::Released => ButtonState::Released,
                             };
-                            events.push(Event::Button {
+                            events.push(InputEvent::Button {
                                 button_state,
                                 button_value: ButtonValue::Attack,
                             });

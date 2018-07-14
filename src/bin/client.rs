@@ -7,7 +7,7 @@ extern crate rusty_sword_arena;
 
 use impose::Audio;
 use rusty_sword_arena::game::{
-    ButtonState, ButtonValue, Color, Event, PlayerEvent, PlayerInput, PlayerState, Vector2,
+    ButtonState, ButtonValue, Color, InputEvent, PlayerEvent, PlayerInput, PlayerState, Vector2,
 };
 use rusty_sword_arena::gfx::{Shape, Window};
 use rusty_sword_arena::net::ServerConnection;
@@ -94,13 +94,13 @@ fn main() {
 
     'gameloop: loop {
         // Accumulate user input into one struct
-        for event in window.events() {
+        for event in window.poll_input_events() {
             match event {
-                Event::WindowClosed => break 'gameloop,
-                Event::MouseMoved { position } => {
+                InputEvent::WindowClosed => break 'gameloop,
+                InputEvent::MouseMoved { position } => {
                     mouse_pos = position;
                 }
-                Event::Button {
+                InputEvent::Button {
                     button_state,
                     button_value,
                 } => {
@@ -125,7 +125,7 @@ fn main() {
             }
         }
 
-        // Every 4 milliseconds, send accumulated input and reset attack
+        // Periodically send accumulated input
         if last_input_sent.elapsed() > Duration::from_millis(15) {
             if let Some(my_player) = players.get(&my_id) {
                 my_input.direction = my_player.player_state.pos.angle_between(mouse_pos);

@@ -6,7 +6,7 @@ extern crate impose;
 extern crate rusty_sword_arena;
 
 use impose::Audio;
-use rusty_sword_arena::game::{Color, Event, PlayerEvent, PlayerState};
+use rusty_sword_arena::game::{Color, InputEvent, PlayerEvent, PlayerState};
 use rusty_sword_arena::gfx::{Shape, Window};
 use rusty_sword_arena::net::ServerConnection;
 //use rusty_sword_arena::timer::Timer;
@@ -79,9 +79,9 @@ fn main() {
 
     'gameloop: loop {
         // Accumulate user input into one struct
-        for event in window.events() {
+        for event in window.poll_input_events() {
             match event {
-                Event::WindowClosed => break 'gameloop,
+                InputEvent::WindowClosed => break 'gameloop,
                 _ => (),
             }
         }

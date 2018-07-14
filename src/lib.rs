@@ -81,7 +81,7 @@
 //!         - FOR EACH GAME STATE (which represents the state of one frame)
 //!         - Process all the [PlayerState](game/struct.PlayerState.html)s into some local
 //!           collection(s) that represent the client's view of players and their graphics.
-//!         - Play sounds as desired, based on events
+//!         - Play sounds as desired, based on player events
 //!     - Loop through your local state storage and draw a frame that represents the latest state
 //!       of the players.
 //! ...

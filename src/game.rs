@@ -150,10 +150,10 @@ pub enum ButtonState {
     Released,
 }
 
-/// `Event` represents input based on the window that is being displayed, such as someone closing
-/// the window, the mouse moving around, or buttons being pushed.
+/// `InputEvent` represents input based on the window that is being displayed, such as someone
+/// closing the window, the mouse moving around, or buttons being pushed.
 #[derive(Copy, Clone, Debug, Deserialize, Serialize, PartialEq)]
-pub enum Event {
+pub enum InputEvent {
     /// The window was closed somehow, so we better quit the application...unless we're going to
     /// pop up another window.
     WindowClosed,
@@ -377,8 +377,8 @@ impl fmt::Display for HighScores {
     }
 }
 
-/// An event that has happened to your player this frame!  Note that it's possible to receive a
-/// whole bunch of events in the same frame.
+/// A player event that has happened to your player this frame!  Note that it's possible to receive
+/// a whole bunch of events in the same frame.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub enum PlayerEvent {
     /// Player has attacked and hit player id.
@@ -474,7 +474,7 @@ pub struct PlayerState {
 /// creates `PlayeState`s, updates them, and sends them to the client each frame. The client is free
 /// to modify its local copy (for example, to remove [PlayerEvent](game/enum.PlayerEvent.html)s it
 /// has processed) -- a new set of `PlayerStates` will be delivered the next frame. Clients
-/// typically look at the fields and events, and don't use any of the methods.
+/// typically look at the fields and player events, and don't use any of the methods.
 impl PlayerState {
     /// The client should never create a `PlayerState` -- the server will do that.
     pub fn new(
@@ -569,7 +569,7 @@ pub struct GameState {
 /// can use the [angle_between](game/struct.Vector2.html#method.angle_between) method of a
 /// Vector2 to find the direction for the input based off of the position in your own player's
 /// [PlayerState](game/struct.PlayerState.html) and the current position of the mouse,
-/// which you get from one of the [window events](gfx/struct.Window.html#method.events)
+/// which you get from one of the [input events](gfx/struct.Window.html#method.events)
 ///
 /// Note that `attack` is an indicator of whether the player is currently (still) attempting to
 /// attack. The server will only attack once every once-in-awhile when the weapon's attack timer
@@ -588,9 +588,9 @@ pub struct PlayerInput {
     pub attack: bool,
     /// How much your player is attempting to move horizontally (x) and vertically (y) [-1.0, 1.0].
     /// Positive is right and up for x and y, respectively.  You can derive movement amounts from
-    /// [Button](game/enum.Event.html#variant.Button) variants of the
-    /// [Event](game/enum.Event.html)s you get from the
-    /// [Window](gfx/struct.Window.html#method.events).
+    /// [Button](game/enum.InputEvent.html#variant.Button) variants of the
+    /// [InputEvent](game/enum.InputEvent.html)s you get from the
+    /// [Window](gfx/struct.Window.html#method.poll_input_events).
     pub move_amount: Vector2,
     /// What direction your player is facing. You can turn instantly, you lucky dog.
     pub direction: f32,
