@@ -72,14 +72,18 @@
 //!   your own sounds!  (Or you can skip sounds altogether, really).
 //! - Create a [Window](gfx/struct.Window.html)
 //! - IN YOUR MAIN GAME LOOP...
-//!     - Gather any keyboard/mouse input, coalesce it to previous input.
-//!         - Every ~4.17ms, send the coalesced input to the server and reset your input
+//!     - Gather any keyboard/mouse input from the [Window](gfx/struct.Window.html)
+//!       you created, and then [coalesce](game/struct.PlayerInput.html#method.coalesce)
+//!       it into a persistent [PlayerInput](game/struct.PlayerInput.html).
+//!         - Every ~15ms, send the coalesced input to the server and reset your input
 //!         - If the player wants to quit, here's the place to break out of the game loop
 //!     - Get all the pending [GameState](game/struct.GameState.html)s from the server.
 //!         - FOR EACH GAME STATE (which represents the state of one frame)
-//!         - Process all the [PlayerState](game/struct.PlayerState.html)s into some local storage
+//!         - Process all the [PlayerState](game/struct.PlayerState.html)s into some local
+//!           collection(s) that represent the client's view of players and their graphics.
 //!         - Play sounds as desired, based on events
-//!     - Loop through your local state storage and draw a frame that represents the latest state.
+//!     - Loop through your local state storage and draw a frame that represents the latest state
+//!       of the players.
 //! ...
 //!
 //! ## Challenges!

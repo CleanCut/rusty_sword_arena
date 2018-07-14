@@ -99,8 +99,9 @@ impl ServerConnection {
         game_states
     }
 
-    /// Send player input to the server. The server processes input as it comes in, so you should
-    /// send it ASAP to reduce lag and improve the simulation.
+    /// Send player input to the server. The server processes input as it comes in, but that doesn't
+    /// mean you should send 10,000 input packets/second.  Keep track of the input and only send
+    /// new input about every 15ms.
     pub fn send_player_input(&mut self, player_input: PlayerInput) {
         self.player_input_socket
             .send(&serialize(&player_input).unwrap(), 0)

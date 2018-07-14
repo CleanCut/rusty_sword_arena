@@ -126,42 +126,52 @@ impl Floatable for Duration {
 /// example)
 #[derive(Copy, Clone, Debug, Deserialize, Serialize, PartialEq)]
 pub enum ButtonValue {
-    /// Arrow Up, W, Comma (Dvorak)
+    /// An abstracted button that combines: Arrow Up, W, Comma (Dvorak)
     Up,
-    /// Arrow Down, S, O (Dvorak)
+    /// An abstracted button that combines: Arrow Down, S, O (Dvorak)
     Down,
-    /// Arrow Left, A
+    /// An abstracted button that combines: Arrow Left, A
     Left,
-    /// Arrow Right, D, E (Dvorak)
+    /// An abstracted button that combines: Arrow Right, D, E (Dvorak)
     Right,
-    /// Left Mouse Button, Space Bar, Backspace (Kinesis Advantage Keyboard)
+    /// An abstracted button that combines: Left Mouse Button, Space Bar, Backspace (Kinesis
+    /// Advantage Keyboard)
     Attack,
-    /// Escape
+    /// An abstracted button that combines: Escape
     Quit,
 }
 
 /// Whether a button was pressed or released
 #[derive(Copy, Clone, Debug, Deserialize, Serialize, PartialEq)]
 pub enum ButtonState {
+    /// A button was just pressed
     Pressed,
+    /// A button was just released
     Released,
 }
 
-/// Client Events that may occur
+/// `Event` represents input based on the window that is being displayed, such as someone closing
+/// the window, the mouse moving around, or buttons being pushed.
 #[derive(Copy, Clone, Debug, Deserialize, Serialize, PartialEq)]
 pub enum Event {
-    /// The window was closed somehow, so we better quit
+    /// The window was closed somehow, so we better quit the application...unless we're going to
+    /// pop up another window.
     WindowClosed,
-    /// The mouse is now at this location (OpenGL coordinates - can extend past what's viewable if
-    /// the mouse is outside the window)
+    /// Indicates the current position the mouse has moved to.  The mouse is now at this location in
+    /// OpenGL coordinates.  Note that on some operating systems this event will fire even if the
+    /// cursor is outside the bounds of the window.
     MouseMoved { position: Vector2 },
+    /// Indicates that a button with value `ButtonValue` has been either pressed or released
+    /// (`ButtonState`).  Note that both mouse buttons and keyboard buttons are abstracted and
+    /// collected together into a few logical game buttons.
+    /// See [ButtonValue](game/enum.ButtonValue.html)
     Button {
         button_value: ButtonValue,
         button_state: ButtonState,
     },
 }
 
-/// Various game control actions. Join a game, leave a game, just fetch updated game settings.
+/// Various game control actions. Used by the networking module and the server.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub enum GameControlMsg {
     Join { name: String },
@@ -181,6 +191,7 @@ pub struct Color {
 }
 
 impl Color {
+    /// Slightly simpler way to create a color
     pub fn new(r: f32, g: f32, b: f32) -> Self {
         Self { r, g, b }
     }
@@ -196,9 +207,8 @@ impl Hash for Color {
 
 impl Eq for Color {}
 
-/// Server returns a GameSetting in response to receiving a PlayerSync
-/// Game settings and player names and colors (including your own) are all in there.  You will
-/// need to re-parse this every time someone joins or leaves the game.
+/// The game setting.  Mostly useful if you want to try to write client-side movement prediction,
+/// AI, etc.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct GameSetting {
     /// Version number of the server you are connecting to. Compare to rusty_sword_arena::version
@@ -221,6 +231,7 @@ pub struct GameSetting {
 }
 
 impl GameSetting {
+    /// Create the default game settings
     pub fn new() -> Self {
         GameSetting {
             version: VERSION.to_string(),
@@ -233,6 +244,7 @@ impl GameSetting {
             drop_delay: 4000,
         }
     }
+    /// Looking forward to the day when game settings can be changed mid-game.
     pub fn get_hash(&self) -> u64 {
         let mut hasher = DefaultHasher::new();
         self.hash(&mut hasher);
@@ -252,6 +264,7 @@ impl Hash for GameSetting {
     }
 }
 
+/// A single player's score
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Score {
     name: String,
@@ -259,6 +272,7 @@ pub struct Score {
 }
 
 impl Score {
+    /// Create a new score
     fn new(name: &str, points: i32) -> Self {
         Self {
             name: name.to_string(),
@@ -307,11 +321,38 @@ pub struct HighScores {
 }
 
 impl HighScores {
+    /// Create a new, blank set of high scores
     pub fn new() -> Self {
         Self {
             scores: Vec::<Score>::new(),
         }
     }
+    /// Bump a player's score up by one. If the player is not present, he will be added.
+    pub fn score(&mut self, name: &str) {
+        self.add_player(name);
+        if let Some(score) = self.scores.iter_mut().find(|x| x.name == name) {
+            score.points += 1;
+        }
+        self.sort();
+    }
+    /// Decrement a player's score by one. If the player is not present, he will be added.
+    pub fn penalize(&mut self, name: &str) {
+        self.add_player(name);
+        if let Some(score) = self.scores.iter_mut().find(|x| x.name == name) {
+            score.points -= 1;
+        }
+        self.sort();
+    }
+    /// Return a clone with only the top-10 scoring players. This is what the server sends the
+    /// client.
+    pub fn top10(&self) -> Self {
+        let mut top10 = self.clone();
+        while top10.scores.len() > 10 {
+            top10.scores.pop();
+        }
+        top10
+    }
+    /// Add a new player with a zero score. Used internally by both `score()` and `penalize()`
     pub fn add_player(&mut self, name: &str) {
         // Abort if we've already seen this player.
         if self.scores.iter().any(|x| x.name == name) {
@@ -320,27 +361,7 @@ impl HighScores {
         self.scores.push(Score::new(name, 0));
         self.sort();
     }
-    pub fn score(&mut self, name: &str) {
-        self.add_player(name);
-        if let Some(score) = self.scores.iter_mut().find(|x| x.name == name) {
-            score.points += 1;
-        }
-        self.sort();
-    }
-    pub fn penalize(&mut self, name: &str) {
-        self.add_player(name);
-        if let Some(score) = self.scores.iter_mut().find(|x| x.name == name) {
-            score.points -= 1;
-        }
-        self.sort();
-    }
-    pub fn top10(&self) -> Self {
-        let mut top10 = self.clone();
-        while top10.scores.len() > 10 {
-            top10.scores.pop();
-        }
-        top10
-    }
+    // Sort the internal score vector in the direction we want.
     fn sort(&mut self) {
         self.scores.sort_by(|a, b| b.cmp(a));
     }
@@ -529,7 +550,7 @@ pub struct GameState {
     /// send a GameControlMsg::Fetch to get the new GameSetting from the server and update your
     /// client state.
     pub game_setting_hash: u64,
-    /// All of the current player's states, including your own! !!!NOTE!!! The only reliable method
+    /// All of the current player's states, including your own! **NOTE:** The only reliable method
     /// of knowing that a player is present in the game or not is whether or not a state is in
     /// player_states.  If there isn't a state, then the player has left or has been kicked/dropped.
     /// If there is a state, then the player is in the game (and might have joined since the last
@@ -538,11 +559,26 @@ pub struct GameState {
     /// High scores. The server will only send the top 10.
     pub high_scores: HighScores,
 }
-/// Clients should send `PlayerInput`s to the server ASAP.  The quicker the server gets inputs, the
+/// Clients should send `PlayerInput`s to the server often.  The quicker the server gets inputs, the
 /// more accurate the simulation will be.  But of course, you also shouldn't overload the server
-/// with too much traffic, because that's bad too.  Good rule of thumb: Coalesce 4 milliseconds
-/// worth of input together, and send that.  That's about 4 times faster than frames are sent by the
-/// server (60fps = 16.7ms).  The server should be able to handle ~250 pkts/sec per client.  I hope.
+/// with too much traffic, because that's bad too.  Good rule of thumb: Coalesce 15 milliseconds
+/// worth of input together, and send that.  That's just faster than frames are sent by the
+/// server (60fps = 16.7ms).  The server should be able to handle ~67 pkts/sec per client.  I hope.
+///
+/// `PlayerInput` is used to collect input into and send it to the server.  You
+/// can use the [angle_between](game/struct.Vector2.html#method.angle_between) method of a
+/// Vector2 to find the direction for the input based off of the position in your own player's
+/// [PlayerState](game/struct.PlayerState.html) and the current position of the mouse,
+/// which you get from one of the [window events](gfx/struct.Window.html#method.events)
+///
+/// Note that `attack` is an indicator of whether the player is currently (still) attempting to
+/// attack. The server will only attack once every once-in-awhile when the weapon's attack timer
+/// is ready, so you probably want to keep attack on while an attack button is held down, and
+/// then switch attack off when the attack button is released.
+///
+/// It's pretty safe to just overwrite move_amount and direction with the latest input you've got.
+/// Direction handling is instantaneous, and the move_amount is treated like a force (you move with
+/// a bit of inertia).
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct PlayerInput {
     /// The ID of your player
@@ -551,13 +587,17 @@ pub struct PlayerInput {
     /// timer has reached 0)
     pub attack: bool,
     /// How much your player is attempting to move horizontally (x) and vertically (y) [-1.0, 1.0].
-    /// Positive is right and up for x and y, respectively.
+    /// Positive is right and up for x and y, respectively.  You can derive movement amounts from
+    /// [Button](game/enum.Event.html#variant.Button) variants of the
+    /// [Event](game/enum.Event.html)s you get from the
+    /// [Window](gfx/struct.Window.html#method.events).
     pub move_amount: Vector2,
     /// What direction your player is facing. You can turn instantly, you lucky dog.
     pub direction: f32,
 }
 
 impl PlayerInput {
+    /// Create a new PlayerInput
     pub fn new() -> Self {
         Self {
             id: 0,
@@ -566,7 +606,7 @@ impl PlayerInput {
             direction: 0.0,
         }
     }
-    // Combine successive inputs into one input
+    /// Used by the server. Unlikely to be used by the client.
     pub fn coalesce(&mut self, new: PlayerInput) {
         // Any attack sticks
         self.attack = self.attack || new.attack;
@@ -574,4 +614,5 @@ impl PlayerInput {
         self.move_amount = new.move_amount;
         self.direction = new.direction;
     }
+
 }

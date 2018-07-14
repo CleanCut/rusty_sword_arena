@@ -126,7 +126,7 @@ fn main() {
         }
 
         // Every 4 milliseconds, send accumulated input and reset attack
-        if last_input_sent.elapsed() > Duration::from_millis(4) {
+        if last_input_sent.elapsed() > Duration::from_millis(15) {
             if let Some(my_player) = players.get(&my_id) {
                 my_input.direction = my_player.player_state.pos.angle_between(mouse_pos);
             }
