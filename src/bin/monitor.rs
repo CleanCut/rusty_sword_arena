@@ -6,9 +6,7 @@ extern crate impose;
 extern crate rusty_sword_arena;
 
 use impose::Audio;
-use rusty_sword_arena::game::{
-    Color, Event, PlayerEvent, PlayerState,
-};
+use rusty_sword_arena::game::{Color, Event, PlayerEvent, PlayerState};
 use rusty_sword_arena::gfx::{Shape, Window};
 use rusty_sword_arena::net::ServerConnection;
 //use rusty_sword_arena::timer::Timer;
