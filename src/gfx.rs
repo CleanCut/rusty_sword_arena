@@ -251,7 +251,7 @@ impl Window {
     }
 
     /// Get [input events](game/enum.InputEvent.html) that the graphics system may have seen
-    /// (window, keyboard, mouse) and translate them into our own, simpler events.
+    /// (window, keyboard, mouse) and return them in a Vec.
     pub fn poll_input_events(&mut self) -> Vec<InputEvent> {
         let screen_to_opengl = &mut (self.screen_to_opengl);
         let mut events = Vec::<InputEvent>::new();

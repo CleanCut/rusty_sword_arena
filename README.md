@@ -6,6 +6,17 @@
 
 This is the companion repository to the half-day tutorial for OSCON 2018.
 
+# LIVE INFO FOR OSCON ITSELF
+
+Wireless Network Info (to be able to see other machines on the network for our course)
+
+```
+SSID: Rusty Sword
+Password: OSCON2018
+Instructor's Laptop Game Server: 10.10.0.49
+Instructor's Home Server (warning, high latency!): agileperception.com
+```
+
 # Preparation - **_DO THIS BEFORE OSCON_**
 
 I use macOS, and that is what I developed Rusty Sword Arena on.  Everything _ought_ to be able to work on major Linux 

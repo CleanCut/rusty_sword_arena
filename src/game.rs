@@ -407,7 +407,7 @@ pub enum PlayerEvent {
     Leave,
 }
 
-/// A weapon a player may hold
+/// A weapon a player may hold.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Weapon {
     /// Something like "Rusty Sword", "Shiny Sword", "Rusty Spear", etc.

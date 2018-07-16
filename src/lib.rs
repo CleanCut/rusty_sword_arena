@@ -91,17 +91,24 @@
 //! Here are some things we will NOT do together in the tutorial.  If you are ahead of the class, or
 //! want to keep going after the class, here's some challenges you could take on!
 //!
+//! - Every GameState includes a [HighScores](game/struct.HighScores.html) struct. Why not do
+//!   something with it?  You could just print it to the console every once-in-awhile, or do
+//!   something more interesting.
+//! - Your player might sometimes appear underneath other players if they overlap. Make your player
+//!   always render on top.
+//! - Which player is yours among so many circles!?!? Add some visual indicator as to which
+//!   player is yours.
 //! - **Multiple players from one client** - The server and networking protocol do not prevent a
 //!   single client from adding multiple players to the game. Create some way to divide the
 //!   keyboard/mouse input up among two or more local players who will play through the same client.
 //! - **AI** - Who says a human has to do the playing?  The server is giving you all the information
 //!   about all the players's states.  Use that information to develop an AI player who plays by
 //!   himself.
-//! - **RTS** - Who says you have to control everything yourself?  Combine one or both of the above
-//!   challenges to implement a real-time strategy interface, where you direct one (or more) players
-//!   controlled by your client to achieve a goal (move somewhere, attack things, run away, etc)
-//!   and then your controlled players autonomously attempt to achieve that goal until you specify
-//!   otherwise.
+//! - **RTS** - Who says you have to control everything little movement?  Combine one or both of the
+//!   above challenges to implement a real-time strategy interface, where you direct one (or more)
+//!   players   controlled by your client to achieve a goal (move somewhere, attack things, run
+//!   away, etc) and then your controlled players autonomously attempt to achieve that goal until
+//!   you specify otherwise.
 //! - **Better Graphics** - Improve on the graphics.  Either make better use of the provided
 //!   shapes to indicate more of what is going on, or dig into the RSA `gfx.rs` module and augment
 //!   it with new and better graphical capabilities.  Health indicators sure would be nice.
@@ -117,13 +124,15 @@
 //!   - Add more graphics primitives (rectangles for healthbars, for example).
 //!   - Add the ability to render text.
 //!   - Port the network subsystem from ZeroMQ to [nanomsg](https://nanomsg.org/).
-//!   - Improve the network methods ability to indicate what exactly happened (was the name taken? was the game full?)
+//!   - Improve the network methods' abilities to indicate what exactly happened (was the name
+//!     taken? was the game full?)
 //!   - Port the sound subsystem from `impose` to something better.
 //!   - Update the documentation to be clearer, more comprehensive, and have more useful links.
 //!   - Add support for Game Modes (Teams? Capture the flag?).
-//!   - Add Weapon Drops.
+//!   - Add multiple weapon types and random weapon drops to pick up.
 //!   - Add the ability to Parry (you can try to attack OR parry - a successful parry causes the
 //!     attacking player to have a much larger delay than usual before the next attack attempt).
+//!   - Add player collision.
 //!   - [Create an issue](https://github.com/CleanCut/rusty_sword_arena/issues/new) if you
 //!     have ideas you want to discuss, or need help.
 //!   - [Create a Pull Request](https://github.com/CleanCut/rusty_sword_arena/compare) if you would
