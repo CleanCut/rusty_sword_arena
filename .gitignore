@@ -8,5 +8,8 @@
 # Intellij
 /.idea
 
+# Visual Studio Code
+/.vscode
+
 CheatSheet.Pages
 .DS_Store

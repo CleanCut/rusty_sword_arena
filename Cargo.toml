@@ -1,6 +1,6 @@
 [package]
 name = "rusty_sword_arena"
-version = "1.0.0"
+version = "1.0.1"
 authors = ["Nathan Stocks <cleancut@github.com>"]
 description = "Library/repository for the half-day Rust tutorial teaching you how to make a game client in Rust."
 documentation = "https://agileperception.com/doc/rusty_sword_arena/"
