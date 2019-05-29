@@ -141,13 +141,13 @@
 
 #![doc(html_favicon_url = "https://agileperception.com/static/img/favicon.ico")]
 #![doc(html_logo_url = "https://agileperception.com/static/img/APSwirl200.png")]
-extern crate bincode;
+
 #[macro_use]
 extern crate glium;
-extern crate rand;
+
 #[macro_use]
 extern crate serde_derive;
-extern crate zmq;
+
 
 /// Everything in the game module is shared by the server _and_ the client
 pub mod game;

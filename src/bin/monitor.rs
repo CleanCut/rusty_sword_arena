@@ -1,9 +1,9 @@
 //! Like the client, only it just connects to a server and displays what's happening without
 //! actually joining a game or sending any input.
 
-extern crate glium;
-extern crate impose;
-extern crate rusty_sword_arena;
+
+
+
 
 use impose::Audio;
 use rusty_sword_arena::game::{Color, InputEvent, PlayerEvent, PlayerState};
@@ -88,7 +88,7 @@ fn main() {
 
         // Process any new game states
         let new_game_states = server_conn.poll_game_states();
-        for mut game_state in new_game_states {
+        for game_state in new_game_states {
             // Remove any players who are no longer in the game
             players.retain(|k, _v| game_state.player_states.contains_key(k));
             // Update or add all players that have states

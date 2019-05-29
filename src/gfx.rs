@@ -1,4 +1,4 @@
-extern crate glium;
+use glium;
 use glium::glutin::{self, ElementState};
 use glium::Surface;
 use std::cmp::min;
@@ -107,7 +107,7 @@ pub struct Window {
     events_loop: glutin::EventsLoop,
     display: glium::Display,
     program: glium::Program,
-    screen_to_opengl: Box<FnMut((f64, f64)) -> Vector2>,
+    screen_to_opengl: Box<dyn FnMut((f64, f64)) -> Vector2>,
     target: Option<Frame>,
 }
 

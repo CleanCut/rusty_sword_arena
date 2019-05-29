@@ -1,9 +1,9 @@
 // THIS IS ONE REFERENCE IMPLEMENTATION
 // IT IS NOT EXACTLY WHAT WE WILL CREATE DURING THE TUTORIAL...but it's pretty similar.
 
-extern crate glium;
-extern crate impose;
-extern crate rusty_sword_arena;
+
+
+
 
 use impose::Audio;
 use rusty_sword_arena::game::{
@@ -136,7 +136,7 @@ fn main() {
 
         // Process any new game states
         let new_game_states = server_conn.poll_game_states();
-        for mut game_state in new_game_states {
+        for game_state in new_game_states {
             // Remove any players who are no longer in the game
             players.retain(|k, _v| game_state.player_states.contains_key(k));
             // Update or add all players that have states

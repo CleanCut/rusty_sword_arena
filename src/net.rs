@@ -1,4 +1,4 @@
-extern crate zmq;
+use zmq;
 use super::game::{GameControlMsg, GameSetting, GameState, PlayerInput};
 use bincode::{deserialize, serialize};
 

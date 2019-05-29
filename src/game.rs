@@ -282,7 +282,7 @@ impl Score {
 }
 
 impl fmt::Display for Score {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{:<4.0} {}", self.points, self.name)
     }
 }
@@ -368,7 +368,7 @@ impl HighScores {
 }
 
 impl fmt::Display for HighScores {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let _ = write!(f, "-----------\nHigh Scores\n-----------");
         for score in self.scores.iter() {
             let _ = write!(f, "\n{}", score);

@@ -1,7 +1,7 @@
-extern crate bincode;
-extern crate rand;
-extern crate rusty_sword_arena;
-extern crate zmq;
+
+
+
+use zmq;
 
 use rand::prelude::{thread_rng, Rng, ThreadRng};
 use rusty_sword_arena::game::{
@@ -441,7 +441,7 @@ fn process_game_control_requests(
                             // Assign player a color
                             let color = color_picker.pop_color();
                             // Create the new player state
-                            let mut player_state = PlayerState::new(
+                            let player_state = PlayerState::new(
                                 &game_setting,
                                 id,
                                 name.clone(),
