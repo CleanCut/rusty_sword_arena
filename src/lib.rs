@@ -142,13 +142,6 @@
 #![doc(html_favicon_url = "https://agileperception.com/static/img/favicon.ico")]
 #![doc(html_logo_url = "https://agileperception.com/static/img/APSwirl200.png")]
 
-#[macro_use]
-extern crate glium;
-
-#[macro_use]
-extern crate serde_derive;
-
-
 /// Everything in the game module is shared by the server _and_ the client
 pub mod game;
 /// The graphics module that will be used by your client

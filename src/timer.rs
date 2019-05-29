@@ -1,4 +1,5 @@
 use super::game::Floatable;
+use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
 /// Doing math with [std::time::Duration](https://doc.rust-lang.org/std/time/struct.Duration.html)

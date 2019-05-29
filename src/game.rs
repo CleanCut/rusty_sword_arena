@@ -2,6 +2,7 @@ use super::timer::Timer;
 use super::VERSION;
 
 use rand::prelude::Rng;
+use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use std::collections::hash_map::DefaultHasher;
 use std::collections::HashMap;

@@ -5,7 +5,7 @@ use std::cmp::min;
 use std::f64::consts::PI;
 
 use super::game::{ButtonState, ButtonValue, Color, InputEvent, Vector2};
-use glium::Frame;
+use glium::{Frame, implement_vertex, uniform};
 
 #[derive(Copy, Clone, Debug)]
 struct Vertex {

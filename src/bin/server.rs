@@ -1,8 +1,3 @@
-
-
-
-use zmq;
-
 use rand::prelude::{thread_rng, Rng, ThreadRng};
 use rusty_sword_arena::game::{
     Color, Floatable, GameControlMsg, GameSetting, GameState, HighScores, PlayerEvent, PlayerInput,
@@ -12,7 +7,7 @@ use rusty_sword_arena::{net, timer};
 use std::collections::HashMap;
 use std::thread;
 use std::time::{Duration, Instant};
-use zmq::Socket;
+use zmq;
 
 use bincode::{deserialize, serialize};
 
@@ -397,7 +392,7 @@ fn remove_player(
 }
 
 fn process_game_control_requests(
-    game_control_server_socket: &mut Socket,
+    game_control_server_socket: &mut zmq::Socket,
     game_setting: &mut GameSetting,
     player_states: &mut HashMap<u8, PlayerState>,
     rng: &mut ThreadRng,
@@ -493,7 +488,7 @@ fn process_game_control_requests(
 }
 
 fn coalesce_player_input(
-    player_input_server_socket: &mut Socket,
+    player_input_server_socket: &mut zmq::Socket,
     player_states: &mut HashMap<u8, PlayerState>,
     player_inputs: &mut HashMap<u8, PlayerInput>,
 ) {
