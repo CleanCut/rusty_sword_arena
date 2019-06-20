@@ -1,41 +1,37 @@
 [![Build Status](https://travis-ci.org/CleanCut/rusty_sword_arena.svg?branch=master)](https://travis-ci.org/CleanCut/rusty_sword_arena)
 [![](http://meritbadge.herokuapp.com/rusty_sword_arena)](https://crates.io/crates/rusty_sword_arena)
 
-
 # Rusty Sword Arena: A Crash Course in Rust
 
-This is the companion repository to the half-day tutorial for OSCON 2018.
+This is the companion repository to the half-day tutorial for OSCON 2019.
 
-# OSCON 2018
-
-- PART TWO! We'll continue on Wednesday, July 18th from 7:00pm-9:00pm in 
-  [room C123/124](https://www.oregoncc.org/sites/default/files/2017/09/22/Facility_floor_plans_and_specifications.pdf)
-- [Slides (PDF)](http://agileperception.com/static/RustySwordArena-OSCON2018.pdf)
+Just watching the training will be entertaining and informative, but you will truly learn a lot more if you actually
+dig in and do some coding!  This repository is for you hands-on-learners who are ready to roll.
 
 # Preparation - **_DO THIS BEFORE OSCON_**
 
 I use macOS, and that is what I developed Rusty Sword Arena on.  Everything _ought_ to be able to work on major Linux 
-distributions and Windows. Please do the following preparation _before_ OSCON so we can focus our tutorial time on 
-learning Rust instead of twiddling with dependencies.  Please [contact me](mailto:nathan.stocks@gmail.com) ASAP if you
+distributions and Windows. Please do the following preparation _before_ OSCON so we can focus our time on 
+learning Rust.  Please [contact me](mailto:nathan.stocks@gmail.com) ASAP if you
 have trouble with anything on this page.
 
 ### Install Rust
 
-Rust 1.27.0 or newer is required for Rusty Sword Arena!
+We will be using Rust 1.35.0 or newer for Rusty Sword Arena.
 
-- Go to [rust-lang.org](https://rust-lang.org) and click on the big blue `Install Rust` 
+- Go to [rust-lang.org](https://rust-lang.org) and click on the big yellow `Get Started` 
   button and follow the instructions to install Rust for your operating system.
   - Please DO NOT install rust via some other package manager, because it will be a version that is _too old_.
-  
+
 You should get somewhat similar output (versions may be newer) if you run commands like the ones below.  If you get a
-version older than 1.27.0, then run `rustup update` to install a newer version.
+version older than 1.35.0, then run `rustup update` to install a newer version.
  
 ```shell
 $ rustc --version
-rustc 1.27.0 (3eda71b00 2018-06-19)
+rustc 1.35.0 (3c235d560 2019-05-20)
 
 $ cargo --version
-cargo 1.27.0 (1e95190e5 2018-05-27)
+cargo 1.35.0 (6f3e9c367 2019-04-04)
 ```
 
 If you have any trouble with installation or running the commands above, please
@@ -43,10 +39,10 @@ If you have any trouble with installation or running the commands above, please
 
 ### Install Other Dependencies
 
-ZeroMQ is used under-the-hood for networking.  It's abstracted away, so you won't actually deal with it other than
+*ZeroMQ* is used under-the-hood for networking.  It's abstracted away, so you won't actually deal with it other than
 making sure the library portion of it is installed so Rust can find it.
 
-On Linux, the alsa development libraries are needed for sound.
+On Linux, the *alsa* development libraries are needed for sound.
 
 **macOS**
 
@@ -81,6 +77,12 @@ Follow the instructions in
 
 ### See if everything is working
 
+_*THIS IS THE IMPORTANT PART!*_  Following these steps will download a few hundred
+dependencies, which is really important to do before the conference because when
+a couple hundred people do it at the same time at the conference the IT folks
+freak out and scold me. :-)  Also, you'll have a working environment so you can
+listen during the tutorial instead of trying to get this stuff working.
+
 - Clone this repository
 - From inside the repository, run:
 ```bash
@@ -105,7 +107,7 @@ If you got through all those steps without anything crashing, then you're all re
 
 # Prepare to Learn
 
-Please do all of the following (see the 
+Please do *each* of the following before OSCON (see the 
 [How To Learn Rust](https://github.com/CleanCut/rusty_sword_arena/blob/master/HowToLearnRust.md) page for details on all
 of these)
 - [ ] Choose an IDE (or Editor) and configure it with Rust support and customize it to your liking
@@ -130,5 +132,7 @@ Your resources will be:
 - [How To Learn Rust](https://github.com/CleanCut/rusty_sword_arena/blob/master/HowToLearnRust.md)
 - [The Rust Standard Library](https://doc.rust-lang.org/std/)
 
+<!--
 Oh, and if you need to ~~cheat~~ catch up, [here is the "duel" repo](https://github.com/CleanCut/duel) 
 with a tag for each stage of the client we're going to build during the tutorial.
+-->
