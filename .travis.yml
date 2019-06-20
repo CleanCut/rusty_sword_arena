@@ -3,16 +3,12 @@ sudo: false
 language: rust
 rust:
     - stable
-    - beta
-    - nightly
 
 os:
   - linux
+  dist: xenial
   - osx
 
-matrix:
-  allow_failures:
-    - rust: nightly
 
 before_install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update && brew install zmq ; fi
