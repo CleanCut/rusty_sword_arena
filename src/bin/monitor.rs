@@ -66,7 +66,7 @@ fn main() {
         VERSION, game_setting.version, host
     );
 
-    let mut window = Window::new(None);
+    let mut window = Window::new(None, "MONITOR");
     let mut players = HashMap::<u8, Player>::new();
     let mut audio = Audio::new();
     audio.add_audio("miss", "media/miss.ogg");
