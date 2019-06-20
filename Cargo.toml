@@ -4,7 +4,7 @@ version = "1.0.1"
 authors = ["Nathan Stocks <cleancut@github.com>"]
 description = "Library/repository for the half-day Rust tutorial teaching you how to make a game client in Rust."
 documentation = "https://agileperception.com/doc/rusty_sword_arena/"
-homepage = "https://conferences.oreilly.com/oscon/oscon-or/public/schedule/detail/67116"
+homepage = "https://conferences.oreilly.com/oscon/oscon-or/public/schedule/detail/75769"
 repository = "https://github.com/CleanCut/rusty_sword_arena"
 readme = "README.md"
 keywords = ["tutorial", "rusty", "sword", "arena", "learn"]
@@ -12,11 +12,11 @@ license = "MIT"
 edition = "2018"
 
 [dependencies]
-# For graphics support 👾 (OpenGL) -- maybe try gfx-rs (Vulkan) instead in the future?
+# For graphics support 👾 (OpenGL) -- TODO: Switch to rendy
 glium = "0.21"
 
-# For raw networking -- need to switch to something that deals better with disconnects in the future, maybe nanomsg?
-zmq = "0.8"
+# Networking support -- TODO: Switch to grpc or twirp
+zmq = "0.9"
 
 # The following three are all so we can send Rust values over the network
 # ----
@@ -27,7 +27,7 @@ serde = { version = "1.0", features = ["derive"] }
 bincode = "1.0"
 
 # For random numbers! 🎲
-rand = "0.5"
+rand = "0.6"
 
-# For playing sound 🔊 - to have the _same_ sound overlap, we'll need to either hack on impose or use "rodio" directly
-impose = "0.2.0"
+# For playing sound 🔊 - TODO: Switch to rodio so we can have the _same_ sound overlap
+impose = "0.3"
