@@ -4,9 +4,10 @@ language: rust
 rust:
     - stable
 
+dist: xenial
+
 os:
   - linux
-  dist: xenial
   - osx
 
 
