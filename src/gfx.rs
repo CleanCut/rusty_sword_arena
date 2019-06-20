@@ -117,25 +117,28 @@ impl Window {
     /// providing a value for override_dimension, for example: `Some(2048)`.  Note that on hi-dpi
     /// displays (like Apple Retina Displays) 1 "pixel" is often a square of 4 hi-dpi pixels
     /// (depending on whether the monitor is set to be scaled or not).
-    pub fn new(override_dimension: Option<u32>) -> Self {
+    pub fn new(override_dimension: Option<u32>, window_title: &str) -> Self {
         let events_loop = glutin::EventsLoop::new();
-        let (_, monitor_height) = events_loop.get_primary_monitor().get_dimensions();
-        let dimension: u32 = match override_dimension {
-            Some(x) => x,
-            None => min(monitor_height - 100, 1024),
+        let primary_monitor = events_loop.get_primary_monitor();
+        let physical_size = primary_monitor.get_dimensions();
+        let screen_height = physical_size.to_logical(primary_monitor.get_hidpi_factor()).height;
+        let dimension = match override_dimension {
+            Some(x) => x as f64,
+            None => min(screen_height as u32 - 100, 1024) as f64,
         };
+        let logical_size = glutin::dpi::LogicalSize::new(dimension, dimension);
         let window = glutin::WindowBuilder::new()
-            .with_dimensions(dimension, dimension)
-            .with_title("Rusty Sword Arena!");
+            .with_dimensions(logical_size)
+            .with_title(window_title);
         let context = glutin::ContextBuilder::new();
         let display = glium::Display::new(window, context, &events_loop).unwrap();
 
         // Create a closure that captures the hidpi_factor to do local screen coordinate conversion
         // for us.
-        let hidpi_factor = display.gl_window().window().hidpi_factor();
+        let hidpi_factor = primary_monitor.get_hidpi_factor();
         let screen_to_opengl = Box::new(move |screen_coord: (f64, f64)| -> Vector2 {
-            let x = (screen_coord.0 as f32 / (0.5 * hidpi_factor * dimension as f32)) - 1.0;
-            let y = 1.0 - (screen_coord.1 as f32 / (0.5 * hidpi_factor * dimension as f32));
+            let x = (screen_coord.0 as f32 / (0.5 * hidpi_factor * dimension) as f32) - 1.0;
+            let y = 1.0 - (screen_coord.1 as f32 / (0.5 * hidpi_factor * dimension) as f32);
             Vector2 { x, y }
         });
 
@@ -259,14 +262,14 @@ impl Window {
             if let glium::glutin::Event::WindowEvent { event, .. } = ev {
                 match event {
                     // Time to close the app?
-                    glutin::WindowEvent::Closed => events.push(InputEvent::WindowClosed),
+                    glutin::WindowEvent::CloseRequested => events.push(InputEvent::WindowClosed),
                     // Mouse moved
                     glutin::WindowEvent::CursorMoved {
                         device_id: _,
                         position,
                         modifiers: _,
                     } => {
-                        let mouse_pos = screen_to_opengl(position);
+                        let mouse_pos = screen_to_opengl(position.into());
                         events.push(InputEvent::MouseMoved {
                             position: mouse_pos,
                         });

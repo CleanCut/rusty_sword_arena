@@ -75,7 +75,7 @@ fn main() {
         VERSION, game_setting.version, host
     );
 
-    let mut window = Window::new(None);
+    let mut window = Window::new(None, "Rusty Sword Arena!");
     let mut players = HashMap::<u8, Player>::new();
 
     let mut mouse_pos = Vector2 { x: 0.0, y: 0.0 };
