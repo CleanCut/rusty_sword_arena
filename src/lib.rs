@@ -19,7 +19,8 @@
 //! Note that while significant effort has been put into making the server _robust_ and unlikely to
 //! crash, there has consciously been very little effort towards security, or pretty much any proper
 //! game engine architecture.  In other words, this is a great way to learn Rust and have some fun
-//! at the same time, but this in no way pretends to be a substitute for a _real game engine™._ 😉
+//! at the same time, but this in no way pretends to be a substitute for a _real game engine™_ like
+//! [amethyst](https://amethyst.rs/) or [ggez](https://ggez.rs/). 😉
 //!
 //! ## Basic Gameplay
 //!
