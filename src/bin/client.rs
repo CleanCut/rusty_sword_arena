@@ -57,6 +57,8 @@ impl Player {
         self.body_shape.direction = player_state.direction;
         self.sword_shape.pos = player_state.pos;
         self.sword_shape.direction = player_state.direction;
+        self.sword_img.pos = player_state.pos;
+        self.sword_img.direction = player_state.direction;
         self.player_state = player_state;
     }
 }

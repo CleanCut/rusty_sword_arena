@@ -130,13 +130,14 @@ impl Image {
         let texture = glium::texture::CompressedSrgbTexture2d::new(&window.display, image).unwrap();
 
         let vertex_buffer = {
+            let scale = 0.1;
             glium::VertexBuffer::new(
                 &window.display,
                 &[
-                    ImgVertex { position: [-1.0, -1.0], tex_coords: [0.0, 0.0] },
-                    ImgVertex { position: [-1.0,  1.0], tex_coords: [0.0, 1.0] },
-                    ImgVertex { position: [ 1.0,  1.0], tex_coords: [1.0, 1.0] },
-                    ImgVertex { position: [ 1.0, -1.0], tex_coords: [1.0, 0.0] }
+                    ImgVertex { position: [-scale, -scale], tex_coords: [0.0, 0.0] },
+                    ImgVertex { position: [-scale,  scale], tex_coords: [0.0, 1.0] },
+                    ImgVertex { position: [ scale,  scale], tex_coords: [1.0, 1.0] },
+                    ImgVertex { position: [ scale, -scale], tex_coords: [1.0, 0.0] }
                 ])
                 .unwrap()
         };
