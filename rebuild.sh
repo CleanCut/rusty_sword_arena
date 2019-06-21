@@ -32,8 +32,7 @@ while true ; do
         # Restart server
         systemctl daemon-reload || die "Failed to reload systemctl daemons"
         systemctl restart rusty_sword_arena || die "Failed restarting the server"
-        echo "Started Rusty Sword Arena server version $(grep version Cargo.toml | cut -d '"' -f 2)"
-        banner
+        echo "Started Rusty Sword Arena server version $(grep ^version Cargo.toml | cut -d '"' -f 2)"
         exec ./rebuild.sh
     fi
     sleep 1;
