@@ -1,6 +1,6 @@
 use glium;
 use glium::glutin::{self, ElementState};
-use glium::Surface;
+use glium::{Surface, IndexBuffer};
 use std::cmp::min;
 use std::f64::consts::PI;
 
@@ -101,12 +101,66 @@ impl Shape {
     }
 }
 
+#[derive(Copy, Clone, Debug)]
+struct ImgVertex {
+    position: [f32; 2],
+    tex_coords: [f32; 2],
+}
+
+implement_vertex!(ImgVertex, position, tex_coords);
+
+#[derive(Debug)]
+pub struct Image {
+    pub pos: Vector2,
+    pub direction: f32,
+    vertex_buffer: glium::vertex::VertexBuffer<ImgVertex>,
+    index_buffer: IndexBuffer<u16>,
+    texture: glium::texture::CompressedSrgbTexture2d,
+}
+impl Image {
+    pub fn new(
+        window: &Window,
+        pos: Vector2,
+        direction: f32,
+    ) -> Self {
+        let image = image::load(std::io::Cursor::new(&include_bytes!("../media/sword.png")[..]),
+                                image::PNG).unwrap().to_rgba();
+        let image_dimensions = image.dimensions();
+        let image = glium::texture::RawImage2d::from_raw_rgba_reversed(&image.into_raw(), image_dimensions);
+        let texture = glium::texture::CompressedSrgbTexture2d::new(&window.display, image).unwrap();
+
+        let vertex_buffer = {
+            glium::VertexBuffer::new(
+                &window.display,
+                &[
+                    ImgVertex { position: [-1.0, -1.0], tex_coords: [0.0, 0.0] },
+                    ImgVertex { position: [-1.0,  1.0], tex_coords: [0.0, 1.0] },
+                    ImgVertex { position: [ 1.0,  1.0], tex_coords: [1.0, 1.0] },
+                    ImgVertex { position: [ 1.0, -1.0], tex_coords: [1.0, 0.0] }
+                ])
+                .unwrap()
+        };
+        let index_buffer = glium::IndexBuffer::new(
+            &window.display,
+            glium::index::PrimitiveType::TriangleStrip, &[1 as u16, 2, 0, 3]).unwrap();
+        Self {
+            pos,
+            direction,
+            vertex_buffer,
+            index_buffer,
+            texture,
+        }
+    }
+}
+
+
 /// An OpenGL window for displaying graphics. Also the object through which you'll receive input
 /// events (mouse, keyboard, etc.)
 pub struct Window {
     events_loop: glutin::EventsLoop,
     display: glium::Display,
     program: glium::Program,
+    program_img: glium::Program,
     screen_to_opengl: Box<dyn FnMut((f64, f64)) -> Vector2>,
     target: Option<Frame>,
 }
@@ -168,6 +222,7 @@ impl Window {
             }
         "#;
 
+
         let program = glium::Program::new(
             &display,
             glium::program::ProgramCreationInput::SourceCode {
@@ -182,10 +237,49 @@ impl Window {
             },
         ).unwrap();
 
+
+        // Image versions
+        let vertex_shader_img = r#"
+            #version 140
+            uniform mat4 matrix;
+            in vec2 position;
+            in vec2 tex_coords;
+            out vec2 v_tex_coords;
+            void main() {
+                gl_Position = matrix * vec4(position, 0.0, 1.0);
+                v_tex_coords = tex_coords;
+            }
+        "#;
+
+        let fragment_shader_img = r#"
+            #version 140
+            uniform sampler2D tex;
+            in vec2 v_tex_coords;
+            out vec4 f_color;
+            void main() {
+                f_color = texture(tex, v_tex_coords);
+            }
+        "#;
+
+        let program_img = glium::Program::new(
+            &display,
+            glium::program::ProgramCreationInput::SourceCode {
+                vertex_shader: vertex_shader_img,
+                tessellation_control_shader: None,
+                tessellation_evaluation_shader: None,
+                geometry_shader: None,
+                fragment_shader: fragment_shader_img,
+                transform_feedback_varyings: None,
+                outputs_srgb: true,
+                uses_point_size: true,
+            },
+        ).unwrap();
+
         Self {
             events_loop,
             display,
             program,
+            program_img,
             screen_to_opengl,
             target: None,
         }
@@ -239,6 +333,44 @@ impl Window {
                     &shape.vertex_buffer,
                     &shape.indices,
                     &self.program,
+                    &uniforms,
+                    &draw_parameters,
+                )
+                .unwrap();
+        }
+    }
+
+    /// Pass `draw()` every shape that you would like to draw.  After the first time they are drawn,
+    /// shapes stay on the GPU and only send updated position/rotation, which is super efficient,
+    /// so keep your shape objects around!  Don't recreate them every frame.  Shapes are drawn in
+    /// order, so the last shape you draw will be on top.
+    pub fn draw_image(&mut self, img: &Image) {
+        if let Some(ref mut target) = self.target {
+            let uniforms = uniform! {
+                        // CAUTION: The inner arrays are COLUMNS not ROWS (left to right actually is top to bottom)
+                            matrix: [
+                                [img.direction.cos() as f32, img.direction.sin() as f32, 0.0, 0.0],
+                                [-img.direction.sin() as f32, img.direction.cos() as f32, 0.0, 0.0],
+                                [0.0, 0.0, 1.0, 0.0],
+                                [img.pos.x, img.pos.y, 0.0, 1.0f32],
+                            ],
+                            tex: &img.texture
+                        };
+
+            // These options don't seem to have any effect at all :-(
+            let draw_parameters = glium::DrawParameters {
+                blend: glium::Blend::alpha_blending(),
+                line_width: Some(5.0),
+                point_size: Some(5.0),
+                smooth: Some(glium::draw_parameters::Smooth::Nicest),
+                ..Default::default()
+            };
+
+            target
+                .draw(
+                    &img.vertex_buffer,
+                    &img.index_buffer,
+                    &self.program_img,
                     &uniforms,
                     &draw_parameters,
                 )

@@ -9,7 +9,7 @@ use impose::Audio;
 use rusty_sword_arena::game::{
     ButtonState, ButtonValue, Color, InputEvent, PlayerEvent, PlayerInput, PlayerState, Vector2,
 };
-use rusty_sword_arena::gfx::{Shape, Window};
+use rusty_sword_arena::gfx::{Image, Shape, Window};
 use rusty_sword_arena::net::ServerConnection;
 //use rusty_sword_arena::timer::Timer;
 use rusty_sword_arena::VERSION;
@@ -21,6 +21,7 @@ struct Player {
     player_state: PlayerState,
     body_shape: Shape,
     sword_shape: Shape,
+    sword_img: Image,
 }
 
 impl Player {
@@ -39,10 +40,16 @@ impl Player {
             player_state.direction,
             Color::new(1.0, 0.0, 0.0),
         );
+        let sword_img = Image::new(
+            window,
+            player_state.pos,
+            player_state.direction,
+        );
         Self {
             player_state,
             body_shape,
             sword_shape,
+            sword_img,
         }
     }
     fn update_state(&mut self, player_state: PlayerState) {
@@ -191,6 +198,7 @@ fn main() {
             if !player.player_state.dead {
                 window.draw(&player.body_shape);
                 window.draw(&player.sword_shape);
+                window.draw_image(&player.sword_img);
             }
         }
         window.drawfinish();
