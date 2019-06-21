@@ -975,7 +975,7 @@ dependencies = [
 
 [[package]]
 name = "rusty_sword_arena"
-version = "1.0.1"
+version = "1.1.0"
 dependencies = [
  "bincode 1.1.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "glium 0.25.0 (registry+https://github.com/rust-lang/crates.io-index)",

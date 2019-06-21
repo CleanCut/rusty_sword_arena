@@ -5,7 +5,7 @@ WATCHFILE="/tmp/rusty_sword_arena.rebuild"
 # For when things go horribly wrong
 function die {
     echo
-    echo $1
+    echo "FATAL: $1"
     echo
     exit 2
 }
@@ -23,7 +23,7 @@ while true ; do
         # Cleanup watchfile
         rm ${WATCHFILE}
         # Pull new source code
-        git pull origin master || die "Error pulling from GitHub"
+        git pull || die "Error pulling from GitHub"
         # Build the docs
         rm -rf target/doc || die "Failed cleaning previous docs"
         cargo doc --lib --no-deps || die "Failed generating documentation"
@@ -34,6 +34,7 @@ while true ; do
         systemctl restart rusty_sword_arena || die "Failed restarting the server"
         echo "Started Rusty Sword Arena server version $(grep version Cargo.toml | cut -d '"' -f 2)"
         banner
+        exec ./rebuild.sh
     fi
     sleep 1;
 done
