@@ -8,16 +8,16 @@ use super::game::{ButtonState, ButtonValue, Color, InputEvent, Vector2};
 use glium::{Frame, implement_vertex, uniform};
 
 #[derive(Copy, Clone, Debug)]
-struct Vertex {
+struct ShapeVertex {
     position: [f32; 2],
     color: [f32; 3],
 }
-implement_vertex!(Vertex, position, color);
+implement_vertex!(ShapeVertex, position, color);
 
-fn create_circle_vertices(radius: f32, num_vertices: usize, color: Color) -> Vec<Vertex> {
-    let mut v = Vec::<Vertex>::with_capacity(num_vertices + 2);
+fn create_circle_vertices(radius: f32, num_vertices: usize, color: Color) -> Vec<ShapeVertex> {
+    let mut v = Vec::<ShapeVertex>::with_capacity(num_vertices + 2);
     // The center of the circle/fan
-    v.push(Vertex {
+    v.push(ShapeVertex {
         position: [0.0, 0.0],
         color: [color.r, color.g, color.b],
     });
@@ -34,7 +34,7 @@ fn create_circle_vertices(radius: f32, num_vertices: usize, color: Color) -> Vec
         } else {
             color
         };
-        v.push(Vertex {
+        v.push(ShapeVertex {
             position: [inner.cos() as f32 * radius, inner.sin() as f32 * radius],
             color: [color.r, color.g, color.b],
         });
@@ -42,11 +42,11 @@ fn create_circle_vertices(radius: f32, num_vertices: usize, color: Color) -> Vec
     v
 }
 
-fn create_ring_vertices(radius: f32, num_vertices: usize, color: Color) -> Vec<Vertex> {
-    let mut v = Vec::<Vertex>::with_capacity(num_vertices + 1);
+fn create_ring_vertices(radius: f32, num_vertices: usize, color: Color) -> Vec<ShapeVertex> {
+    let mut v = Vec::<ShapeVertex>::with_capacity(num_vertices + 1);
     for x in 0..=num_vertices {
         let inner: f64 = 2.0 * PI / num_vertices as f64 * x as f64;
-        v.push(Vertex {
+        v.push(ShapeVertex {
             position: [inner.cos() as f32 * radius, inner.sin() as f32 * radius],
             color: [color.r, color.g, color.b],
         });
@@ -60,7 +60,7 @@ fn create_ring_vertices(radius: f32, num_vertices: usize, color: Color) -> Vec<V
 pub struct Shape {
     pub pos: Vector2,
     pub direction: f32,
-    vertex_buffer: glium::vertex::VertexBuffer<Vertex>,
+    vertex_buffer: glium::vertex::VertexBuffer<ShapeVertex>,
     indices: glium::index::NoIndices,
 }
 
@@ -117,6 +117,7 @@ pub struct Image {
     index_buffer: IndexBuffer<u16>,
     texture: glium::texture::CompressedSrgbTexture2d,
 }
+
 impl Image {
     pub fn new(
         window: &Window,
@@ -160,9 +161,9 @@ impl Image {
 pub struct Window {
     events_loop: glutin::EventsLoop,
     display: glium::Display,
-    program: glium::Program,
-    program_img: glium::Program,
-    screen_to_opengl: Box<dyn FnMut((f64, f64)) -> Vector2>,
+    shape_program: glium::Program,
+    img_program: glium::Program,
+    screen_to_opengl: Box<dyn Fn((f64, f64)) -> Vector2>,
     target: Option<Frame>,
 }
 
@@ -188,16 +189,15 @@ impl Window {
         let context = glutin::ContextBuilder::new();
         let display = glium::Display::new(window, context, &events_loop).unwrap();
 
-        // Create a closure that captures the hidpi_factor to do local screen coordinate conversion
-        // for us.
-        let hidpi_factor = primary_monitor.get_hidpi_factor();
+        // Create a closure that captures current screen information to use to
+        // do local screen coordinate conversion for us.
         let screen_to_opengl = Box::new(move |screen_coord: (f64, f64)| -> Vector2 {
-            let x = (screen_coord.0 as f32 / (0.5 * hidpi_factor * dimension) as f32) - 1.0;
-            let y = 1.0 - (screen_coord.1 as f32 / (0.5 * hidpi_factor * dimension) as f32);
+            let x = (screen_coord.0 as f32 / (0.5 * dimension) as f32) - 1.0;
+            let y = 1.0 - (screen_coord.1 as f32 / (0.5 * dimension) as f32);
             Vector2 { x, y }
         });
 
-        let vertex_shader = r#"
+        let shape_vertex_shader = r#"
         #version 140
 
         in vec2 position;
@@ -212,7 +212,7 @@ impl Window {
         }
         "#;
 
-        let fragment_shader = r#"
+        let shape_fragment_shader = r#"
             #version 140
 
             in vec3 v_color;
@@ -227,11 +227,11 @@ impl Window {
         let program = glium::Program::new(
             &display,
             glium::program::ProgramCreationInput::SourceCode {
-                vertex_shader: vertex_shader,
+                vertex_shader: shape_vertex_shader,
                 tessellation_control_shader: None,
                 tessellation_evaluation_shader: None,
                 geometry_shader: None,
-                fragment_shader: fragment_shader,
+                fragment_shader: shape_fragment_shader,
                 transform_feedback_varyings: None,
                 outputs_srgb: true,
                 uses_point_size: true,
@@ -279,8 +279,8 @@ impl Window {
         Self {
             events_loop,
             display,
-            program,
-            program_img,
+            shape_program: program,
+            img_program: program_img,
             screen_to_opengl,
             target: None,
         }
@@ -333,7 +333,7 @@ impl Window {
                 .draw(
                     &shape.vertex_buffer,
                     &shape.indices,
-                    &self.program,
+                    &self.shape_program,
                     &uniforms,
                     &draw_parameters,
                 )
@@ -371,7 +371,7 @@ impl Window {
                 .draw(
                     &img.vertex_buffer,
                     &img.index_buffer,
-                    &self.program_img,
+                    &self.img_program,
                     &uniforms,
                     &draw_parameters,
                 )
