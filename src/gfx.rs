@@ -115,7 +115,7 @@ pub struct Image {
     pub direction: f32,
     vertex_buffer: glium::vertex::VertexBuffer<ImgVertex>,
     index_buffer: IndexBuffer<u16>,
-    texture: glium::texture::CompressedSrgbTexture2d,
+    texture: glium::texture::CompressedTexture2d,
 }
 
 impl Image {
@@ -128,7 +128,7 @@ impl Image {
                                 image::PNG).unwrap().to_rgba();
         let image_dimensions = image.dimensions();
         let image = glium::texture::RawImage2d::from_raw_rgba_reversed(&image.into_raw(), image_dimensions);
-        let texture = glium::texture::CompressedSrgbTexture2d::new(&window.display, image).unwrap();
+        let texture = glium::texture::CompressedTexture2d::new(&window.display, image).unwrap();
 
         let vertex_buffer = {
             let scale = 0.1;
