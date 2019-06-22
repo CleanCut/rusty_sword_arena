@@ -97,13 +97,15 @@ cargo run --bin server
 cargo run --bin client -- yourname localhost
 ```
   - The server should say something about a player connecting
-  - This should compile and then launch a window with a circle with a stripe.
-  - The stripe should point at your mouse pointer.
+  - This should compile and then launch a window with a circle holding a sword
+  - The sword should point at your mouse pointer.
   - The circle can be moved around with the arrow keys or WASD.
+  - You can swing your sword by clicking your mouse
   - Stop the client by closing the window. Stop the server by pressing `Ctrl-C` in it's terminal.
   - If something crashes or goes wrong, please [contact me](mailto:nathan.stocks@gmail.com) before OSCON!!!
 
-If you got through all those steps without anything crashing, then you're all ready for OSCON. ✨🎉✨
+If you got through all those steps without anything crashing, then you're all ready for OSCON. We're going to
+learn Rust while making that game client. ✨🎉✨
 
 # Prepare to Learn
 
