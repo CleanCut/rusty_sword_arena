@@ -295,11 +295,11 @@ impl Window {
         }
     }
 
-    /// Pass `draw()` every shape that you would like to draw.  After the first time they are drawn,
-    /// shapes stay on the GPU and only send updated position/rotation, which is super efficient,
-    /// so keep your shape objects around!  Don't recreate them every frame.  Shapes are drawn in
+    /// Pass `draw_shape()` a shape to draw.  After the first time the shape is drawn it
+    /// stays on the GPU and only send updated position/rotation, which is super efficient,
+    /// so keep your shapes around!  Don't recreate them every frame.  Shapes are drawn in
     /// order, so the last shape you draw will be on top.
-    pub fn draw(&mut self, shape: &Shape) {
+    pub fn draw_shape(&mut self, shape: &Shape) {
         if let Some(ref mut target) = self.target {
             let uniforms = uniform! {
                         // CAUTION: The inner arrays are COLUMNS not ROWS (left to right actually is top to bottom)

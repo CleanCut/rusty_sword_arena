@@ -61,10 +61,21 @@ impl Timer {
         if self.ready {
             return;
         }
+//        print!("{} - {} = ", self.time_left.as_nanos(), delta.as_nanos());
         if let Some(result) = self.time_left.checked_sub(delta) {
+//            println!("{}", result.as_nanos());
             self.time_left = result;
         } else {
             self.ready = true;
+        }
+    }
+
+    /// How much time is left as an f32 percentage from 0.0 to 1.0
+    pub fn time_left_percent(&self) -> f32 {
+        if self.ready {
+            1.0
+        } else {
+            self.time_left.as_millis() as f32 / self.time.as_millis() as f32
         }
     }
 }

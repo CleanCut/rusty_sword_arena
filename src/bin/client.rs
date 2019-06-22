@@ -1,27 +1,26 @@
 // THIS IS ONE REFERENCE IMPLEMENTATION
 // IT IS NOT EXACTLY WHAT WE WILL CREATE DURING THE TUTORIAL...but it's pretty similar.
 
-
-
-
-
 use impose::Audio;
 use rusty_sword_arena::game::{
     ButtonState, ButtonValue, Color, InputEvent, PlayerEvent, PlayerInput, PlayerState, Vector2,
 };
 use rusty_sword_arena::gfx::{Image, Shape, Window};
 use rusty_sword_arena::net::ServerConnection;
-//use rusty_sword_arena::timer::Timer;
+use rusty_sword_arena::timer::Timer;
 use rusty_sword_arena::VERSION;
 use std::collections::HashMap;
 use std::env;
 use std::time::{Duration, Instant};
+use std::f32::consts::PI;
 
 struct Player {
     player_state: PlayerState,
     body_shape: Shape,
     sword_shape: Shape,
     sword_img: Image,
+    sword_swing_center: f32,
+    sword_swing_timer: Timer,
 }
 
 impl Player {
@@ -45,11 +44,15 @@ impl Player {
             player_state.pos,
             player_state.direction,
         );
+        let mut sword_swing_timer = Timer::from_millis(350);
+        sword_swing_timer.update(Duration::from_secs(5));
         Self {
             player_state,
             body_shape,
             sword_shape,
             sword_img,
+            sword_swing_center: 0.0,
+            sword_swing_timer,
         }
     }
     fn update_state(&mut self, player_state: PlayerState) {
@@ -58,8 +61,51 @@ impl Player {
         self.sword_shape.pos = player_state.pos;
         self.sword_shape.direction = player_state.direction;
         self.sword_img.pos = player_state.pos;
-        self.sword_img.direction = player_state.direction;
+        // Reset the swing timer (for animating the sword) if an attack was attempted
+        for event in &player_state.player_events {
+            match event {
+                PlayerEvent::AttackHit { id: _ } => {
+                    self.sword_swing_timer.reset();
+                    self.sword_swing_center = player_state.direction;
+                },
+                PlayerEvent::AttackMiss => {
+                    self.sword_swing_timer.reset();
+                    self.sword_swing_center = player_state.direction;
+                },
+                _ => {},
+            }
+        }
+        // The timer being "ready" means the swing is over, so just point the sword forward
+        if self.sword_swing_timer.ready {
+            self.sword_img.direction = player_state.direction;
+        } else {
+            // If the timer is going, then put the sword in some portion of the swing animation
+            self.sword_img.direction = self.sword_swing_center + (2.0 * PI * self.sword_swing_timer.time_left_percent());
+        }
         self.player_state = player_state;
+    }
+    fn update(&mut self, dt: Duration, audio: &mut Audio) {
+        self.sword_swing_timer.update(dt);
+        for player_event in self.player_state.player_events.drain(..) {
+            match player_event {
+                PlayerEvent::AttackMiss => audio.play("miss"),
+                PlayerEvent::Die => audio.play("die"),
+                PlayerEvent::Spawn => audio.play("spawn"),
+                PlayerEvent::Join => audio.play("join"),
+                PlayerEvent::Leave => audio.play("leave"),
+                PlayerEvent::TookDamage => audio.play("ow"),
+                PlayerEvent::ChangeWeapon => audio.play("change_weapon"),
+                _ => (),
+            }
+        }
+    }
+    fn draw(&self, window: &mut Window) {
+        if self.player_state.dead {
+            return;
+        }
+        window.draw_shape(&self.body_shape);
+        //window.draw_shape(&self.sword_shape);
+        window.draw_image(&self.sword_img);
     }
 }
 
@@ -91,6 +137,8 @@ fn main() {
     let mut my_input = PlayerInput::new();
     my_input.id = my_id;
     let mut last_input_sent = Instant::now();
+    let mut last_frame_time = Instant::now();
+    let mut dt = Duration::from_secs(0);
 
     let mut audio = Audio::new();
     audio.add_audio("miss", "media/miss.ogg");
@@ -159,51 +207,25 @@ fn main() {
         }
         // Process Player Events
         for (_id, player) in &mut players {
-            for player_event in &mut player.player_state.player_events {
-                match player_event {
-                    PlayerEvent::AttackMiss => audio.play("miss"),
-                    PlayerEvent::Die => audio.play("die"),
-                    PlayerEvent::Spawn => audio.play("spawn"),
-                    PlayerEvent::Join => audio.play("join"),
-                    PlayerEvent::Leave => audio.play("leave"),
-                    PlayerEvent::TookDamage => audio.play("ow"),
-                    PlayerEvent::ChangeWeapon => audio.play("change_weapon"),
-                    _ => (),
-                }
-            }
+            player.update(dt, &mut audio);
         }
 
         // Draw a frame!
         window.drawstart();
-        // Draw all the bodies
+        // Draw all the other players
         for (id, player) in &players {
             if *id == my_id {
                 continue;
             }
-            if player.player_state.dead {
-                continue;
-            }
-            window.draw(&player.body_shape);
+            player.draw(&mut window);
         }
-        // Draw all the swords
-        for (id, player) in &players {
-            if *id == my_id {
-                continue;
-            }
-            if player.player_state.dead {
-                continue;
-            }
-            window.draw(&player.sword_shape);
-        }
-        // Draw my own body & sword last, so I can always see myself
+        // Draw my own player last, so I can always see myself
         if let Some(player) = players.get(&my_id) {
-            if !player.player_state.dead {
-                window.draw(&player.body_shape);
-                window.draw(&player.sword_shape);
-                window.draw_image(&player.sword_img);
-            }
+            player.draw(&mut window);
         }
         window.drawfinish();
+        dt = last_frame_time.elapsed();
+        last_frame_time = Instant::now();
     }
 
     println!("Leaving the game.");

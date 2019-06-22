@@ -123,14 +123,14 @@ fn main() {
             if player.player_state.dead {
                 continue;
             }
-            window.draw(&player.body_shape);
+            window.draw_shape(&player.body_shape);
         }
         // Draw all the swords
         for (_id, player) in &players {
             if player.player_state.dead {
                 continue;
             }
-            window.draw(&player.sword_shape);
+            window.draw_shape(&player.sword_shape);
         }
         window.drawfinish();
     }
