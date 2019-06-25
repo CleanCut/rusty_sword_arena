@@ -3,7 +3,7 @@
 
 use impose::Audio;
 use rusty_sword_arena::game::{
-    ButtonState, ButtonValue, Color, InputEvent, PlayerEvent, PlayerInput, PlayerState, Vector2,
+    ButtonState, ButtonValue, InputEvent, PlayerEvent, PlayerInput, PlayerState, Vector2,
 };
 use rusty_sword_arena::gfx::{Image, Shape, Window};
 use rusty_sword_arena::net::ServerConnection;
@@ -17,10 +17,8 @@ use std::time::{Duration, Instant};
 struct Player {
     player_state: PlayerState,
     body_shape: Shape,
-    sword_shape: Shape,
     sword_img: Image,
-    sword_swing_center: f32,
-    sword_swing_timer: Timer,
+    swing_timer: Timer,
 }
 
 impl Player {
@@ -32,57 +30,44 @@ impl Player {
             player_state.direction,
             player_state.color,
         );
-        let sword_shape = Shape::new_ring(
-            window,
-            player_state.weapon.radius,
-            player_state.pos,
-            player_state.direction,
-            Color::new(1.0, 0.0, 0.0),
-        );
         let sword_img = Image::new(window, player_state.pos, player_state.direction);
         let mut sword_swing_timer = Timer::from_millis(350);
         sword_swing_timer.update(Duration::from_secs(5));
         Self {
             player_state,
             body_shape,
-            sword_shape,
             sword_img,
-            sword_swing_center: 0.0,
-            sword_swing_timer,
+            swing_timer: sword_swing_timer,
         }
     }
     fn update_state(&mut self, player_state: PlayerState) {
         self.body_shape.pos = player_state.pos;
         self.body_shape.direction = player_state.direction;
-        self.sword_shape.pos = player_state.pos;
-        self.sword_shape.direction = player_state.direction;
         self.sword_img.pos = player_state.pos;
         // Reset the swing timer (for animating the sword) if an attack was attempted
         for event in &player_state.player_events {
             match event {
                 PlayerEvent::AttackHit { id: _ } => {
-                    self.sword_swing_timer.reset();
-                    self.sword_swing_center = player_state.direction;
+                    self.swing_timer.reset();
                 }
                 PlayerEvent::AttackMiss => {
-                    self.sword_swing_timer.reset();
-                    self.sword_swing_center = player_state.direction;
+                    self.swing_timer.reset();
                 }
                 _ => {}
             }
         }
         // The timer being "ready" means the swing is over, so just point the sword forward
-        if self.sword_swing_timer.ready {
+        if self.swing_timer.ready {
             self.sword_img.direction = player_state.direction;
         } else {
             // If the timer is going, then put the sword in some portion of the swing animation
             self.sword_img.direction =
-                self.sword_swing_center + (2.0 * PI * self.sword_swing_timer.time_left_percent());
+                self.player_state.direction + (2.0 * PI * self.swing_timer.time_left_percent());
         }
         self.player_state = player_state;
     }
     fn update(&mut self, dt: Duration, audio: &mut Audio) {
-        self.sword_swing_timer.update(dt);
+        self.swing_timer.update(dt);
         for player_event in self.player_state.player_events.drain(..) {
             match player_event {
                 PlayerEvent::AttackMiss => audio.play("miss"),
@@ -101,7 +86,6 @@ impl Player {
             return;
         }
         window.draw_shape(&self.body_shape);
-        //window.draw_shape(&self.sword_shape);
         window.draw_image(&self.sword_img);
     }
 }
