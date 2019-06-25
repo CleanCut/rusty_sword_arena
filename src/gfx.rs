@@ -1,11 +1,11 @@
 use glium;
 use glium::glutin::{self, ElementState};
-use glium::{Surface, IndexBuffer};
+use glium::{IndexBuffer, Surface};
 use std::cmp::min;
 use std::f64::consts::PI;
 
 use super::game::{ButtonState, ButtonValue, Color, InputEvent, Vector2};
-use glium::{Frame, implement_vertex, uniform};
+use glium::{implement_vertex, uniform, Frame};
 
 #[derive(Copy, Clone, Debug)]
 struct ShapeVertex {
@@ -119,15 +119,16 @@ pub struct Image {
 }
 
 impl Image {
-    pub fn new(
-        window: &Window,
-        pos: Vector2,
-        direction: f32,
-    ) -> Self {
-        let image = image::load(std::io::Cursor::new(&include_bytes!("../media/sword.png")[..]),
-                                image::PNG).unwrap().to_rgba();
+    pub fn new(window: &Window, pos: Vector2, direction: f32) -> Self {
+        let image = image::load(
+            std::io::Cursor::new(&include_bytes!("../media/sword.png")[..]),
+            image::PNG,
+        )
+        .unwrap()
+        .to_rgba();
         let image_dimensions = image.dimensions();
-        let image = glium::texture::RawImage2d::from_raw_rgba_reversed(&image.into_raw(), image_dimensions);
+        let image =
+            glium::texture::RawImage2d::from_raw_rgba_reversed(&image.into_raw(), image_dimensions);
         let texture = glium::texture::CompressedTexture2d::new(&window.display, image).unwrap();
 
         let vertex_buffer = {
@@ -135,16 +136,32 @@ impl Image {
             glium::VertexBuffer::new(
                 &window.display,
                 &[
-                    ImgVertex { position: [-scale, -scale], tex_coords: [0.0, 0.0] },
-                    ImgVertex { position: [-scale,  scale], tex_coords: [0.0, 1.0] },
-                    ImgVertex { position: [ scale,  scale], tex_coords: [1.0, 1.0] },
-                    ImgVertex { position: [ scale, -scale], tex_coords: [1.0, 0.0] }
-                ])
-                .unwrap()
+                    ImgVertex {
+                        position: [-scale, -scale],
+                        tex_coords: [0.0, 0.0],
+                    },
+                    ImgVertex {
+                        position: [-scale, scale],
+                        tex_coords: [0.0, 1.0],
+                    },
+                    ImgVertex {
+                        position: [scale, scale],
+                        tex_coords: [1.0, 1.0],
+                    },
+                    ImgVertex {
+                        position: [scale, -scale],
+                        tex_coords: [1.0, 0.0],
+                    },
+                ],
+            )
+            .unwrap()
         };
         let index_buffer = glium::IndexBuffer::new(
             &window.display,
-            glium::index::PrimitiveType::TriangleStrip, &[1 as u16, 2, 0, 3]).unwrap();
+            glium::index::PrimitiveType::TriangleStrip,
+            &[1 as u16, 2, 0, 3],
+        )
+        .unwrap();
         Self {
             pos,
             direction,
@@ -154,7 +171,6 @@ impl Image {
         }
     }
 }
-
 
 /// An OpenGL window for displaying graphics. Also the object through which you'll receive input
 /// events (mouse, keyboard, etc.)
@@ -177,7 +193,9 @@ impl Window {
         let events_loop = glutin::EventsLoop::new();
         let primary_monitor = events_loop.get_primary_monitor();
         let physical_size = primary_monitor.get_dimensions();
-        let screen_height = physical_size.to_logical(primary_monitor.get_hidpi_factor()).height;
+        let screen_height = physical_size
+            .to_logical(primary_monitor.get_hidpi_factor())
+            .height;
         let dimension = match override_dimension {
             Some(x) => x as f64,
             None => min(screen_height as u32 - 100, 1024) as f64,
@@ -223,7 +241,6 @@ impl Window {
             }
         "#;
 
-
         let program = glium::Program::new(
             &display,
             glium::program::ProgramCreationInput::SourceCode {
@@ -236,8 +253,8 @@ impl Window {
                 outputs_srgb: true,
                 uses_point_size: true,
             },
-        ).unwrap();
-
+        )
+        .unwrap();
 
         // Image versions
         let vertex_shader_img = r#"
@@ -274,7 +291,8 @@ impl Window {
                 outputs_srgb: true,
                 uses_point_size: true,
             },
-        ).unwrap();
+        )
+        .unwrap();
 
         Self {
             events_loop,
@@ -348,15 +366,15 @@ impl Window {
     pub fn draw_image(&mut self, img: &Image) {
         if let Some(ref mut target) = self.target {
             let uniforms = uniform! {
-                        // CAUTION: The inner arrays are COLUMNS not ROWS (left to right actually is top to bottom)
-                            matrix: [
-                                [img.direction.cos() as f32, img.direction.sin() as f32, 0.0, 0.0],
-                                [-img.direction.sin() as f32, img.direction.cos() as f32, 0.0, 0.0],
-                                [0.0, 0.0, 1.0, 0.0],
-                                [img.pos.x, img.pos.y, 0.0, 1.0f32],
-                            ],
-                            tex: &img.texture
-                        };
+            // CAUTION: The inner arrays are COLUMNS not ROWS (left to right actually is top to bottom)
+                matrix: [
+                    [img.direction.cos() as f32, img.direction.sin() as f32, 0.0, 0.0],
+                    [-img.direction.sin() as f32, img.direction.cos() as f32, 0.0, 0.0],
+                    [0.0, 0.0, 1.0, 0.0],
+                    [img.pos.x, img.pos.y, 0.0, 1.0f32],
+                ],
+                tex: &img.texture
+            };
 
             // These options don't seem to have any effect at all :-(
             let draw_parameters = glium::DrawParameters {

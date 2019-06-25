@@ -61,9 +61,7 @@ impl Timer {
         if self.ready {
             return;
         }
-//        print!("{} - {} = ", self.time_left.as_nanos(), delta.as_nanos());
         if let Some(result) = self.time_left.checked_sub(delta) {
-//            println!("{}", result.as_nanos());
             self.time_left = result;
         } else {
             self.ready = true;

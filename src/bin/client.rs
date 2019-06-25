@@ -11,8 +11,8 @@ use rusty_sword_arena::timer::Timer;
 use rusty_sword_arena::VERSION;
 use std::collections::HashMap;
 use std::env;
-use std::time::{Duration, Instant};
 use std::f32::consts::PI;
+use std::time::{Duration, Instant};
 
 struct Player {
     player_state: PlayerState,
@@ -39,11 +39,7 @@ impl Player {
             player_state.direction,
             Color::new(1.0, 0.0, 0.0),
         );
-        let sword_img = Image::new(
-            window,
-            player_state.pos,
-            player_state.direction,
-        );
+        let sword_img = Image::new(window, player_state.pos, player_state.direction);
         let mut sword_swing_timer = Timer::from_millis(350);
         sword_swing_timer.update(Duration::from_secs(5));
         Self {
@@ -67,12 +63,12 @@ impl Player {
                 PlayerEvent::AttackHit { id: _ } => {
                     self.sword_swing_timer.reset();
                     self.sword_swing_center = player_state.direction;
-                },
+                }
                 PlayerEvent::AttackMiss => {
                     self.sword_swing_timer.reset();
                     self.sword_swing_center = player_state.direction;
-                },
-                _ => {},
+                }
+                _ => {}
             }
         }
         // The timer being "ready" means the swing is over, so just point the sword forward
@@ -80,7 +76,8 @@ impl Player {
             self.sword_img.direction = player_state.direction;
         } else {
             // If the timer is going, then put the sword in some portion of the swing animation
-            self.sword_img.direction = self.sword_swing_center + (2.0 * PI * self.sword_swing_timer.time_left_percent());
+            self.sword_img.direction =
+                self.sword_swing_center + (2.0 * PI * self.sword_swing_timer.time_left_percent());
         }
         self.player_state = player_state;
     }

@@ -615,5 +615,4 @@ impl PlayerInput {
         self.move_amount = new.move_amount;
         self.direction = new.direction;
     }
-
 }

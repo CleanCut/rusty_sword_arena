@@ -1,6 +1,6 @@
-use zmq;
 use super::game::{GameControlMsg, GameSetting, GameState, PlayerInput};
 use bincode::{deserialize, serialize};
+use zmq;
 
 #[doc(hidden)]
 pub const PLAYER_INPUT_PORT: i32 = 8001;

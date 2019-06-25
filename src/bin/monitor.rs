@@ -1,10 +1,6 @@
 //! Like the client, only it just connects to a server and displays what's happening without
 //! actually joining a game or sending any input.
 
-
-
-
-
 use impose::Audio;
 use rusty_sword_arena::game::{Color, InputEvent, PlayerEvent, PlayerState};
 use rusty_sword_arena::gfx::{Shape, Window};
