@@ -9,23 +9,35 @@ use std::time::Duration;
 /// the main loop, check `.ready` to see if the timer has gone off, and call `.reset()` to start
 /// over.
 ///
-/// Of course, that means that you still have to keep track of time by getting an
-/// [Instant](https://doc.rust-lang.org/std/time/struct.Instant.html) at the start of every loop,
-/// and then getting it's `elapsed()` duration before resetting it the next time around the loop.
+/// You still have to keep track of time by getting an
+/// [Instant](https://doc.rust-lang.org/std/time/struct.Instant.html) and storing its `elapsed()`
+/// duration to use during your game loop.  It looks like this:
 ///
-/// If you are only tracking one single thing, the `Instant` and its `elapsed()` are all you need.
-/// If you're timing more than one thing, then use the `Instant` and its `elapsed()` for your delta
-/// duration, and use it to pump all your timers.
+/// ```
+/// // The current time on the clock
+/// let mut instant = Instant::now();
+/// // The "delta time", or time it took to make it around the loop last time
+/// let mut dt = Duration::from_secs(0);
+/// loop {
+///     // All your game logic, including pumping your timers like this...
+///     timer1.update(dt);
+///     timer2.update(dt);
+///
+///     // Get the delta time for the next loop iteration
+///     dt = instant.elapsed();
+///     instant = Instant::now();
+/// }
 #[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Timer {
     time: Duration,
     time_left: Duration,
-    /// True if the timer has gone off.  Timer counts down to zero.
+    /// True while the timer is at zero.  Once the timer reaches zero, it stays
+    /// at zero until you call `.reset()` or `.set_millis_transient()`
     pub ready: bool,
 }
 
 impl Timer {
-    /// Set the timer based on milliseconds
+    /// Create a timer, initializing with a value in milliseconds.
     pub fn from_millis(ms: u64) -> Self {
         let duration = Duration::from_millis(ms);
         Self {
@@ -35,7 +47,7 @@ impl Timer {
         }
     }
 
-    /// Set the timer based on nanoseconds.
+    /// Create a timer, initializing with a value in nanoseconds.
     pub fn from_nanos(nanos: u64) -> Self {
         let duration = Duration::from_nanos(nanos);
         Self {
@@ -45,19 +57,24 @@ impl Timer {
         }
     }
 
-    /// Resets the timer as if it were newly created.
+    /// Resets the timer back to the starting time.  `ready` goes back to `false`
     pub fn reset(&mut self) {
         self.ready = false;
         self.time_left = self.time;
     }
 
-    /// Sets the timer to a value, but will still reset back to the initial value
+    /// Just like `.reset()` but the timer is set to an arbitrary time.  Calling
+    /// `.reset()` will still use the original starting time.
     pub fn set_millis_transient(&mut self, ms: u64) {
         self.ready = false;
         self.time_left = Duration::from_millis(ms);
     }
 
-    /// This is how the timer counts-down. You have got to call this repeatedly as time passes.
+    /// IMPORTANT! You must call this method in your game loop!  This is how the
+    /// timer counts-down. Every time you call this, the timer counts down the
+    /// amount in `delta`.  If the timer reaches zero, `ready` becomes true and
+    /// the timer stays at zero until `.reset()` or `.set_millis_transient()` is
+    /// called.
     pub fn update(&mut self, delta: Duration) {
         if self.ready {
             return;
@@ -69,7 +86,8 @@ impl Timer {
         }
     }
 
-    /// How much time is left as an f32 percentage from 0.0 to 1.0
+    /// How much time is left as an f32 percentage from 0.0 to 1.0.  Very useful
+    /// if your timer is being used for some sort of animation.
     pub fn time_left_percent(&self) -> f32 {
         if self.ready {
             1.0

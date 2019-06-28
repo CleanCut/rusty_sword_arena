@@ -118,7 +118,7 @@ fn main() {
     let mut my_input = PlayerInput::new();
     my_input.id = my_id;
     let mut last_input_sent = Instant::now();
-    let mut last_frame_time = Instant::now();
+    let mut instant = Instant::now();
     let mut dt = Duration::from_secs(0);
 
     let mut audio = Audio::new();
@@ -205,8 +205,8 @@ fn main() {
             player.draw(&mut window);
         }
         window.drawfinish();
-        dt = last_frame_time.elapsed();
-        last_frame_time = Instant::now();
+        dt = instant.elapsed();
+        instant = Instant::now();
     }
 
     println!("Leaving the game.");
