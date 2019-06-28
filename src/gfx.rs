@@ -55,8 +55,8 @@ fn create_ring_vertices(radius: f32, num_vertices: usize, color: Color) -> Vec<S
     v
 }
 
-/// A `Shape` can be drawn by a [Window](gfx/struct.Window.html).  Use the provided `new_*` methods
-/// to make a `Shape`.
+/// A `Shape` can be drawn to a [Window](gfx/struct.Window.html) using its `draw_shape()` method.
+/// Use the provided `new_*` methods to make a `Shape`.
 #[derive(Debug)]
 pub struct Shape {
     pub pos: Vector2,
@@ -66,6 +66,7 @@ pub struct Shape {
 }
 
 impl Shape {
+    /// Create a solid circle with a stripe that always faces `direction`.
     pub fn new_circle(
         window: &Window,
         radius: f32,
@@ -83,6 +84,7 @@ impl Shape {
             indices: glium::index::NoIndices(glium::index::PrimitiveType::TriangleFan),
         }
     }
+    /// Create a thin ring, or outline of a circle.
     pub fn new_ring(
         window: &Window,
         radius: f32,
@@ -110,6 +112,17 @@ struct ImgVertex {
 
 implement_vertex!(ImgVertex, position, tex_coords);
 
+/// A PNG image that can be drawn to a [Window](gfx/struct.Window.html) using
+/// its `.draw_image()` method.
+///
+/// If you are looking at a PNG image in Photoshop, the "right" direction is the
+/// "front" of the image.  `direction` is the angle in radians that the image
+/// will be rotated.
+///
+/// If you want your image to have transparency without getting white borders,
+/// export as a PNG-8 with Transparency checked, and Matte set to None.  See
+/// `media/png-settings-screenshot.png` in the repository for a screenshot of
+/// the Photoshop "Export > Save for Web" settings that are known to work.
 #[derive(Debug)]
 pub struct Image {
     pub pos: Vector2,
@@ -120,13 +133,14 @@ pub struct Image {
 }
 
 impl Image {
-    pub fn new(window: &Window, pos: Vector2, direction: f32) -> Self {
-        let image = image::load(
-            std::io::Cursor::new(&include_bytes!("../media/sword.png")[..]),
-            image::PNG,
-        )
-        .unwrap()
-        .to_rgba();
+    /// Create a new image.  `filename` is relative to the root of the project
+    /// you are running from. For example, if you created a `media` subdirectory
+    /// in the root of your project and then put `soldier.png` in it, then your
+    /// filename would be `media/soldier.png`.
+    pub fn new(window: &Window, pos: Vector2, direction: f32, filename: &str) -> Self {
+        let file = std::fs::File::open(filename).unwrap();
+        let reader = std::io::BufReader::new(file);
+        let image = image::load(reader, image::PNG).unwrap().to_rgba();
         let image_dimensions = image.dimensions();
         let image =
             glium::texture::RawImage2d::from_raw_rgba_reversed(&image.into_raw(), image_dimensions);
@@ -186,10 +200,11 @@ pub struct Window {
 
 impl Window {
     /// By default, this will be a square window with a dimension of `1024px` or
-    /// `(monitor height - 100px)`, whichever is smaller.  You can override the dimension by
-    /// providing a value for override_dimension, for example: `Some(2048)`.  Note that on hi-dpi
-    /// displays (like Apple Retina Displays) 1 "pixel" is often a square of 4 hi-dpi pixels
-    /// (depending on whether the monitor is set to be scaled or not).
+    /// `(monitor height - 100px)`, whichever is smaller.  You can override the
+    /// dimension by providing a value for override_dimension, for example:
+    /// `Some(2048)`.
+    ///
+    /// `window_title` is for the OS to use on the bar above your window.
     pub fn new(override_dimension: Option<u32>, window_title: &str) -> Self {
         let events_loop = glutin::EventsLoop::new();
         let primary_monitor = events_loop.get_primary_monitor();
@@ -216,6 +231,7 @@ impl Window {
             Vector2 { x, y }
         });
 
+        // For drawing shapes
         let shape_vertex_shader = r#"
         #version 140
 
@@ -257,7 +273,7 @@ impl Window {
         )
         .unwrap();
 
-        // Image versions
+        // For drawing images
         let vertex_shader_img = r#"
             #version 140
             uniform mat4 matrix;
@@ -305,8 +321,8 @@ impl Window {
         }
     }
 
-    /// Call `drawstart()` when you are ready to draw a new frame. It will create the new frame and
-    /// clear it to black.
+    /// Call `drawstart()` when you are ready to draw a new frame. It will
+    /// initialize the next off-screen framebuffer and clear it to black.
     pub fn drawstart(&mut self) {
         self.target = Some(self.display.draw());
         if let Some(ref mut target) = self.target {
@@ -314,10 +330,13 @@ impl Window {
         }
     }
 
-    /// Pass `draw_shape()` a shape to draw.  After the first time the shape is drawn it
-    /// stays on the GPU and only send updated position/rotation, which is super efficient,
-    /// so keep your shapes around!  Don't recreate them every frame.  Shapes are drawn in
-    /// order, so the last shape you draw will be on top.
+    /// You must call `.drawstart()` before calling this method.  `draw_shape()`
+    /// will draw your shape to the current off-screen framebuffer.  After the
+    /// first time a given shape value is drawn it stays on the GPU and during
+    /// subsequent calls it only sends updated position/rotation, which is super
+    /// efficient, so don't destroy and recreate shapes every frame! Draw calls
+    /// draw to the framebuffer in the order that they occur, so the last shape
+    /// you draw will be on top.
     pub fn draw_shape(&mut self, shape: &Shape) {
         if let Some(ref mut target) = self.target {
             let uniforms = uniform! {
@@ -360,10 +379,13 @@ impl Window {
         }
     }
 
-    /// Pass `draw()` every shape that you would like to draw.  After the first time they are drawn,
-    /// shapes stay on the GPU and only send updated position/rotation, which is super efficient,
-    /// so keep your shape objects around!  Don't recreate them every frame.  Shapes are drawn in
-    /// order, so the last shape you draw will be on top.
+    /// You must call `.drawstart()` before calling this method.  `draw_image()`
+    /// will draw your image to the current off-screen framebuffer.  After the
+    /// first time a given image value is drawn it stays on the GPU and during
+    /// subsequent calls it only sends updated position/rotation, which is super
+    /// efficient, so don't destroy and recreate images every frame! Draw calls
+    /// draw to the framebuffer in the order that they occur, so the last image
+    /// you draw will be on top.
     pub fn draw_image(&mut self, img: &Image) {
         if let Some(ref mut target) = self.target {
             let uniforms = uniform! {
@@ -399,14 +421,18 @@ impl Window {
     }
 
     /// Call `drawfinish()` when you are ready to finalize the frame and show it.  You will need to
-    /// call `drawstart()` again before you can `draw()` any shapes in a new frame.  I think this
-    /// method blocks until the hardware is ready for a frame. 60fps on most displays.
+    /// call `drawstart()` again before you can `draw()` any shapes in a new frame.  I _think_ this
+    /// method blocks until the hardware is ready for a frame (vsync), so an unconstrained loop
+    /// (that runs fast enough) should run at 60fps on most displays.
     pub fn drawfinish(&mut self) {
         self.target.take().unwrap().finish().unwrap();
     }
 
-    /// Get [input events](game/enum.InputEvent.html) that the graphics system may have seen
-    /// (window, keyboard, mouse) and return them in a Vec.
+    /// For convenience this method abstracts all the possible mouse and keyboard events to
+    /// [InputEvent](game/enum.InputEvent.html)s, which are the events we care about for the game.
+    /// The WASD and arrow keys map to directions, mouse clicks and space bar map to attacks, and
+    /// the Escape key maps to quitting.  Any number of events could have occurred since we last
+    /// looked, so a Vec<InputEvent> is returned.
     pub fn poll_input_events(&mut self) -> Vec<InputEvent> {
         let screen_to_opengl = &mut (self.screen_to_opengl);
         let mut events = Vec::<InputEvent>::new();

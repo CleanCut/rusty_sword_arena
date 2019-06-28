@@ -30,7 +30,12 @@ impl Player {
             player_state.direction,
             player_state.color,
         );
-        let sword_img = Image::new(window, player_state.pos, player_state.direction);
+        let sword_img = Image::new(
+            window,
+            player_state.pos,
+            player_state.direction,
+            "media/sword.png",
+        );
         let mut sword_swing_timer = Timer::from_millis(350);
         sword_swing_timer.update(Duration::from_secs(5));
         Self {

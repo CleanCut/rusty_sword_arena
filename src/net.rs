@@ -111,6 +111,7 @@ impl ConnectionToServer {
     /// Send player input to the server. The server processes input as it comes
     /// in, but that doesn't mean you should send 10,000 input packets/second.
     /// Keep track of the input and only send new input about every 15ms.
+    /// TODO: Accumulate the input internally here, instead of requiring the caller to keep track of it.
     pub fn send_player_input(&mut self, player_input: PlayerInput) {
         self.player_input_socket
             .send(&serialize(&player_input).unwrap(), 0)
