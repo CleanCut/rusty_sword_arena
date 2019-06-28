@@ -19,6 +19,7 @@ struct ColorPicker {
 }
 
 // Why not just a Vec?  Because I've reimplemented this a half-dozen times...
+#[allow(clippy::excessive_precision, clippy::unreadable_literal)]
 impl ColorPicker {
     fn new() -> Self {
         let colors = vec![
@@ -389,9 +390,10 @@ fn remove_player(
         println!("{}", msg);
         return true;
     }
-    return false;
+    false
 }
 
+#[allow(clippy::never_loop)]
 fn process_game_control_requests(
     game_control_server_socket: &mut zmq::Socket,
     game_setting: &mut GameSetting,
@@ -498,14 +500,10 @@ fn coalesce_player_input(
         if let Some(player_state) = player_states.get_mut(&player_input.id) {
             player_state.drop_timer.reset();
         }
-        if player_inputs.contains_key(&player_input.id) {
-            player_inputs
-                .get_mut(&player_input.id)
-                .unwrap()
-                .coalesce(player_input);
-        } else {
-            player_inputs.insert(player_input.id, player_input);
-        }
+        player_inputs
+            .entry(player_input.id)
+            .or_insert_with(|| player_input.clone())
+            .coalesce(player_input);
     }
 }
 
@@ -685,7 +683,7 @@ fn main() {
 
     let mut loop_iterations: i64 = 0;
     let mut loop_start = Instant::now();
-    let mut frame_timer = timer::Timer::from_nanos(16666666); // 60 FPS
+    let mut frame_timer = timer::Timer::from_nanos(16_666_666); // 60 FPS
     let mut color_picker = ColorPicker::new();
     let mut game_setting = GameSetting::new();
     let mut rng = thread_rng();
@@ -696,7 +694,7 @@ fn main() {
 
     println!("--------------------------------------------------------------");
     println!("Server started (Ctrl-C to stop)\n{:#?}", game_setting);
-    'gameloop: loop {
+    loop {
         let delta = loop_start.elapsed();
         loop_start = Instant::now();
         frame_timer.update(delta);

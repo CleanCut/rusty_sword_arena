@@ -210,8 +210,8 @@ impl Window {
             .to_logical(primary_monitor.get_hidpi_factor())
             .height;
         let dimension = match override_dimension {
-            Some(x) => x as f64,
-            None => min(screen_height as u32 - 100, 1024) as f64,
+            Some(x) => f64::from(x),
+            None => f64::from(min(screen_height as u32 - 100, 1024)),
         };
         let logical_size = glutin::dpi::LogicalSize::new(dimension, dimension);
         let window = glutin::WindowBuilder::new()
@@ -437,11 +437,7 @@ impl Window {
                     // Time to close the app?
                     glutin::WindowEvent::CloseRequested => events.push(InputEvent::WindowClosed),
                     // Mouse moved
-                    glutin::WindowEvent::CursorMoved {
-                        device_id: _,
-                        position,
-                        modifiers: _,
-                    } => {
+                    glutin::WindowEvent::CursorMoved { position, .. } => {
                         let mouse_pos = screen_to_opengl(position.into());
                         events.push(InputEvent::MouseMoved {
                             position: mouse_pos,

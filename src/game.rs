@@ -12,7 +12,7 @@ use std::time::Duration;
 /// 2D Vector (x, y) that can represent coordinates in OpenGL space that fill your window, or
 /// velocity, or whatever other two f32 values you need.  The OpenGL window is (-1.0, -1.0) in
 /// the bottom left to (1.0, 1.0) in the top right.
-#[derive(Copy, Clone, Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Copy, Clone, Debug, Default, Deserialize, Serialize, PartialEq)]
 pub struct Vector2 {
     pub x: f32,
     pub y: f32,
@@ -73,18 +73,18 @@ impl Vector2 {
     }
 }
 
-/// Do docs for trait impls show up???
+#[allow(clippy::float_cmp)]
 impl PartialOrd for Vector2 {
     fn partial_cmp(&self, other: &Vector2) -> Option<Ordering> {
         let magnitude = self.magnitude();
         let other_magnitude = other.magnitude();
-        return if magnitude < other_magnitude {
+        if magnitude < other_magnitude {
             Some(Ordering::Less)
         } else if magnitude == other_magnitude {
             Some(Ordering::Equal)
         } else {
             Some(Ordering::Greater)
-        };
+        }
     }
 }
 
@@ -178,7 +178,7 @@ pub enum GameControlMsg {
 }
 
 /// A color with 32-bit float parts from `[0.0, 1.0]` suitable for OpenGL.
-#[derive(Copy, Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub struct Color {
     /// Red
     pub r: f32,
@@ -203,11 +203,15 @@ impl Hash for Color {
     }
 }
 
-impl Eq for Color {}
+impl PartialEq for Color {
+    fn eq(&self, other: &Self) -> bool {
+        (self.r == other.r) && (self.g == other.g) && (self.b == other.b)
+    }
+}
 
 /// The game setting.  Mostly useful if you want to try to write client-side movement prediction,
 /// AI, etc.
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct GameSetting {
     /// Version number of the server you are connecting to. Compare to rusty_sword_arena::version
     pub version: String,
@@ -262,6 +266,12 @@ impl Hash for GameSetting {
     }
 }
 
+impl Default for GameSetting {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// A single player's score
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Score {
@@ -274,7 +284,7 @@ impl Score {
     fn new(name: &str, points: i32) -> Self {
         Self {
             name: name.to_string(),
-            points: points,
+            points,
         }
     }
 }
@@ -313,7 +323,7 @@ impl PartialOrd for Score {
 
 /// High Scores!  High scores are reset every time the server restarts, but other than that they
 /// are persistent across joins/leaves.
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
 pub struct HighScores {
     pub scores: Vec<Score>,
 }
@@ -426,6 +436,12 @@ impl Weapon {
             radius: 0.1,
             attack_timer: Timer::from_millis(500),
         }
+    }
+}
+
+impl Default for Weapon {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -577,7 +593,7 @@ pub struct GameState {
 /// It's pretty safe to just overwrite move_amount and direction with the latest input you've got.
 /// Direction handling is instantaneous, and the move_amount is treated like a force (you move with
 /// a bit of inertia).
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
 pub struct PlayerInput {
     /// The ID of your player
     pub id: u8,
