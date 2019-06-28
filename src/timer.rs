@@ -1,4 +1,5 @@
-use super::game::Floatable;
+use crate::game::Floatable;
+
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 

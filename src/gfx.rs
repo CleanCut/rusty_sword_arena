@@ -1,11 +1,12 @@
-use glium;
-use glium::glutin::{self, ElementState};
-use glium::{IndexBuffer, Surface};
+use crate::game::{ButtonState, ButtonValue, Color, InputEvent, Vector2};
+
+use glium::{
+    self,
+    glutin::{self, ElementState},
+    implement_vertex, uniform, Frame, IndexBuffer, Surface,
+};
 use std::cmp::min;
 use std::f64::consts::PI;
-
-use super::game::{ButtonState, ButtonValue, Color, InputEvent, Vector2};
-use glium::{implement_vertex, uniform, Frame};
 
 #[derive(Copy, Clone, Debug)]
 struct ShapeVertex {

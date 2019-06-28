@@ -2,13 +2,13 @@
 // IT IS NOT EXACTLY WHAT WE WILL CREATE DURING THE TUTORIAL...but it's pretty similar.
 
 use impose::Audio;
-use rusty_sword_arena::game::{
-    ButtonState, ButtonValue, InputEvent, PlayerEvent, PlayerInput, PlayerState, Vector2,
+use rusty_sword_arena::{
+    game::{ButtonState, ButtonValue, InputEvent, PlayerEvent, PlayerInput, PlayerState, Vector2},
+    gfx::{Image, Shape, Window},
+    net::ServerConnection,
+    timer::Timer,
+    VERSION,
 };
-use rusty_sword_arena::gfx::{Image, Shape, Window};
-use rusty_sword_arena::net::ServerConnection;
-use rusty_sword_arena::timer::Timer;
-use rusty_sword_arena::VERSION;
 use std::collections::HashMap;
 use std::env;
 use std::f32::consts::PI;

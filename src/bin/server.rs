@@ -1,15 +1,16 @@
+use bincode::{deserialize, serialize};
 use rand::prelude::{thread_rng, Rng, ThreadRng};
-use rusty_sword_arena::game::{
-    Color, Floatable, GameControlMsg, GameSetting, GameState, HighScores, PlayerEvent, PlayerInput,
-    PlayerState, Vector2,
+use rusty_sword_arena::{
+    game::{
+        Color, Floatable, GameControlMsg, GameSetting, GameState, HighScores, PlayerEvent,
+        PlayerInput, PlayerState, Vector2,
+    },
+    net, timer,
 };
-use rusty_sword_arena::{net, timer};
 use std::collections::HashMap;
 use std::thread;
 use std::time::{Duration, Instant};
 use zmq;
-
-use bincode::{deserialize, serialize};
 
 struct ColorPicker {
     index: usize,
@@ -536,8 +537,9 @@ fn update_state(
     // Process input to affect velocities
     for (id, player_input) in &mut player_inputs.iter() {
         if let Some(player_state) = player_states.get_mut(id) {
-            // Ignore input from dead players
+            // Ignore input from dead players, and remove their movement.
             if player_state.dead {
+                player_state.velocity = Vector2::new();
                 continue;
             }
             // Instantaneously face a direction

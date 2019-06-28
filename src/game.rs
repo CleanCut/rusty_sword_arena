@@ -1,15 +1,12 @@
-use super::timer::Timer;
-use super::VERSION;
+use crate::{timer::Timer, VERSION};
 
 use rand::prelude::Rng;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
-use std::collections::hash_map::DefaultHasher;
-use std::collections::HashMap;
+use std::collections::{hash_map::DefaultHasher, HashMap};
 use std::fmt;
 use std::hash::{Hash, Hasher};
-use std::ops::Add;
-use std::ops::Mul;
+use std::ops::{Add, Mul};
 use std::time::Duration;
 
 /// 2D Vector (x, y) that can represent coordinates in OpenGL space that fill your window, or

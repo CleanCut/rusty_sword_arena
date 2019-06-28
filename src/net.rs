@@ -1,4 +1,5 @@
-use super::game::{GameControlMsg, GameSetting, GameState, PlayerInput};
+use crate::game::{GameControlMsg, GameSetting, GameState, PlayerInput};
+
 use bincode::{deserialize, serialize};
 use zmq;
 
