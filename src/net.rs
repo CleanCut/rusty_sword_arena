@@ -10,9 +10,8 @@ pub const GAME_STATE_PORT: i32 = 8002;
 #[doc(hidden)]
 pub const GAME_CONTROL_PORT: i32 = 8003;
 
-/// This is your client's network connection to the server. The methods abstract
-/// away all the actual object serialization and network communication. Hooray
-/// for encapsulation!
+/// This is your client's network connection to the server. The methods abstract away all the actual
+/// object serialization and network communication. Hooray for encapsulation!
 pub struct ConnectionToServer {
     _context: zmq::Context,
     game_control_socket: zmq::Socket,
@@ -21,9 +20,9 @@ pub struct ConnectionToServer {
 }
 
 impl ConnectionToServer {
-    /// Create a new connection to a server.  `host` is the IP address or domain
-    /// name of the server.  If you run the server on the same machine, you
-    /// should pass `localhost` or `127.0.0.1` as the host.
+    /// Create a new connection to a server.  `host` is the IP address or domain name of the server.
+    ///  If you run the server on the same machine, you should pass `localhost` or `127.0.0.1` as
+    /// the host.
     pub fn new(host: &str) -> Self {
         let context = zmq::Context::new();
 
@@ -52,11 +51,10 @@ impl ConnectionToServer {
         }
     }
 
-    /// Join a game.  If successful, you'll get a non-zero player id back. Save
-    /// the player id, because it is how you will be able to tell which of the
-    /// players the server tells you about is YOU! If unsuccessful then there
-    /// was probably a name collision, so change your name and try again.  If
-    /// changing the name still doesn't work, then the server is probably full.
+    /// Join a game.  If successful, you'll get a non-zero player id back. Save the player id,
+    /// because it is how you will be able to tell which of the players the server tells you about
+    /// is YOU! If unsuccessful then there was probably a name collision, so change your name and
+    /// try again.  If changing the name still doesn't work, then the server is probably full.
     /// TODO: Return a Result with a nice Error.
     pub fn join(&mut self, name: &str) -> u8 {
         let msg = GameControlMsg::Join {
@@ -70,8 +68,8 @@ impl ConnectionToServer {
         new_id
     }
 
-    /// Get the current GameSetting.  You should look at the version number and
-    /// make sure that you are connecting to a version of the server you expect.
+    /// Get the current GameSetting.  You should look at the version number and make sure that you
+    /// are connecting to a version of the server you expect.
     pub fn get_game_setting(&mut self) -> GameSetting {
         let msg = GameControlMsg::Fetch;
         self.game_control_socket
@@ -82,9 +80,8 @@ impl ConnectionToServer {
         game_setting
     }
 
-    /// Cause the selected player id to leave the game.  You should pass in your
-    /// own player id, obviously.  Passing in someone else's player id would be
-    /// really mean.
+    /// Cause the selected player id to leave the game.  You should pass in your own player id,
+    /// obviously.  Passing in someone else's player id would be really mean.
     pub fn leave(&mut self, id: u8) -> bool {
         let msg = GameControlMsg::Leave { id };
         self.game_control_socket.set_rcvtimeo(1500).unwrap();
@@ -98,8 +95,8 @@ impl ConnectionToServer {
         return false;
     }
 
-    /// Gets all available unprocessed game states.  Game states arrive in
-    /// order.  You should call this every time around your game loop.
+    /// Gets all available unprocessed game states.  Game states arrive in order.  You should call
+    /// this every time around your game loop.
     pub fn poll_game_states(&mut self) -> Vec<GameState> {
         let mut game_states = Vec::<GameState>::new();
         while let Ok(bytes) = self.game_state_socket.recv_bytes(0) {
@@ -111,7 +108,7 @@ impl ConnectionToServer {
     /// Send player input to the server. The server processes input as it comes
     /// in, but that doesn't mean you should send 10,000 input packets/second.
     /// Keep track of the input and only send new input about every 15ms.
-    /// TODO: Accumulate the input internally here, instead of requiring the caller to keep track of it.
+    /// TODO: Accumulate the input here, instead of requiring the caller to keep track of it.
     pub fn send_player_input(&mut self, player_input: PlayerInput) {
         self.player_input_socket
             .send(&serialize(&player_input).unwrap(), 0)

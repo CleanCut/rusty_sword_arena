@@ -42,8 +42,8 @@ use std::time::Duration;
 pub struct Timer {
     time: Duration,
     time_left: Duration,
-    /// True while the timer is at zero.  Once the timer reaches zero, it stays
-    /// at zero until you call `.reset()` or `.set_millis_transient()`
+    /// True while the timer is at zero.  Once the timer reaches zero, it stays at zero until you
+    /// call `.reset()` or `.set_millis_transient()`
     pub ready: bool,
 }
 
@@ -74,18 +74,17 @@ impl Timer {
         self.time_left = self.time;
     }
 
-    /// Just like `.reset()` but the timer is set to an arbitrary time.  Calling
-    /// `.reset()` will still use the original starting time.
+    /// Just like `.reset()` but the timer is set to an arbitrary time.  Calling `.reset()` will
+    /// still use the original starting time.
     pub fn set_millis_transient(&mut self, ms: u64) {
         self.ready = false;
         self.time_left = Duration::from_millis(ms);
     }
 
-    /// IMPORTANT! You must call this method in your game loop!  This is how the
-    /// timer counts-down. Every time you call this, the timer counts down the
-    /// amount in `delta`.  If the timer reaches zero, `ready` becomes true and
-    /// the timer stays at zero until `.reset()` or `.set_millis_transient()` is
-    /// called.
+    /// IMPORTANT! You must call this method in your game loop!  This is how the timer counts-down.
+    /// Every time you call this, the timer counts down the amount in `delta`.  If the timer reaches
+    /// zero, `ready` becomes true and the timer stays at zero until `.reset()` or
+    /// `.set_millis_transient()` is called.
     pub fn update(&mut self, delta: Duration) {
         if self.ready {
             return;
@@ -97,8 +96,8 @@ impl Timer {
         }
     }
 
-    /// How much time is left as an f32 percentage from 0.0 to 1.0.  Very useful
-    /// if your timer is being used for some sort of animation.
+    /// How much time is left as an f32 percentage from 0.0 to 1.0.  Very useful if your timer is
+    /// being used for some sort of animation.
     pub fn time_left_percent(&self) -> f32 {
         if self.ready {
             1.0

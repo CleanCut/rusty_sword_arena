@@ -112,17 +112,16 @@ struct ImgVertex {
 
 implement_vertex!(ImgVertex, position, tex_coords);
 
-/// A PNG image that can be drawn to a [Window](gfx/struct.Window.html) using
-/// its `.draw_image()` method.
+/// A PNG image that can be drawn to a [Window](gfx/struct.Window.html) using its `.draw_image()`
+/// method.
 ///
-/// If you are looking at a PNG image in Photoshop, the "right" direction is the
-/// "front" of the image.  `direction` is the angle in radians that the image
-/// will be rotated.
+/// If you are looking at a PNG image in Photoshop, the "right" direction is the "front" of the
+/// image.  `direction` is the angle in radians that the image will be rotated.
 ///
-/// If you want your image to have transparency without getting white borders,
-/// export as a PNG-8 with Transparency checked, and Matte set to None.  See
-/// `media/png-settings-screenshot.png` in the repository for a screenshot of
-/// the Photoshop "Export > Save for Web" settings that are known to work.
+/// If you want your image to have transparency without getting white borders, export as a PNG-8
+/// with Transparency checked, and Matte set to None.  See `media/png-settings-screenshot.png` in
+/// the repository for a screenshot of the Photoshop "Export > Save for Web" settings that are known
+/// to work.
 #[derive(Debug)]
 pub struct Image {
     pub pos: Vector2,
@@ -133,10 +132,9 @@ pub struct Image {
 }
 
 impl Image {
-    /// Create a new image.  `filename` is relative to the root of the project
-    /// you are running from. For example, if you created a `media` subdirectory
-    /// in the root of your project and then put `soldier.png` in it, then your
-    /// filename would be `media/soldier.png`.
+    /// Create a new image.  `filename` is relative to the root of the project you are running from.
+    /// For example, if you created a `media` subdirectory in the root of your project and then put
+    /// `soldier.png` in it, then your filename would be `media/soldier.png`.
     pub fn new(window: &Window, pos: Vector2, direction: f32, filename: &str) -> Self {
         let file = std::fs::File::open(filename).unwrap();
         let reader = std::io::BufReader::new(file);
@@ -200,9 +198,8 @@ pub struct Window {
 
 impl Window {
     /// By default, this will be a square window with a dimension of `1024px` or
-    /// `(monitor height - 100px)`, whichever is smaller.  You can override the
-    /// dimension by providing a value for override_dimension, for example:
-    /// `Some(2048)`.
+    /// `(monitor height - 100px)`, whichever is smaller.  You can override the dimension by
+    /// providing a value for override_dimension, for example: `Some(2048)`.
     ///
     /// `window_title` is for the OS to use on the bar above your window.
     pub fn new(override_dimension: Option<u32>, window_title: &str) -> Self {
@@ -321,8 +318,8 @@ impl Window {
         }
     }
 
-    /// Call `drawstart()` when you are ready to draw a new frame. It will
-    /// initialize the next off-screen framebuffer and clear it to black.
+    /// Call `drawstart()` when you are ready to draw a new frame. It will initialize the next
+    /// off-screen framebuffer and clear it to black.
     pub fn drawstart(&mut self) {
         self.target = Some(self.display.draw());
         if let Some(ref mut target) = self.target {
@@ -330,12 +327,11 @@ impl Window {
         }
     }
 
-    /// You must call `.drawstart()` before calling this method.  `draw_shape()`
-    /// will draw your shape to the current off-screen framebuffer.  After the
-    /// first time a given shape value is drawn it stays on the GPU and during
-    /// subsequent calls it only sends updated position/rotation, which is super
-    /// efficient, so don't destroy and recreate shapes every frame! Draw calls
-    /// draw to the framebuffer in the order that they occur, so the last shape
+    /// You must call `.drawstart()` before calling this method.  `draw_shape()` will draw your
+    /// shape to the current off-screen framebuffer.  After the first time a given shape value is
+    /// drawn it stays on the GPU and during subsequent calls it only sends updated
+    /// position/rotation, which is super efficient, so don't destroy and recreate shapes every
+    /// frame! Draw calls draw to the framebuffer in the order that they occur, so the last shape
     /// you draw will be on top.
     pub fn draw_shape(&mut self, shape: &Shape) {
         if let Some(ref mut target) = self.target {
@@ -379,12 +375,11 @@ impl Window {
         }
     }
 
-    /// You must call `.drawstart()` before calling this method.  `draw_image()`
-    /// will draw your image to the current off-screen framebuffer.  After the
-    /// first time a given image value is drawn it stays on the GPU and during
-    /// subsequent calls it only sends updated position/rotation, which is super
-    /// efficient, so don't destroy and recreate images every frame! Draw calls
-    /// draw to the framebuffer in the order that they occur, so the last image
+    /// You must call `.drawstart()` before calling this method.  `draw_image()` will draw your
+    /// image to the current off-screen framebuffer.  After the first time a given image value is
+    /// drawn it stays on the GPU and during subsequent calls it only sends updated
+    /// position/rotation, which is super efficient, so don't destroy and recreate images every
+    /// frame! Draw calls draw to the framebuffer in the order that they occur, so the last image
     /// you draw will be on top.
     pub fn draw_image(&mut self, img: &Image) {
         if let Some(ref mut target) = self.target {
