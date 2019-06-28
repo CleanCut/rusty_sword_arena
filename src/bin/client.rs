@@ -5,7 +5,7 @@ use impose::Audio;
 use rusty_sword_arena::{
     game::{ButtonState, ButtonValue, InputEvent, PlayerEvent, PlayerInput, PlayerState, Vector2},
     gfx::{Image, Shape, Window},
-    net::ServerConnection,
+    net::ConnectionToServer,
     timer::Timer,
     VERSION,
 };
@@ -98,7 +98,7 @@ fn main() {
     }
     let host = args.pop().unwrap();
     let name = args.pop().unwrap();
-    let mut server_conn = ServerConnection::new(&host);
+    let mut server_conn = ConnectionToServer::new(&host);
     let my_id = server_conn.join(&name);
     if my_id == 0 {
         println!("Either name is taken or server is full. Give it another try.");

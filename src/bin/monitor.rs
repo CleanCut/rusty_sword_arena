@@ -4,7 +4,7 @@
 use impose::Audio;
 use rusty_sword_arena::game::{Color, InputEvent, PlayerEvent, PlayerState};
 use rusty_sword_arena::gfx::{Shape, Window};
-use rusty_sword_arena::net::ServerConnection;
+use rusty_sword_arena::net::ConnectionToServer;
 //use rusty_sword_arena::timer::Timer;
 use rusty_sword_arena::VERSION;
 use std::collections::HashMap;
@@ -54,7 +54,7 @@ fn main() {
         std::process::exit(2);
     }
     let host = args.pop().unwrap();
-    let mut server_conn = ServerConnection::new(&host);
+    let mut server_conn = ConnectionToServer::new(&host);
     let game_setting = server_conn.get_game_setting();
 
     println!(
