@@ -14,10 +14,20 @@ use std::time::Duration;
 /// duration to use during your game loop.  It looks like this:
 ///
 /// ```
+/// use std::time::{Duration, Instant};
+/// use rusty_sword_arena::timer::Timer;
+///
+/// // Create some timers
+/// let mut timer1 = Timer::from_millis(100);
+/// let mut timer2 = Timer::from_millis(200);
+///
 /// // The current time on the clock
 /// let mut instant = Instant::now();
+///
 /// // The "delta time", or time it took to make it around the loop last time
 /// let mut dt = Duration::from_secs(0);
+///
+/// // Your game loop
 /// loop {
 ///     // All your game logic, including pumping your timers like this...
 ///     timer1.update(dt);
@@ -26,6 +36,7 @@ use std::time::Duration;
 ///     // Get the delta time for the next loop iteration
 ///     dt = instant.elapsed();
 ///     instant = Instant::now();
+/// #   break
 /// }
 #[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Timer {
