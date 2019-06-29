@@ -123,7 +123,6 @@ fn main() {
     let mut mouse_pos = Vector2 { x: 0.0, y: 0.0 };
     let mut my_input = PlayerInput::new();
     my_input.id = my_id;
-    let mut last_input_sent = Instant::now();
     let mut instant = Instant::now();
     let mut dt = Duration::from_secs(0);
 
@@ -171,13 +170,10 @@ fn main() {
         }
 
         // Periodically send accumulated input
-        if last_input_sent.elapsed() > Duration::from_millis(15) {
-            if let Some(my_player) = players.get(&my_id) {
-                my_input.direction = my_player.player_state.pos.angle_between(mouse_pos);
-            }
-            server_conn.send_player_input(my_input.clone());
-            last_input_sent = Instant::now();
+        if let Some(my_player) = players.get(&my_id) {
+            my_input.direction = my_player.player_state.pos.angle_between(mouse_pos);
         }
+        server_conn.send_player_input(&my_input);
 
         // Process any new game states
         let new_game_states = server_conn.poll_game_states();

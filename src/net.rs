@@ -1,6 +1,7 @@
 use crate::game::{GameControlMsg, GameSetting, GameState, PlayerInput};
 
 use bincode::{deserialize, serialize};
+use std::time::{Duration, Instant};
 use zmq;
 
 #[doc(hidden)]
@@ -10,6 +11,8 @@ pub const GAME_STATE_PORT: i32 = 8002;
 #[doc(hidden)]
 pub const GAME_CONTROL_PORT: i32 = 8003;
 
+const PLAYER_INPUT_INTERVAL: Duration = Duration::from_millis(15);
+
 /// This is your client's network connection to the server. The methods abstract away all the actual
 /// object serialization and network communication. Hooray for encapsulation!
 pub struct ConnectionToServer {
@@ -17,12 +20,13 @@ pub struct ConnectionToServer {
     game_control_socket: zmq::Socket,
     game_state_socket: zmq::Socket,
     player_input_socket: zmq::Socket,
+    last_player_input_sent: Instant,
 }
 
 impl ConnectionToServer {
     /// Create a new connection to a server.  `host` is the IP address or domain name of the server.
-    ///  If you run the server on the same machine, you should pass `localhost` or `127.0.0.1` as
-    /// the host.
+    /// If you run the server on the same machine, you should pass `localhost` or `127.0.0.1` as
+    /// the host.  This neets to be `mut` since it needs to track state internally.
     pub fn new(host: &str) -> Self {
         let context = zmq::Context::new();
 
@@ -48,6 +52,7 @@ impl ConnectionToServer {
             game_control_socket,
             game_state_socket,
             player_input_socket,
+            last_player_input_sent: Instant::now(),
         }
     }
 
@@ -104,13 +109,16 @@ impl ConnectionToServer {
         game_states
     }
 
-    /// Send player input to the server. The server processes input as it comes
-    /// in, but that doesn't mean you should send 10,000 input packets/second.
-    /// Keep track of the input and only send new input about every 15ms.
-    /// TODO: Accumulate the input here, instead of requiring the caller to keep track of it.
-    pub fn send_player_input(&mut self, player_input: PlayerInput) {
-        self.player_input_socket
-            .send(&serialize(&player_input).unwrap(), 0)
-            .unwrap();
+    /// Send player input to the server. This method only actually sends input to the server if it
+    /// has been >= 15ms since the last time it sent input (to avoid overwhelming the server with
+    /// too many input packets per client).  Otherwise, it just does nothing.  You should maintain
+    /// a mutable PlayerInput in your game loop and try to send it every time around your loop.
+    pub fn send_player_input(&mut self, player_input: &PlayerInput) {
+        if self.last_player_input_sent.elapsed() >= PLAYER_INPUT_INTERVAL {
+            self.player_input_socket
+                .send(&serialize(player_input).unwrap(), 0)
+                .unwrap();
+            self.last_player_input_sent = Instant::now();
+        }
     }
 }
