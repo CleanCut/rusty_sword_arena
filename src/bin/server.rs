@@ -698,6 +698,7 @@ fn main() {
     let mut player_states = HashMap::<u8, PlayerState>::new();
     let mut player_inputs = HashMap::<u8, PlayerInput>::new();
     let mut high_scores = HighScores::new();
+    let sleep_delay = Duration::from_millis(1);
 
     println!("--------------------------------------------------------------");
     println!("Server started (Ctrl-C to stop)\n{:#?}", game_setting);
@@ -705,9 +706,10 @@ fn main() {
         let delta = loop_start.elapsed();
         loop_start = Instant::now();
         frame_timer.update(delta);
-        // TODO: Refactor the server to be interrupt-driven, so we don't have to sleep to keep a
-        //       busy-loop from sucking up 100% of a CPU
-        thread::sleep(Duration::from_micros(50));
+        // Sleep just a bit to avoid a busy-loop from sucking up 100% of a CPU
+        if delta < sleep_delay {
+            thread::sleep(Duration::from_micros(50));
+        }
         loop_iterations += 1;
 
         // Handle and reply to all Game Control requests. The game settings might get changed.

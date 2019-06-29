@@ -148,6 +148,7 @@ fn main() {
                     button_state,
                     button_value,
                 } => {
+                    // TODO: Fix tapping-opposite-direction-cancels-keypress behavior
                     let axis_amount = match button_state {
                         ButtonState::Pressed => 1.0,
                         ButtonState::Released => 0.0,
