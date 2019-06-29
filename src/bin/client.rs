@@ -104,11 +104,12 @@ fn main() {
     let host = args.pop().unwrap();
     let name = args.pop().unwrap();
     let mut server_conn = ConnectionToServer::new(&host);
-    let my_id = server_conn.join(&name);
-    if my_id == 0 {
-        println!("Either name is taken or server is full. Give it another try.");
+    let response = server_conn.join(&name);
+    if let Err(err) = response {
+        println!("{}", err);
         std::process::exit(3);
     }
+    let my_id = response.unwrap();
     let game_setting = server_conn.get_game_setting();
 
     println!(

@@ -410,14 +410,16 @@ fn process_game_control_requests(
                 let msg: GameControlMsg = deserialize(&multipart_message[2][..]).unwrap();
                 match msg {
                     GameControlMsg::Join { name } => {
-                        let mut id: u8 = 0;
+                        let result: Result<u8, String>;
                         loop {
                             // Is the game full?
                             if player_states.len() >= game_setting.max_players as usize {
-                                println!(
-                                    "Join Failed: No room for for {} - max players reached.",
-                                    name
+                                let err = format!(
+                                    "Join Failed: No room for player {} - {} players is the max!",
+                                    name, game_setting.max_players
                                 );
+                                println!("{}", err);
+                                result = Err(err);
                                 break;
                             }
                             // Is the name already taken?
@@ -426,10 +428,14 @@ fn process_game_control_requests(
                                 .map(|player_state| &player_state.name)
                                 .any(|x| x == &name)
                             {
-                                println!("Join Failed: Name \"{}\" is already taken.", name);
+                                let err =
+                                    format!("Join Failed: Name \"{}\" is already taken.", name);
+                                println!("{}", err);
+                                result = Err(err);
                                 break;
                             }
-                            // Find an unused, non-zero id
+                            // Find a random, unused, non-zero id
+                            let mut id;
                             loop {
                                 id = rng.gen::<u8>();
                                 if (id != 0) && !player_states.contains_key(&id) {
@@ -450,11 +456,12 @@ fn process_game_control_requests(
                             high_scores.add_player(&player_state.name);
                             player_states.insert(id, player_state);
                             println!("Joined: {} (id {})", name, id,);
+                            result = Ok(id);
                             break;
                         }
                         game_control_server_socket
                             .send_multipart(
-                                &[&return_identity[..], &[], &serialize(&id).unwrap()],
+                                &[&return_identity[..], &[], &serialize(&result).unwrap()],
                                 0,
                             )
                             .unwrap();

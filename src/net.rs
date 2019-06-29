@@ -51,12 +51,11 @@ impl ConnectionToServer {
         }
     }
 
-    /// Join a game.  If successful, you'll get a non-zero player id back. Save the player id,
-    /// because it is how you will be able to tell which of the players the server tells you about
-    /// is YOU! If unsuccessful then there was probably a name collision, so change your name and
-    /// try again.  If changing the name still doesn't work, then the server is probably full.
-    /// TODO: Return a Result with a nice Error.
-    pub fn join(&mut self, name: &str) -> u8 {
+    /// Join a game.  If successful, this returns an Ok(u8) representing your
+    /// player id. Save the player id, because it is how you will be able to tell which of the
+    /// players the server tells you about later is YOU! If unsuccessful then this returns an
+    /// Err(String) that you can unwrap and print out to see an informative error message.
+    pub fn join(&mut self, name: &str) -> Result<u8, String> {
         let msg = GameControlMsg::Join {
             name: name.to_string(),
         };
@@ -64,8 +63,8 @@ impl ConnectionToServer {
             .send(&serialize(&msg).unwrap(), 0)
             .unwrap();
         let bytes = self.game_control_socket.recv_bytes(0).unwrap();
-        let new_id: u8 = deserialize(&bytes[..]).unwrap();
-        new_id
+        let result: Result<u8, String> = deserialize(&bytes[..]).unwrap();
+        result
     }
 
     /// Get the current GameSetting.  You should look at the version number and make sure that you
