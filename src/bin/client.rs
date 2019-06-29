@@ -52,7 +52,7 @@ impl Player {
         // Reset the swing timer (for animating the sword) if an attack was attempted
         for event in &player_state.player_events {
             match event {
-                PlayerEvent::AttackHit { id: _ } => {
+                PlayerEvent::AttackHit { .. } => {
                     self.swing_timer.reset();
                 }
                 PlayerEvent::AttackMiss => {
@@ -184,15 +184,14 @@ fn main() {
             players.retain(|k, _v| game_state.player_states.contains_key(k));
             // Update or add all players that have states
             for (id, player_state) in game_state.player_states {
-                if players.contains_key(&id) {
-                    players.get_mut(&id).unwrap().update_state(player_state);
-                } else {
-                    players.insert(id, Player::new(&window, player_state));
-                }
+                players
+                    .entry(id)
+                    .or_insert_with(|| Player::new(&window, player_state.clone()))
+                    .update_state(player_state);
             }
         }
         // Process Player Events
-        for (_id, player) in &mut players {
+        for player in players.values_mut() {
             player.update(dt, &mut audio);
         }
 

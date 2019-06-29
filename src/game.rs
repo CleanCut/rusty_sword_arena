@@ -31,20 +31,20 @@ impl Vector2 {
         }
     }
     /// Calculate the distance between two Vector2's -- useful when they represent coordinates
-    pub fn distance_between(&self, other: Self) -> f32 {
+    pub fn distance_between(self, other: Self) -> f32 {
         ((self.x - other.x).powi(2) + (self.y - other.y).powi(2)).sqrt()
     }
     /// Calculate the angle between two Vector2's -- useful when they represent coordinates
-    pub fn angle_between(&self, other: Self) -> f32 {
+    pub fn angle_between(self, other: Self) -> f32 {
         (other.y - self.y).atan2(other.x - self.x)
     }
     /// Calculate the magnitude of the Vector2 -- useful when it represents a vector (such as
     /// velocity)
-    pub fn magnitude(&self) -> f32 {
+    pub fn magnitude(self) -> f32 {
         (self.x.powi(2) + self.y.powi(2)).sqrt()
     }
     /// Create a new Vector2D, normalized to be of unit length (length 1).
-    pub fn normalized(&self) -> Self {
+    pub fn normalized(self) -> Self {
         let magnitude = self.magnitude();
         Self {
             x: self.x / magnitude,
@@ -52,15 +52,15 @@ impl Vector2 {
         }
     }
     /// Create a new Vector2D that is clamped to a magnitude of `1.0`
-    pub fn clamped_to_normal(&self) -> Self {
+    pub fn clamped_to_normal(self) -> Self {
         if self.magnitude() > 1.0 {
             self.normalized()
         } else {
-            self.clone()
+            self
         }
     }
     /// Create a new Vector2D clamped to `magnitude`
-    pub fn clamped_to(&self, magnitude: f32) -> Self {
+    pub fn clamped_to(self, magnitude: f32) -> Self {
         if self.magnitude() > magnitude {
             let ratio = magnitude / self.magnitude();
             Self {
@@ -68,7 +68,7 @@ impl Vector2 {
                 y: self.y * ratio,
             }
         } else {
-            self.clone()
+            self
         }
     }
 }

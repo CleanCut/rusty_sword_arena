@@ -444,10 +444,7 @@ impl Window {
                         });
                     }
                     // Keyboard button
-                    glutin::WindowEvent::KeyboardInput {
-                        device_id: _,
-                        input,
-                    } => {
+                    glutin::WindowEvent::KeyboardInput { input, .. } => {
                         let button_state = match input.state {
                             ElementState::Pressed => ButtonState::Pressed,
                             ElementState::Released => ButtonState::Released,
@@ -483,12 +480,7 @@ impl Window {
                             }
                         }
                     }
-                    glutin::WindowEvent::MouseInput {
-                        device_id: _,
-                        state,
-                        button,
-                        modifiers: _,
-                    } => {
+                    glutin::WindowEvent::MouseInput { state, button, .. } => {
                         if button == glium::glutin::MouseButton::Left {
                             let button_state = match state {
                                 ElementState::Pressed => ButtonState::Pressed,

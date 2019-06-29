@@ -92,7 +92,7 @@ impl ConnectionToServer {
             let succeeded: bool = deserialize(&bytes[..]).unwrap();
             return succeeded;
         }
-        return false;
+        false
     }
 
     /// Gets all available unprocessed game states.  Game states arrive in order.  You should call

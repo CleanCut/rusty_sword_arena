@@ -154,4 +154,4 @@ pub mod timer;
 
 /// The current version number. Your client should check this against the version the server sends
 /// in [GameSettings]()
-pub const VERSION: &'static str = env!("CARGO_PKG_VERSION");
+pub const VERSION: &str = env!("CARGO_PKG_VERSION");
