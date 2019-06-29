@@ -1,4 +1,4 @@
-use crate::game::{ButtonState, ButtonValue, Color, InputEvent, Vector2};
+use crate::game::{ButtonState, ButtonValue, Color, GameEvent, Vector2};
 
 use glium::{
     self,
@@ -55,8 +55,8 @@ fn create_ring_vertices(radius: f32, num_vertices: usize, color: Color) -> Vec<S
     v
 }
 
-/// A `Shape` can be drawn to a [Window](gfx/struct.Window.html) using its `draw_shape()` method.
-/// Use the provided `new_*` methods to make a `Shape`.
+/// A `Shape` can be drawn to a `Window` using its `draw_shape()` method. Use the provided `new_*`
+/// methods to make a `Shape`.
 #[derive(Debug)]
 pub struct Shape {
     pub pos: Vector2,
@@ -112,8 +112,7 @@ struct ImgVertex {
 
 implement_vertex!(ImgVertex, position, tex_coords);
 
-/// A PNG image that can be drawn to a [Window](gfx/struct.Window.html) using its `.draw_image()`
-/// method.
+/// A PNG image that can be drawn to a `Window` using its `.draw_image()` method.
 ///
 /// If you are looking at a PNG image in Photoshop, the "right" direction is the "front" of the
 /// image.  `direction` is the angle in radians that the image will be rotated.
@@ -424,22 +423,22 @@ impl Window {
     }
 
     /// For convenience this method abstracts all the possible mouse and keyboard events to
-    /// [InputEvent](game/enum.InputEvent.html)s, which are the events we care about for the game.
+    /// `GameEvent`s, which are the events we care about for the game.
     /// The WASD and arrow keys map to directions, mouse clicks and space bar map to attacks, and
     /// the Escape key maps to quitting.  Any number of events could have occurred since we last
-    /// looked, so a Vec<InputEvent> is returned.
-    pub fn poll_input_events(&mut self) -> Vec<InputEvent> {
+    /// looked, so a `Vec<GameEvent>` is returned.
+    pub fn poll_game_events(&mut self) -> Vec<GameEvent> {
         let screen_to_opengl = &mut (self.screen_to_opengl);
-        let mut events = Vec::<InputEvent>::new();
+        let mut events = Vec::<GameEvent>::new();
         self.events_loop.poll_events(|ev| {
             if let glium::glutin::Event::WindowEvent { event, .. } = ev {
                 match event {
                     // Time to close the app?
-                    glutin::WindowEvent::CloseRequested => events.push(InputEvent::WindowClosed),
+                    glutin::WindowEvent::CloseRequested => events.push(GameEvent::Quit),
                     // Mouse moved
                     glutin::WindowEvent::CursorMoved { position, .. } => {
                         let mouse_pos = screen_to_opengl(position.into());
-                        events.push(InputEvent::MouseMoved {
+                        events.push(GameEvent::MouseMoved {
                             position: mouse_pos,
                         });
                     }
@@ -452,27 +451,24 @@ impl Window {
                         use glium::glutin::VirtualKeyCode::*;
                         if let Some(vkey) = input.virtual_keycode {
                             match vkey {
-                                W | Up | Comma => events.push(InputEvent::Button {
+                                W | Up | Comma => events.push(GameEvent::Button {
                                     button_state,
                                     button_value: ButtonValue::Up,
                                 }),
-                                S | Down | O => events.push(InputEvent::Button {
+                                S | Down | O => events.push(GameEvent::Button {
                                     button_state,
                                     button_value: ButtonValue::Down,
                                 }),
-                                A | Left => events.push(InputEvent::Button {
+                                A | Left => events.push(GameEvent::Button {
                                     button_state,
                                     button_value: ButtonValue::Left,
                                 }),
-                                D | Right | E => events.push(InputEvent::Button {
+                                D | Right | E => events.push(GameEvent::Button {
                                     button_state,
                                     button_value: ButtonValue::Right,
                                 }),
-                                Escape => events.push(InputEvent::Button {
-                                    button_state,
-                                    button_value: ButtonValue::Quit,
-                                }),
-                                Space | Delete => events.push(InputEvent::Button {
+                                Escape => events.push(GameEvent::Quit),
+                                Space | Delete => events.push(GameEvent::Button {
                                     button_state,
                                     button_value: ButtonValue::Attack,
                                 }),
@@ -486,7 +482,7 @@ impl Window {
                                 ElementState::Pressed => ButtonState::Pressed,
                                 ElementState::Released => ButtonState::Released,
                             };
-                            events.push(InputEvent::Button {
+                            events.push(GameEvent::Button {
                                 button_state,
                                 button_value: ButtonValue::Attack,
                             });

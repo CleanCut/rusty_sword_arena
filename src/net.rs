@@ -56,10 +56,10 @@ impl ConnectionToServer {
         }
     }
 
-    /// Join a game.  If successful, this returns an Ok(u8) representing your
+    /// Join a game.  If successful, this returns an `Ok(u8)` representing your
     /// player id. Save the player id, because it is how you will be able to tell which of the
     /// players the server tells you about later is YOU! If unsuccessful then this returns an
-    /// Err(String) that you can unwrap and print out to see an informative error message.
+    /// `Err(String)` that you can unwrap and print out to see an informative error message.
     pub fn join(&mut self, name: &str) -> Result<u8, String> {
         let msg = GameControlMsg::Join {
             name: name.to_string(),

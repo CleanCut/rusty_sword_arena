@@ -58,14 +58,14 @@
 //!   - One easy way is to get the name and host from the command-line.
 //!   - See [args](https://doc.rust-lang.org/std/env/fn.args.html) for the code part.
 //! - Add `rusty_sword_arena` as a dependency in your `Cargo.toml` file.
-//! - Create a [ServerConnection](net/struct.ServerConnection.html) using the `host`
-//! - Use the [ServerConnection](net/struct.ServerConnection.html) to join the game
-//!   - You should hold onto that ID so you know which player you are.
-//!   - You should probably handle the possible didn't-join condition.
-//! - Use the [ServerConnection](net/struct.ServerConnection.html) to get a
-//!   [GameSetting](game/struct.GameSetting.html).  If `version` in game setting does not match
-//!   [VERSION](constant.VERSION.html) in the rusty_sword_arena module you are using, you may want
-//!   to abort the game...and then fix your `Cargo.toml`.
+//! - Create a `ConnectionToServer` using the `host`
+//! - Use the `ConnectionToServer` to join the game.
+//!   - If the join fails, print out the error message and quit the program.
+//!   - Keep the player id that is returned so you can tell which player you are.
+//! - Use the `ConnectionToServer` to get a `GameSetting`.  If the `GameSetting`'s `version` does
+//!   not match `rusty_sword_arena::VERSION` you are using, then you are using a different version
+//!   of rusty_sword_arena than the server, and you should abort the game and update your
+//!   `Cargo.toml` to use the same version.
 //! - Add [impose](https://crates.io/crates/impose) as a dependency.
 //! - Use impose to add your audio to an
 //!   [audio system](https://docs.rs/impose/0.2.0/impose/struct.Audio.html).  You can use
@@ -73,19 +73,17 @@
 //!   [individually](https://github.com/CleanCut/rusty_sword_arena/tree/master/media)
 //!   or [zipped up](https://agileperception.com/static/media.zip)
 //!   if you like, or [record](https://www.audacityteam.org/) or [create](https://www.bfxr.net/)
-//!   your own sounds!  (Or you can skip sounds altogether, really).
-//! - Create a [Window](gfx/struct.Window.html)
+//!   your own sounds!  Use the Ogg Vorbis format.  (Or you can skip sounds altogether, really).
+//! - Create a `Window`
+//! - Create a `PlayerInput` to keep track of player input.
 //! - IN YOUR MAIN GAME LOOP...
-//!     - Gather any keyboard/mouse input from the [Window](gfx/struct.Window.html)
-//!       you created, and then [coalesce](game/struct.PlayerInput.html#method.coalesce)
-//!       it into a persistent [PlayerInput](game/struct.PlayerInput.html).
-//!         - Every ~15ms, send the coalesced input to the server and reset your input
-//!         - If the player wants to quit, here's the place to break out of the game loop
-//!     - Get all the pending [GameState](game/struct.GameState.html)s from the server.
+//!     - Gather `GameEvent`s from the `Window`, handle all the possible events, including updating
+//!       your `PlayerInput` based on what you see.
+//!     - Get all the pending `GameState`s from the server.
 //!         - FOR EACH GAME STATE (which represents the state of one frame)
-//!         - Process all the [PlayerState](game/struct.PlayerState.html)s into some local
-//!           collection(s) that represent the client's view of players and their graphics.
-//!         - Play sounds as desired, based on player events
+//!         - Process all the `PlayerState`s into some local collection(s) that represent the
+//!           client's current view of players.
+//!     - For each `PlayerState`, process any new `PlayerEvent`s to play sounds or update
 //!     - Loop through your local state storage and draw a frame that represents the latest state
 //!       of the players.
 //! ...
@@ -95,13 +93,11 @@
 //! Here are some things we will NOT do together in the tutorial.  If you are ahead of the class, or
 //! want to keep going after the class, here's some challenges you could take on!
 //!
-//! - Every GameState includes a [HighScores](game/struct.HighScores.html) struct. Why not do
-//!   something with it?  You could just print it to the console every once-in-awhile, or do
-//!   something more interesting.
+//! - Every GameState includes a `HighScores` struct. Why not do something with it?  You could just
+//!   print it to the console every once-in-awhile, or do something more interesting.
 //! - Your player might sometimes appear underneath other players if they overlap. Make your player
 //!   always render on top.
-//! - Which player is yours among so many circles!?!? Add some visual indicator as to which
-//!   player is yours.
+//! - Which player is yours!? Add some visual indicator so you can easily tell your player apart.
 //! - **Multiple players from one client** - The server and networking protocol do not prevent a
 //!   single client from adding multiple players to the game. Create some way to divide the
 //!   keyboard/mouse input up among two or more local players who will play through the same client.

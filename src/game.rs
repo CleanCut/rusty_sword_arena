@@ -19,31 +19,31 @@ pub struct Vector2 {
 }
 
 impl Vector2 {
-    /// New Vector2D at (0.0, 0.0)
+    /// New `Vector2` at (0.0, 0.0)
     pub fn new() -> Self {
         Self { x: 0.0, y: 0.0 }
     }
-    /// Create a random Vector2D with x and y both in `[-dimension, dimension]`
+    /// Create a random `Vector2` with x and y both in `[-dimension, dimension]`
     pub fn new_in_square<T: Rng>(dimension: f32, rng: &mut T) -> Self {
         Self {
             x: rng.gen_range(-dimension, dimension),
             y: rng.gen_range(-dimension, dimension),
         }
     }
-    /// Calculate the distance between two Vector2's -- useful when they represent coordinates
+    /// Calculate the distance between two `Vector2`'s -- useful when they represent coordinates
     pub fn distance_between(self, other: Self) -> f32 {
         ((self.x - other.x).powi(2) + (self.y - other.y).powi(2)).sqrt()
     }
-    /// Calculate the angle between two Vector2's -- useful when they represent coordinates
+    /// Calculate the angle between two `Vector2`'s -- useful when they represent coordinates
     pub fn angle_between(self, other: Self) -> f32 {
         (other.y - self.y).atan2(other.x - self.x)
     }
-    /// Calculate the magnitude of the Vector2 -- useful when it represents a vector (such as
+    /// Calculate the magnitude of the `Vector2` -- useful when it represents a vector (such as
     /// velocity)
     pub fn magnitude(self) -> f32 {
         (self.x.powi(2) + self.y.powi(2)).sqrt()
     }
-    /// Create a new Vector2D, normalized to be of unit length (length 1).
+    /// Create a new `Vector2`, normalized to be of unit length (length 1).
     pub fn normalized(self) -> Self {
         let magnitude = self.magnitude();
         Self {
@@ -51,7 +51,7 @@ impl Vector2 {
             y: self.y / magnitude,
         }
     }
-    /// Create a new Vector2D that is clamped to a magnitude of `1.0`
+    /// Create a new `Vector2` that is clamped to a magnitude of `1.0`
     pub fn clamped_to_normal(self) -> Self {
         if self.magnitude() > 1.0 {
             self.normalized()
@@ -59,7 +59,7 @@ impl Vector2 {
             self
         }
     }
-    /// Create a new Vector2D clamped to `magnitude`
+    /// Create a new `Vector2` clamped to `magnitude`
     pub fn clamped_to(self, magnitude: f32) -> Self {
         if self.magnitude() > magnitude {
             let ratio = magnitude / self.magnitude();
@@ -109,7 +109,7 @@ impl Mul<f32> for Vector2 {
 }
 
 /// Convenience trait that adds an `.f32()` method that returns a 32-bit float representation of
-/// something.  Implemented for std::time::Duration and rusty_sword_arena::timer::Timer.
+/// something.  Implemented for `std::time::Duration` and `rusty_sword_arena::timer::Timer`.
 pub trait Floatable {
     fn f32(&self) -> f32;
 }
@@ -135,8 +135,6 @@ pub enum ButtonValue {
     /// An abstracted button that combines: Left Mouse Button, Space Bar, Backspace (Kinesis
     /// Advantage Keyboard)
     Attack,
-    /// An abstracted button that combines: Escape
-    Quit,
 }
 
 /// Whether a button was pressed or released
@@ -148,21 +146,19 @@ pub enum ButtonState {
     Released,
 }
 
-/// `InputEvent` represents input based on the window that is being displayed, such as someone
-/// closing the window, the mouse moving around, or buttons being pushed.
+/// `GameEvent` represents game events caused by a user, such as the mouse moving around, buttons
+/// being pushed, or the window being closed.
 #[derive(Copy, Clone, Debug, Deserialize, Serialize, PartialEq)]
-pub enum InputEvent {
-    /// The window was closed somehow, so we better quit the application...unless we're going to
-    /// pop up another window.
-    WindowClosed,
+pub enum GameEvent {
+    /// The user pressed Escape or closed the window. We should quit the game.
+    Quit,
     /// Indicates the current position the mouse has moved to.  The mouse is now at this location in
     /// OpenGL coordinates.  Note that on some operating systems this event will fire even if the
     /// cursor is outside the bounds of the window.
     MouseMoved { position: Vector2 },
-    /// Indicates that a button with value `ButtonValue` has been either pressed or released
-    /// (`ButtonState`).  Note that both mouse buttons and keyboard buttons are abstracted and
-    /// collected together into a few logical game buttons.
-    /// See [ButtonValue](game/enum.ButtonValue.html)
+    /// Indicates that a button with variant `ButtonValue` has been either pressed or released
+    /// (variant of `ButtonState`).  Note that both mouse buttons and keyboard buttons are
+    /// abstracted and collected together into a few logical game buttons.
     Button {
         button_value: ButtonValue,
         button_state: ButtonState,
@@ -583,7 +579,7 @@ pub struct GameState {
 /// can use the [angle_between](game/struct.Vector2.html#method.angle_between) method of a
 /// Vector2 to find the direction for the input based off of the position in your own player's
 /// [PlayerState](game/struct.PlayerState.html) and the current position of the mouse,
-/// which you get from one of the [input events](gfx/struct.Window.html#method.events)
+/// which you get from one of the [game events](../gfx/struct.Window.html#method.poll_game_events)
 ///
 /// Note that `attack` is an indicator of whether the player is currently (still) attempting to
 /// attack. The server will only attack once every once-in-awhile when the weapon's attack timer
@@ -602,9 +598,9 @@ pub struct PlayerInput {
     pub attack: bool,
     /// How much your player is attempting to move horizontally (x) and vertically (y) [-1.0, 1.0].
     /// Positive is right and up for x and y, respectively.  You can derive movement amounts from
-    /// [Button](game/enum.InputEvent.html#variant.Button) variants of the
-    /// [InputEvent](game/enum.InputEvent.html)s you get from the
-    /// [Window](gfx/struct.Window.html#method.poll_input_events).
+    /// [Button](game/enum.GameEvent.html#variant.Button) variants of the
+    /// [GameEvent](game/enum.GameEvent.html)s you get from the
+    /// [Window](../gfx/struct.Window.html#method.poll_game_events).
     pub move_amount: Vector2,
     /// What direction your player is facing. You can turn instantly, you lucky dog.
     pub direction: f32,

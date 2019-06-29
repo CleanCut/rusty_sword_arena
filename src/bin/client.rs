@@ -3,7 +3,7 @@
 
 use impose::Audio;
 use rusty_sword_arena::{
-    game::{ButtonState, ButtonValue, InputEvent, PlayerEvent, PlayerInput, PlayerState, Vector2},
+    game::{ButtonState, ButtonValue, GameEvent, PlayerEvent, PlayerInput, PlayerState, Vector2},
     gfx::{Image, Shape, Window},
     net::ConnectionToServer,
     timer::Timer,
@@ -137,13 +137,13 @@ fn main() {
 
     'gameloop: loop {
         // Accumulate user input into one struct
-        for event in window.poll_input_events() {
+        for event in window.poll_game_events() {
             match event {
-                InputEvent::WindowClosed => break 'gameloop,
-                InputEvent::MouseMoved { position } => {
+                GameEvent::Quit => break 'gameloop,
+                GameEvent::MouseMoved { position } => {
                     mouse_pos = position;
                 }
-                InputEvent::Button {
+                GameEvent::Button {
                     button_state,
                     button_value,
                 } => {
@@ -163,7 +163,6 @@ fn main() {
                                 ButtonState::Released => false,
                             };
                         }
-                        ButtonValue::Quit => break 'gameloop,
                     }
                 }
             }
