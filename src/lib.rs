@@ -7,8 +7,11 @@
 //!
 //! **Other Tutorial References**
 //!
-//! - [Git repository for Rusty Sword Arena](https://github.com/CleanCut/rusty_sword_arena) repository.
-//! - [How To Learn Rust]() - a handy reference.
+//! - [Git repository for Rusty Sword Arena](https://github.com/CleanCut/rusty_sword_arena).
+//! - [How To Learn Rust](https://github.com/CleanCut/rusty_sword_arena/blob/master/HowToLearnRust.md) - a
+//!   handy checklist of things to do.
+//!
+//!
 //!
 //! # Rusty Sword Arena - Game Design
 //!
@@ -25,12 +28,13 @@
 //! ## Basic Gameplay
 //!
 //! The basic idea of the game is you are presented with the top-down view of a person (circle) in
-//! an arena (your window) who can swing his weapon (a rusty sword) around a certain distance (a
-//! larger [concentric] circle than the person himself).  You can face any direction you like, in
-//! fact turning is instant as far as the server is concerned.  You can move in any direction (which
-//! is _not_ instant, the server implements some rudimentary movement physics) and attempt to attack
-//! other players with your sword.  You will be limited to 50% movement speed while attacking, so it
-//! is to your benefit to try to time your attack attempts to when you are actually ready to attack.
+//! an arena (your window) who can swing his weapon (a rusty sword) in a circle.  You can face any
+//! direction you like, turning is instant as far as the server is concerned.  You can move in any
+//! direction (which is _not_ instant, the server implements some rudimentary movement physics) and
+//! attempt to attack other players with your sword.  If another player is within the radius of
+//! your sword reach when you attack, they will be hurt and their health will go down.  You will be
+//! limited to 50% movement speed while attacking, so try to time your attack to when they will be
+//! successful.
 //!
 //! You start with some health. When you are hit, you lose health.  When the health runs out, you
 //! die and the person who killed you gets a point.  After a respawn delay, you respawn with full
@@ -40,10 +44,9 @@
 //!
 //! ## Preparation
 //!
-//! First, you should follow the [instructions on the readme](https://github.com/cleancut/rusty_sword_arena)
-//! to install some prerequisites.  Then come back here and keep going.
-//!
-
+//! First, you should follow the
+//! [instructions on the readme](https://github.com/cleancut/rusty_sword_arena#preparation---do-this-before-oscon)
+//! to install some dependencies.  Then come back here and keep going.
 //!
 //! ## Creating Your Game Client
 //!

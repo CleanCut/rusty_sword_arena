@@ -39,8 +39,9 @@ If you have any trouble with installation or running the commands above, please
 
 ### Install Other Dependencies
 
-*ZeroMQ* is used under-the-hood for networking.  It's abstracted away, so you won't actually deal with it other than
-making sure the library portion of it is installed so Rust can find it.
+*ZeroMQ* 4.1.x or later is used under-the-hood for networking.  It's abstracted away, so you will
+not actually deal with it other than making sure the library portion of it is installed so Rust can
+find it.
 
 On Linux, the *alsa* development libraries are needed for sound.
 
@@ -73,48 +74,54 @@ sudo apt install libasound2-dev
 **Other Operating Systems**
 
 Follow the instructions in
-[ZeroMQ's download documentation](http://zeromq.org/area:download) for your operating system.
+[ZeroMQ's download documentation](http://zeromq.org/area:download) 4.1.x or later for your operating system.
 
 ### See if everything is working
 
-_*THIS IS THE IMPORTANT PART!*_  Following these steps will download a few hundred
-dependencies, which is really important to do before the conference because when
-a couple hundred people do it at the same time at the conference the IT folks
-freak out and scold me. :-)  Also, you'll have a working environment so you can
-listen during the tutorial instead of trying to get this stuff working.
+_*THIS IS THE IMPORTANT PART!*_  Following these steps will download a few hundred dependencies,
+which is really important to do before OSCON because when a hundred people do it at the same time at
+the conference the IT folks freak out and scold me. :wink:  Also, this will ensure that you have a
+working environment so that you will be able to listen during the tutorial instead of trying to get
+this stuff working.
 
-- Clone this repository
-- From inside the repository, run:
+- Clone this repository (see the green "Clone or Download" button at the top-right of the page)
+- From a terminal, change directory to inside the repository and then run:
 ```bash
 cargo run --bin server
 ```
-- It should compile for a long time and then you should get a startup message and some stats.
-  - If your firewall prompts you for whether to allow the server to use the network, choose YES
+- It should download & compile for a long time and then you should get a startup message and some
+  stats.
   - Leave the server running for the next step!  When you're ready to shut it down press `Ctrl-C`
-  - If something crashes or goes wrong, please [contact me](mailto:nathan.stocks@gmail.com) before OSCON!!!
-- In another terminal window, run
+  - If your firewall prompts you for whether to allow the server to use the network, choose YES
+  - If something crashes or goes wrong, please [contact me](mailto:nathan.stocks@gmail.com) before
+    OSCON!!!
+- In another terminal window, change directory to inside the repository and run:
 ```bash
-cargo run --bin client -- yourname localhost
+cargo run --bin client -- YOURNAME localhost
 ```
-  - The server should say something about a player connecting
-  - This should compile and then launch a window with a circle holding a sword
+  - You can replace `YOURNAME` with your own name, for example: `Nathan`
+  - This should compile much more quickly since it shares all the same dependencies as the server
+    - when compilation is done, then a window should appear with a circle holding a sword
+    - The server should say something about a player connecting
   - The sword should point at your mouse pointer.
   - The circle can be moved around with the arrow keys or WASD.
-  - You can swing your sword by clicking your mouse
-  - Stop the client by closing the window. Stop the server by pressing `Ctrl-C` in it's terminal.
+  - You can swing your sword by clicking your mouse or pressing space bar
+  - Stop the client by closing the window or pressing the `Escape` key.
+  - Stop the server by pressing `Ctrl-C` in its terminal window.
   - If something crashes or goes wrong, please [contact me](mailto:nathan.stocks@gmail.com) before OSCON!!!
 
-If you got through all those steps without anything crashing, then you're all ready for OSCON. We're going to
-learn Rust while making that game client. ✨🎉✨
+If you got through all those steps without anything crashing, then you are all ready for OSCON. We
+are going to learn Rust while making our own game client similar to this reference implementation.
+✨🎉✨
 
 # Prepare to Learn
 
 Please do *each* of the following before OSCON (see the 
-[How To Learn Rust](https://github.com/CleanCut/rusty_sword_arena/blob/master/HowToLearnRust.md) page for details on all
-of these)
+[How To Learn Rust](https://github.com/CleanCut/rusty_sword_arena/blob/master/HowToLearnRust.md)
+page for details on all of these)
 - [ ] Choose an IDE (or Editor) and configure it with Rust support and customize it to your liking
-- [ ] Choose one place to "find answers" and either introduce yourself (if it's a forum, IRC, etc.) or find the answer
-      to one question you have.
+- [ ] Choose one place to "find answers" and either introduce yourself (if it's a forum, IRC, etc.)
+  or find the answer to one question you have.
 - [ ] Try doing something in Rust!  If you don't have a better idea, then just do this:
   - `cargo new message`
   - `cd message`
