@@ -1,8 +1,8 @@
 // THIS IS ONE REFERENCE IMPLEMENTATION
 // IT IS NOT EXACTLY WHAT WE WILL CREATE DURING THE TUTORIAL...but it's pretty similar.
 
-use impose::Audio;
 use rusty_sword_arena::{
+    audio::Audio,
     game::{ButtonState, ButtonValue, GameEvent, PlayerEvent, PlayerInput, PlayerState, Vector2},
     gfx::{Image, Shape, Window},
     net::ConnectionToServer,
@@ -127,13 +127,13 @@ fn main() {
     let mut dt = Duration::from_secs(0);
 
     let mut audio = Audio::new();
-    audio.add_audio("miss", "media/miss.ogg");
-    audio.add_audio("change_weapon", "media/change_weapon.ogg");
-    audio.add_audio("die", "media/die.ogg");
-    audio.add_audio("spawn", "media/spawn.ogg");
-    audio.add_audio("join", "media/join.ogg");
-    audio.add_audio("leave", "media/leave.ogg");
-    audio.add_audio("ow", "media/ow.ogg");
+    audio.add("miss", "media/miss.ogg");
+    audio.add("change_weapon", "media/change_weapon.ogg");
+    audio.add("die", "media/die.ogg");
+    audio.add("spawn", "media/spawn.ogg");
+    audio.add("join", "media/join.ogg");
+    audio.add("leave", "media/leave.ogg");
+    audio.add("ow", "media/ow.ogg");
 
     'gameloop: loop {
         // Accumulate user input into one struct

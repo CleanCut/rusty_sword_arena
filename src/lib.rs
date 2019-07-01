@@ -66,14 +66,12 @@
 //!   not match `rusty_sword_arena::VERSION` you are using, then you are using a different version
 //!   of rusty_sword_arena than the server, and you should abort the game and update your
 //!   `Cargo.toml` to use the same version.
-//! - Add [impose](https://crates.io/crates/impose) as a dependency.
-//! - Use impose to add your audio to an
-//!   [audio system](https://docs.rs/impose/0.2.0/impose/struct.Audio.html).  You can use
-//!   these free placeholder sounds either
-//!   [individually](https://github.com/CleanCut/rusty_sword_arena/tree/master/media)
+//! - Use the `Audio` struct to play sound effects.  You can use these free placeholder sounds
+//!   either [individually](https://github.com/CleanCut/rusty_sword_arena/tree/master/media)
 //!   or [zipped up](https://agileperception.com/static/media.zip)
 //!   if you like, or [record](https://www.audacityteam.org/) or [create](https://www.bfxr.net/)
-//!   your own sounds!  Use the Ogg Vorbis format.  (Or you can skip sounds altogether, really).
+//!   your own sounds!  Files can be MP3, WAV, Vorbis or Flac. (Or you can skip sounds altogether,
+//!   really).
 //! - Create a `Window`
 //! - Create a `PlayerInput` to keep track of player input.
 //! - IN YOUR MAIN GAME LOOP...
