@@ -95,6 +95,62 @@ impl Player {
     }
 }
 
+#[derive(Debug)]
+struct MovementStack {
+    horizontal: Vec<ButtonValue>,
+    vertical: Vec<ButtonValue>,
+}
+
+impl MovementStack {
+    fn new() -> Self {
+        Self {
+            horizontal: Vec::new(),
+            vertical: Vec::new(),
+        }
+    }
+    fn handle_buttons(
+        &mut self,
+        button_state: ButtonState,
+        button_value: ButtonValue,
+        player_input: &mut PlayerInput,
+    ) {
+        match button_state {
+            ButtonState::Pressed => match button_value {
+                ButtonValue::Up | ButtonValue::Down => self.vertical.push(button_value),
+                ButtonValue::Left | ButtonValue::Right => self.horizontal.push(button_value),
+                ButtonValue::Attack => player_input.attack = true,
+            },
+            ButtonState::Released => match button_value {
+                ButtonValue::Up | ButtonValue::Down => self.vertical.retain(|&x| x != button_value),
+                ButtonValue::Left | ButtonValue::Right => {
+                    self.horizontal.retain(|&x| x != button_value)
+                }
+                ButtonValue::Attack => player_input.attack = false,
+            },
+        }
+        // Set horizontal movement based on the stack
+        if let Some(last_horiz) = self.horizontal.last() {
+            match last_horiz {
+                ButtonValue::Left => player_input.move_amount.x = -1.0,
+                ButtonValue::Right => player_input.move_amount.x = 1.0,
+                _ => {}
+            }
+        } else {
+            player_input.move_amount.x = 0.0;
+        }
+        // Set vertical movement based on the stack
+        if let Some(last_vert) = self.vertical.last() {
+            match last_vert {
+                ButtonValue::Up => player_input.move_amount.y = 1.0,
+                ButtonValue::Down => player_input.move_amount.y = -1.0,
+                _ => {}
+            }
+        } else {
+            player_input.move_amount.y = 0.0;
+        }
+    }
+}
+
 fn main() {
     let mut args: Vec<String> = env::args().skip(1).collect();
     if args.len() != 2 {
@@ -121,8 +177,9 @@ fn main() {
     let mut players = HashMap::<u8, Player>::new();
 
     let mut mouse_pos = Vector2 { x: 0.0, y: 0.0 };
-    let mut my_input = PlayerInput::new();
-    my_input.id = my_id;
+    let mut player_input = PlayerInput::new();
+    player_input.id = my_id;
+    let mut movement_stack = MovementStack::new();
     let mut instant = Instant::now();
     let mut dt = Duration::from_secs(0);
 
@@ -146,33 +203,15 @@ fn main() {
                 GameEvent::Button {
                     button_state,
                     button_value,
-                } => {
-                    // TODO: Fix tapping-opposite-direction-cancels-keypress behavior
-                    let axis_amount = match button_state {
-                        ButtonState::Pressed => 1.0,
-                        ButtonState::Released => 0.0,
-                    };
-                    match button_value {
-                        ButtonValue::Up => my_input.move_amount.y = axis_amount,
-                        ButtonValue::Down => my_input.move_amount.y = -axis_amount,
-                        ButtonValue::Left => my_input.move_amount.x = -axis_amount,
-                        ButtonValue::Right => my_input.move_amount.x = axis_amount,
-                        ButtonValue::Attack => {
-                            my_input.attack = match button_state {
-                                ButtonState::Pressed => true,
-                                ButtonState::Released => false,
-                            };
-                        }
-                    }
-                }
+                } => movement_stack.handle_buttons(button_state, button_value, &mut player_input),
             }
         }
 
-        // Periodically send accumulated input
+        // Send player input
         if let Some(my_player) = players.get(&my_id) {
-            my_input.direction = my_player.player_state.pos.angle_between(mouse_pos);
+            player_input.direction = my_player.player_state.pos.angle_between(mouse_pos);
         }
-        server_conn.send_player_input(&my_input);
+        server_conn.send_player_input(&player_input);
 
         // Process any new game states
         let new_game_states = server_conn.poll_game_states();
