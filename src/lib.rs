@@ -110,10 +110,7 @@
 //! - **Better Graphics** - Improve on the graphics.  Either make better use of the provided
 //!   shapes to indicate more of what is going on, or dig into the RSA `gfx.rs` module and augment
 //!   it with new and better graphical capabilities.  Health indicators sure would be nice.
-//! - **Better Sound** - The sound library we used is pretty limited.  Add new sounds, or improve
-//!   the underlying sound system.  The sound library that `impose` uses is called
-//!   [rodio](https://github.com/tomaka/rodio) -- you could use it directly.  Or you could switch
-//!   to a similar, but better high-level library like [ears](https://github.com/jhasse/ears).
+//! - **Better Sound Effects** - Make some decent sound effects of your own!
 //! - **Improve Rusty Sword Arena Itself** -- Fork
 //!   [Rusty Sword Arena](https://github.com/CleanCut/rusty_sword_arena).  Add features, or fix
 //!   bugs in the server.
@@ -122,9 +119,9 @@
 //!   - Add more graphics primitives (rectangles for healthbars, for example).
 //!   - Add the ability to render text.
 //!   - Port the network subsystem from ZeroMQ to [nanomsg](https://nanomsg.org/).
-//!   - Improve the network methods' abilities to indicate what exactly happened (was the name
-//!     taken? was the game full?)
-//!   - Port the sound subsystem from `impose` to something better.
+//!   - Upgrade the audio subsystem. Add a way to play looping music alongside the sound effects,
+//!   or to adjust the volume.  Read up on [rodio](https://github.com/tomaka/rodio), the low-level
+//!   library we use to process and play audio.
 //!   - Update the documentation to be clearer, more comprehensive, and have more useful links.
 //!   - Add support for Game Modes (Teams? Capture the flag?).
 //!   - Add multiple weapon types and random weapon drops to pick up.
