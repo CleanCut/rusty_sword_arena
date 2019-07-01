@@ -4,13 +4,12 @@ use rodio::{
 };
 use std::collections::HashMap;
 use std::fs::File;
-use std::io::{BufReader, Cursor, Read};
+use std::io::{Cursor, Read};
 
 /// A simple 4-track audio system to load/decode audio files from disk to play later. Supported
 /// formats are: MP3, WAV, Vorbis and Flac.  This is just a thin convenience layer on top of
 /// [rodio](https://github.com/tomaka/rodio).
 pub struct Audio {
-    endpoint: Device,
     clips: HashMap<&'static str, Buffered<Decoder<Cursor<Vec<u8>>>>>,
     channels: Vec<Sink>,
     current_channel: usize,
@@ -27,7 +26,6 @@ impl Audio {
             channels.push(Sink::new(&endpoint))
         }
         Self {
-            endpoint,
             clips,
             channels,
             current_channel: 0,
