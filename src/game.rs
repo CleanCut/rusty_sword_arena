@@ -389,26 +389,14 @@ pub enum PlayerEvent {
     AttackHit { id: u8 },
     /// Player has attacked, but not hit anyone.
     AttackMiss,
-    /// Player has changed to a new weapon
-    ChangeWeapon,
     /// Player has died
     Die,
-    /// Player has stopped healing
-    HealEnd,
-    /// Player has started healing
-    HealStart,
-    /// Player has stopped moving
-    MoveEnd,
-    /// Player has started moving
-    MoveStart,
     /// Player has spawned
     Spawn,
     /// Player has received damage
     TookDamage,
     /// Player has joined the game
     Join,
-    /// Player has left the game
-    Leave,
 }
 
 /// A weapon a player may hold.
@@ -428,7 +416,7 @@ impl Weapon {
     pub fn new() -> Self {
         Self {
             description: "Rusty Sword".to_string(),
-            damage: 17.0,
+            damage: 26.0,
             radius: 0.1,
             attack_timer: Timer::from_millis(500),
         }
@@ -558,7 +546,8 @@ pub struct GameState {
     /// The hash of the current game setting. Your client should store this somewhere. If it changes
     /// then something has changed (most likely a player has joined or disconnected), so you should
     /// send a GameControlMsg::Fetch to get the new GameSetting from the server and update your
-    /// client state.
+    /// client state. (Not actually a concern yet since the server hasn't implemented changing the
+    /// game state).
     pub game_setting_hash: u64,
     /// All of the current player's states, including your own! **NOTE:** The only reliable method
     /// of knowing that a player is present in the game or not is whether or not a state is in

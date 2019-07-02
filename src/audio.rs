@@ -1,6 +1,6 @@
 use rodio::{
     source::{Buffered, Source},
-    Decoder, Device, Sink,
+    Decoder, Sink,
 };
 use std::collections::HashMap;
 use std::fs::File;

@@ -79,9 +79,7 @@ impl Player {
                 PlayerEvent::Die => audio.play("die"),
                 PlayerEvent::Spawn => audio.play("spawn"),
                 PlayerEvent::Join => audio.play("join"),
-                PlayerEvent::Leave => audio.play("leave"),
                 PlayerEvent::TookDamage => audio.play("ow"),
-                PlayerEvent::ChangeWeapon => audio.play("change_weapon"),
                 _ => (),
             }
         }
@@ -185,11 +183,9 @@ fn main() {
 
     let mut audio = Audio::new();
     audio.add("miss", "media/miss.ogg");
-    audio.add("change_weapon", "media/change_weapon.ogg");
     audio.add("die", "media/die.ogg");
     audio.add("spawn", "media/spawn.ogg");
     audio.add("join", "media/join.ogg");
-    audio.add("leave", "media/leave.ogg");
     audio.add("ow", "media/ow.ogg");
 
     'gameloop: loop {
