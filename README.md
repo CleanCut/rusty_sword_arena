@@ -3,7 +3,9 @@
 
 # Rusty Sword Arena: A Crash Course in Rust
 
-This is the companion repository to the half-day tutorial for OSCON 2019.
+This is the companion repository to the half-day tutorial for OSCON 2019. (The links you need
+during OSCON are 
+[in the Resources section at the bottom](https://github.com/cleancut/rusty_sword_arena#resources))
 
 Just watching the training will be entertaining and informative, but you will truly learn a lot more if you actually
 dig in and do some coding!  This repository is for you hands-on-learners who are ready to roll.
