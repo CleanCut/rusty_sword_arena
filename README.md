@@ -140,8 +140,12 @@ Your resources will be:
 - [Rusty Sword Arena Crate Docs](https://agileperception.com/doc/rusty_sword_arena/)
 - [How To Learn Rust](https://github.com/CleanCut/rusty_sword_arena/blob/master/HowToLearnRust.md)
 - [The Rust Standard Library](https://doc.rust-lang.org/std/)
+- [Sound Files (Zip)](https://agileperception.com/static/media.zip)
+  or [Individual Sound Files](https://github.com/CleanCut/rusty_sword_arena/tree/master/media)
+  - Or you could [record](https://www.audacityteam.org/) or [create](https://www.bfxr.net/)
+    your own sounds!  Files can be MP3, WAV, Vorbis or Flac.
 
 <!--
-Oh, and if you need to ~~cheat~~ catch up, [here is the "duel" repo](https://github.com/CleanCut/duel) 
+Oh, and if you need to ~~cheat~~ catch up, [here is the "blade" repo](https://github.com/CleanCut/blade) 
 with a tag for each stage of the client we're going to build during the tutorial.
 -->
