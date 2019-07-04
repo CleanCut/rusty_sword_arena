@@ -19,6 +19,7 @@ struct Player {
     body_shape: Shape,
     sword_img: Image,
     swing_timer: Timer,
+    rip_img: Image,
 }
 
 impl Player {
@@ -36,6 +37,12 @@ impl Player {
             player_state.direction,
             "media/sword.png",
         );
+        let rip_img = Image::new(
+            window,
+            player_state.pos,
+            0.0,
+            "media/rip.png",
+        );
         let mut sword_swing_timer = Timer::from_millis(350);
         sword_swing_timer.update(Duration::from_secs(5));
         Self {
@@ -43,12 +50,14 @@ impl Player {
             body_shape,
             sword_img,
             swing_timer: sword_swing_timer,
+            rip_img,
         }
     }
     fn update_state(&mut self, player_state: PlayerState) {
         self.body_shape.pos = player_state.pos;
         self.body_shape.direction = player_state.direction;
         self.sword_img.pos = player_state.pos;
+        self.rip_img.pos = player_state.pos;
         // Reset the swing timer (for animating the sword) if an attack was attempted
         for event in &player_state.player_events {
             match event {
@@ -86,6 +95,9 @@ impl Player {
     }
     fn draw(&self, window: &mut Window) {
         if self.player_state.dead {
+            if !self.player_state.joining {
+                window.draw_image(&self.rip_img);
+            }
             return;
         }
         window.draw_shape(&self.body_shape);

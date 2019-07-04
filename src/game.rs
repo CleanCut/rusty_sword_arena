@@ -470,6 +470,9 @@ pub struct PlayerState {
     /// Are you dead?  Untangling health/respawn_timer dynamics is a pain, so we'll use this much
     /// more convenient boolean.
     pub dead: bool,
+    /// You start dead when you join...but maybe you want to treat the joining dead differently than
+    /// the properly-slain dead.
+    pub joining: bool,
 }
 
 impl PlayerState {
@@ -499,6 +502,7 @@ impl PlayerState {
             drop_timer: Timer::from_millis(game_setting.drop_delay),
             respawn_timer,
             dead: true,
+            joining: true,
         }
     }
     /// Clients never need to call update. The server calls it each time it processes some amount of
@@ -527,6 +531,7 @@ impl PlayerState {
         self.health = self.starting_health;
         self.player_events.push(PlayerEvent::Spawn);
         self.dead = false;
+        self.joining = false;
     }
 }
 
