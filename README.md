@@ -132,11 +132,9 @@ page for details on all of these)
   - `cargo run` again to see your new message.
 - [ ] Check out the descriptions of the tools and books. 
 
-# Tutorial!
+## Resources
 
 Now you are ready for the tutorial! You are going to make your own game client far Rusty Sword Arena!
-
-### Resources
 
 - [Presentation slides](https://agileperception.com/static/rustyswordarena2019.pdf) & walk-through
   by the instructor (Nathan Stocks)
