@@ -2,7 +2,7 @@ use bincode::{deserialize, serialize};
 use rand::prelude::{thread_rng, Rng, ThreadRng};
 use rusty_sword_arena::{
     game::{
-        Color, Floatable, GameControlMsg, GameSetting, GameState, HighScores, PlayerEvent,
+        Color, Floatable, GameControlMsg, GameSettings, GameState, HighScores, PlayerEvent,
         PlayerInput, PlayerState, Vector2,
     },
     net, timer,
@@ -396,7 +396,7 @@ fn remove_player(
 #[allow(clippy::never_loop)]
 fn process_game_control_requests(
     game_control_server_socket: &mut zmq::Socket,
-    game_setting: &mut GameSetting,
+    game_setting: &mut GameSettings,
     player_states: &mut HashMap<u8, PlayerState>,
     rng: &mut ThreadRng,
     color_picker: &mut ColorPicker,
@@ -517,7 +517,7 @@ fn coalesce_player_input(
 fn update_state(
     player_states: &mut HashMap<u8, PlayerState>,
     player_inputs: &mut HashMap<u8, PlayerInput>,
-    game_setting: &mut GameSetting,
+    game_setting: &mut GameSettings,
     color_picker: &mut ColorPicker,
     delta: Duration,
     rng: &mut ThreadRng,
@@ -692,7 +692,7 @@ fn main() {
     let mut loop_start = Instant::now();
     let mut frame_timer = timer::Timer::from_nanos(16_666_666); // 60 FPS
     let mut color_picker = ColorPicker::new();
-    let mut game_setting = GameSetting::new();
+    let mut game_setting = GameSettings::new();
     let mut rng = thread_rng();
     let mut frame_number: u64 = 0;
     let mut player_states = HashMap::<u8, PlayerState>::new();

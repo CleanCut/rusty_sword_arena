@@ -1,3 +1,5 @@
+//! The OpenGL window is (-1.0, -1.0) in the bottom left to (1.0, 1.0) in the top right.
+
 use crate::game::{ButtonState, ButtonValue, Color, GameEvent, Vector2};
 
 use glium::{

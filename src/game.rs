@@ -205,11 +205,11 @@ impl PartialEq for Color {
     }
 }
 
-/// The game setting.  Mostly useful if you want to try to write client-side movement prediction,
-/// AI, etc.
+/// The game settings.  Mostly useful if you want to try to write client-side animations that match
+/// server simulation, movement prediction, AI, etc.
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct GameSetting {
-    /// Version number of the server you are connecting to. Compare to rusty_sword_arena::version
+pub struct GameSettings {
+    /// Version number of the server you are connecting to. Compare to `rusty_sword_arena::version`
     pub version: String,
     /// The maximum amount of players this server will allow
     pub max_players: u8,
@@ -228,10 +228,10 @@ pub struct GameSetting {
     pub drop_delay: u64,
 }
 
-impl GameSetting {
+impl GameSettings {
     /// Create the default game settings
     pub fn new() -> Self {
-        GameSetting {
+        GameSettings {
             version: VERSION.to_string(),
             max_players: 64,
             acceleration: 1.5,
@@ -250,7 +250,7 @@ impl GameSetting {
     }
 }
 
-impl Hash for GameSetting {
+impl Hash for GameSettings {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.version.hash(state);
         self.max_players.hash(state);
@@ -262,7 +262,7 @@ impl Hash for GameSetting {
     }
 }
 
-impl Default for GameSetting {
+impl Default for GameSettings {
     fn default() -> Self {
         Self::new()
     }
@@ -429,9 +429,14 @@ impl Default for Weapon {
     }
 }
 
-/// The state of a player on the server. The server broadcasts these to all clients every frame as
-/// part of a FrameState.  Note that you can receive `PlayerState`s before you have gotten a
-/// corresponding GameSetting telling you their name and color!
+
+/// Represents the state of the player on the server for the current `GameState`.  The server always
+/// creates `PlayeState`s, updates them, and sends them to the client each frame inside a
+/// `GameState`. The client is free to modify its local copy (for example, to remove `PlayerEvent`s
+/// it has processed) -- a new set of `PlayerState`s will be delivered the next frame. Clients
+/// typically look at the fields, drain and process the player events, but don't call any of the
+/// methods (since the methods are for server-side updates).  You _could_ potentially do your own
+/// updates just for prediction or AI purposes, though.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct PlayerState {
     /// The ID of the player
@@ -467,16 +472,10 @@ pub struct PlayerState {
     pub dead: bool,
 }
 
-/// Represents the state of the player on the server for the current frame.  Always delivered by the
-/// server to the client inside a [GameState](game/struct.GameState.html).  The server always
-/// creates `PlayeState`s, updates them, and sends them to the client each frame. The client is free
-/// to modify its local copy (for example, to remove [PlayerEvent](game/enum.PlayerEvent.html)s it
-/// has processed) -- a new set of `PlayerStates` will be delivered the next frame. Clients
-/// typically look at the fields and player events, and don't use any of the methods.
 impl PlayerState {
     /// The client should never create a `PlayerState` -- the server will do that.
     pub fn new(
-        game_setting: &GameSetting,
+        game_setting: &GameSettings,
         id: u8,
         name: String,
         color: Color,
@@ -587,9 +586,7 @@ pub struct PlayerInput {
     pub attack: bool,
     /// How much your player is attempting to move horizontally (x) and vertically (y) [-1.0, 1.0].
     /// Positive is right and up for x and y, respectively.  You can derive movement amounts from
-    /// [Button](game/enum.GameEvent.html#variant.Button) variants of the
-    /// [GameEvent](game/enum.GameEvent.html)s you get from the
-    /// [Window](../gfx/struct.Window.html#method.poll_game_events).
+    /// `Button` variants of the `GameEvent`s you get from the `Window.poll_game_events()`.
     pub move_amount: Vector2,
     /// What direction your player is facing. You can turn instantly, you lucky dog.
     pub direction: f32,

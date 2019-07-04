@@ -1,4 +1,4 @@
-use crate::game::{GameControlMsg, GameSetting, GameState, PlayerInput};
+use crate::game::{GameControlMsg, GameSettings, GameState, PlayerInput};
 
 use bincode::{deserialize, serialize};
 use std::time::{Duration, Instant};
@@ -74,13 +74,13 @@ impl ConnectionToServer {
 
     /// Get the current GameSetting.  You should look at the version number and make sure that you
     /// are connecting to a version of the server you expect.
-    pub fn get_game_setting(&mut self) -> GameSetting {
+    pub fn get_game_setting(&mut self) -> GameSettings {
         let msg = GameControlMsg::Fetch;
         self.game_control_socket
             .send(&serialize(&msg).unwrap(), 0)
             .unwrap();
         let bytes = self.game_control_socket.recv_bytes(0).unwrap();
-        let game_setting: GameSetting = deserialize(&bytes[..]).unwrap();
+        let game_setting: GameSettings = deserialize(&bytes[..]).unwrap();
         game_setting
     }
 
