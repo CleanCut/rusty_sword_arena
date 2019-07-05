@@ -656,9 +656,9 @@ pub struct PlayerInput {
 
 impl PlayerInput {
     /// Create a new PlayerInput
-    pub fn new() -> Self {
+    pub fn with_id(id: u8) -> Self {
         Self {
-            id: 0,
+            id,
             attack: false,
             move_amount: Vector2::new(),
             direction: 0.0,

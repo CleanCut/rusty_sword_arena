@@ -131,11 +131,9 @@ fn main() {
     );
 
     let mut window = Window::new(None, "Rusty Sword Arena!");
-    let mut players = HashMap::<u8, Player>::new();
-
-    let mut mouse_pos = Vector2 { x: 0.0, y: 0.0 };
-    let mut player_input = PlayerInput::new();
-    player_input.id = my_id;
+    let mut players: HashMap<u8, Player> = HashMap::new();
+    let mut mouse_pos = Vector2::new();
+    let mut player_input = PlayerInput::with_id(my_id);
     let mut button_processor = ButtonProcessor::new();
     let mut instant = Instant::now();
     let mut dt = Duration::from_secs(0);
@@ -153,9 +151,7 @@ fn main() {
         for event in window.poll_game_events() {
             match event {
                 GameEvent::Quit => break 'gameloop,
-                GameEvent::MouseMoved { position } => {
-                    mouse_pos = position;
-                }
+                GameEvent::MouseMoved { position } => mouse_pos = position,
                 GameEvent::Button {
                     button_state,
                     button_value,
