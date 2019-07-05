@@ -165,6 +165,65 @@ pub enum GameEvent {
     },
 }
 
+/// Stateful, stack-based button processor.  You can use this to process button state/values and
+/// update a `PlayerInput` that you can send to the server.  Also handles the attack button.
+pub struct ButtonProcessor {
+    horizontal: Vec<ButtonValue>,
+    vertical: Vec<ButtonValue>,
+}
+
+impl ButtonProcessor {
+    /// Create a new `ButtonProcessor`
+    pub fn new() -> Self {
+        Self {
+            horizontal: Vec::new(),
+            vertical: Vec::new(),
+        }
+    }
+    /// Process one button, and update the PlayerInput accordingly. Handles movement & attack.
+    pub fn process(
+        &mut self,
+        button_state: ButtonState,
+        button_value: ButtonValue,
+        player_input: &mut PlayerInput,
+    ) {
+        match button_state {
+            ButtonState::Pressed => match button_value {
+                ButtonValue::Up | ButtonValue::Down => self.vertical.push(button_value),
+                ButtonValue::Left | ButtonValue::Right => self.horizontal.push(button_value),
+                ButtonValue::Attack => player_input.attack = true,
+            },
+            ButtonState::Released => match button_value {
+                ButtonValue::Up | ButtonValue::Down => self.vertical.retain(|&x| x != button_value),
+                ButtonValue::Left | ButtonValue::Right => {
+                    self.horizontal.retain(|&x| x != button_value)
+                }
+                ButtonValue::Attack => player_input.attack = false,
+            },
+        }
+        // Set horizontal movement based on the stack
+        if let Some(last_horiz) = self.horizontal.last() {
+            match last_horiz {
+                ButtonValue::Left => player_input.move_amount.x = -1.0,
+                ButtonValue::Right => player_input.move_amount.x = 1.0,
+                _ => {}
+            }
+        } else {
+            player_input.move_amount.x = 0.0;
+        }
+        // Set vertical movement based on the stack
+        if let Some(last_vert) = self.vertical.last() {
+            match last_vert {
+                ButtonValue::Up => player_input.move_amount.y = 1.0,
+                ButtonValue::Down => player_input.move_amount.y = -1.0,
+                _ => {}
+            }
+        } else {
+            player_input.move_amount.y = 0.0;
+        }
+    }
+}
+
 /// Various game control actions. Used by the networking module and the server.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub enum GameControlMsg {
@@ -428,7 +487,6 @@ impl Default for Weapon {
         Self::new()
     }
 }
-
 
 /// Represents the state of the player on the server for the current `GameState`.  The server always
 /// creates `PlayeState`s, updates them, and sends them to the client each frame inside a

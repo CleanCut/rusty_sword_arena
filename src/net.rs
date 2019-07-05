@@ -74,6 +74,7 @@ impl ConnectionToServer {
 
     /// Get the current `GameSettings`.  You should look at the version number and make sure that
     /// you are connecting to a version of the server you expect.
+    // TODO: Do the version check here.
     pub fn get_game_settings(&mut self) -> GameSettings {
         let msg = GameControlMsg::Fetch;
         self.game_control_socket

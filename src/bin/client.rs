@@ -3,7 +3,7 @@
 
 use rusty_sword_arena::{
     audio::Audio,
-    game::{ButtonState, ButtonValue, GameEvent, PlayerEvent, PlayerInput, PlayerState, Vector2},
+    game::{ButtonProcessor, GameEvent, PlayerEvent, PlayerInput, PlayerState, Vector2},
     gfx::{Img, Window},
     net::ConnectionToServer,
     timer::Timer,
@@ -108,61 +108,6 @@ impl Player {
     }
 }
 
-struct MovementStack {
-    horizontal: Vec<ButtonValue>,
-    vertical: Vec<ButtonValue>,
-}
-
-impl MovementStack {
-    fn new() -> Self {
-        Self {
-            horizontal: Vec::new(),
-            vertical: Vec::new(),
-        }
-    }
-    fn handle_buttons(
-        &mut self,
-        button_state: ButtonState,
-        button_value: ButtonValue,
-        player_input: &mut PlayerInput,
-    ) {
-        match button_state {
-            ButtonState::Pressed => match button_value {
-                ButtonValue::Up | ButtonValue::Down => self.vertical.push(button_value),
-                ButtonValue::Left | ButtonValue::Right => self.horizontal.push(button_value),
-                ButtonValue::Attack => player_input.attack = true,
-            },
-            ButtonState::Released => match button_value {
-                ButtonValue::Up | ButtonValue::Down => self.vertical.retain(|&x| x != button_value),
-                ButtonValue::Left | ButtonValue::Right => {
-                    self.horizontal.retain(|&x| x != button_value)
-                }
-                ButtonValue::Attack => player_input.attack = false,
-            },
-        }
-        // Set horizontal movement based on the stack
-        if let Some(last_horiz) = self.horizontal.last() {
-            match last_horiz {
-                ButtonValue::Left => player_input.move_amount.x = -1.0,
-                ButtonValue::Right => player_input.move_amount.x = 1.0,
-                _ => {}
-            }
-        } else {
-            player_input.move_amount.x = 0.0;
-        }
-        // Set vertical movement based on the stack
-        if let Some(last_vert) = self.vertical.last() {
-            match last_vert {
-                ButtonValue::Up => player_input.move_amount.y = 1.0,
-                ButtonValue::Down => player_input.move_amount.y = -1.0,
-                _ => {}
-            }
-        } else {
-            player_input.move_amount.y = 0.0;
-        }
-    }
-}
-
 fn main() {
     let mut args: Vec<String> = env::args().skip(1).collect();
     if args.len() != 2 {
@@ -191,7 +136,7 @@ fn main() {
     let mut mouse_pos = Vector2 { x: 0.0, y: 0.0 };
     let mut player_input = PlayerInput::new();
     player_input.id = my_id;
-    let mut movement_stack = MovementStack::new();
+    let mut button_processor = ButtonProcessor::new();
     let mut instant = Instant::now();
     let mut dt = Duration::from_secs(0);
 
@@ -214,7 +159,7 @@ fn main() {
                 GameEvent::Button {
                     button_state,
                     button_value,
-                } => movement_stack.handle_buttons(button_state, button_value, &mut player_input),
+                } => button_processor.process(button_state, button_value, &mut player_input),
             }
         }
         if let Some(my_player) = players.get(&my_id) {

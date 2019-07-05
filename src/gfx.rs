@@ -139,7 +139,13 @@ impl Img {
     /// Create a new image.  `filename` is relative to the root of the project you are running from.
     /// For example, if you created a `media` subdirectory in the root of your project and then put
     /// `soldier.png` in it, then your filename would be `media/soldier.png`.
-    pub fn new(window: &Window, pos: Vector2, direction: f32, color: Option<Color>, filename: &str) -> Self {
+    pub fn new(
+        window: &Window,
+        pos: Vector2,
+        direction: f32,
+        color: Option<Color>,
+        filename: &str,
+    ) -> Self {
         let file = std::fs::File::open(filename).unwrap();
         let reader = std::io::BufReader::new(file);
         let image = image::load(reader, image::PNG).unwrap().to_rgba();
