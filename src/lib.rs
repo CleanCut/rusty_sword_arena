@@ -62,10 +62,10 @@
 //! - Use the `ConnectionToServer` to join the game.
 //!   - If the join fails, print out the error message and quit the program.
 //!   - Keep the player id that is returned so you can tell which player you are.
-//! - Use the `ConnectionToServer` to get a `GameSetting`.  If the `GameSetting`'s `version` does
-//!   not match `rusty_sword_arena::VERSION` you are using, then you are using a different version
-//!   of rusty_sword_arena than the server, and you should abort the game and update your
-//!   `Cargo.toml` to use the same version.
+//! - Use the `ConnectionToServer` to get a `GameSetting`.  If `GameSettings.version` does not match
+//!   the `rusty_sword_arena::VERSION` you are using, then you are using a different version of
+//!   rusty_sword_arena than the server, and you should abort the game and update your `Cargo.toml`
+//!   to use the same version.
 //! - Use the `Audio` struct to play sound effects.  You can use these free placeholder sounds
 //!   either [individually](https://github.com/CleanCut/rusty_sword_arena/tree/master/media)
 //!   or [zipped up](https://agileperception.com/static/media.zip)
@@ -149,5 +149,5 @@ pub mod net;
 pub mod timer;
 
 /// The current version number. Your client should check this against the version the server sends
-/// in [GameSettings]()
+/// in `GameSettings`
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");

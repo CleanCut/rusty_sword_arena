@@ -478,15 +478,15 @@ pub struct PlayerState {
 impl PlayerState {
     /// The client should never create a `PlayerState` -- the server will do that.
     pub fn new(
-        game_setting: &GameSettings,
+        game_settings: &GameSettings,
         id: u8,
         name: String,
         color: Color,
         pos: Vector2,
         radius: f32,
     ) -> Self {
-        let mut respawn_timer = Timer::from_millis(game_setting.respawn_delay);
-        respawn_timer.set_millis_transient(1000); // spawn more quickly on initial connect
+        let mut respawn_timer = Timer::from_millis(game_settings.respawn_delay);
+        respawn_timer.set_millis_transient(2000); // spawn more quickly on initial connect
         Self {
             id,
             name,
@@ -498,8 +498,8 @@ impl PlayerState {
             health: 100.0,
             starting_health: 100.0,
             weapon: Weapon::new(),
-            player_events: Vec::<PlayerEvent>::new(),
-            drop_timer: Timer::from_millis(game_setting.drop_delay),
+            player_events: vec![PlayerEvent::Join],
+            drop_timer: Timer::from_millis(game_settings.drop_delay),
             respawn_timer,
             dead: true,
             joining: true,
@@ -549,10 +549,9 @@ pub struct GameState {
     pub delta: Duration,
     /// The hash of the current game setting. Your client should store this somewhere. If it changes
     /// then something has changed (most likely a player has joined or disconnected), so you should
-    /// send a GameControlMsg::Fetch to get the new GameSetting from the server and update your
-    /// client state. (Not actually a concern yet since the server hasn't implemented changing the
-    /// game state).
-    pub game_setting_hash: u64,
+    /// get the new `GameSettings` from the server and update your client state. (Not actually a
+    /// concern yet since the server hasn't implemented changing the game state).
+    pub game_settings_hash: u64,
     /// All of the current player's states, including your own! **NOTE:** The only reliable method
     /// of knowing that a player is present in the game or not is whether or not a state is in
     /// player_states.  If there isn't a state, then the player has left or has been kicked/dropped.

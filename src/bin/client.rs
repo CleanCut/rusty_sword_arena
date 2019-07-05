@@ -4,7 +4,7 @@
 use rusty_sword_arena::{
     audio::Audio,
     game::{ButtonState, ButtonValue, GameEvent, PlayerEvent, PlayerInput, PlayerState, Vector2},
-    gfx::{Image, Shape, Window},
+    gfx::{Img, Window},
     net::ConnectionToServer,
     timer::Timer,
     VERSION,
@@ -16,51 +16,56 @@ use std::time::{Duration, Instant};
 
 struct Player {
     player_state: PlayerState,
-    body_shape: Shape,
-    sword_img: Image,
+    player_img: Img,
+    sword_img: Img,
     swing_timer: Timer,
-    rip_img: Image,
+    rip_img: Img,
 }
 
 impl Player {
     fn new(window: &Window, player_state: PlayerState) -> Self {
-        let body_shape = Shape::new_circle(
+        let player_img = Img::new(
             window,
-            player_state.radius,
             player_state.pos,
             player_state.direction,
-            player_state.color,
+            Some(player_state.color),
+            "media/player.png",
         );
-        let sword_img = Image::new(
+        let sword_img = Img::new(
             window,
             player_state.pos,
             player_state.direction,
+            None,
             "media/sword.png",
         );
-        let rip_img = Image::new(
+        let rip_img = Img::new(
             window,
             player_state.pos,
             0.0,
+            Some(player_state.color),
             "media/rip.png",
         );
         let mut sword_swing_timer = Timer::from_millis(350);
         sword_swing_timer.update(Duration::from_secs(5));
         Self {
             player_state,
-            body_shape,
+            player_img,
             sword_img,
             swing_timer: sword_swing_timer,
             rip_img,
         }
     }
-    fn update_state(&mut self, player_state: PlayerState) {
-        self.body_shape.pos = player_state.pos;
-        self.body_shape.direction = player_state.direction;
-        self.sword_img.pos = player_state.pos;
-        self.rip_img.pos = player_state.pos;
-        // Reset the swing timer (for animating the sword) if an attack was attempted
-        for event in &player_state.player_events {
-            match event {
+    fn update_state(&mut self, player_state: PlayerState, audio: &mut Audio) {
+        self.player_state = player_state;
+        let ps = &mut self.player_state;
+        self.player_img.pos = ps.pos;
+        self.player_img.direction = ps.direction;
+        self.sword_img.pos = ps.pos;
+        self.rip_img.pos = ps.pos;
+        // Process events for this player
+        for player_event in ps.player_events.drain(..) {
+            // Reset the swing timer
+            match player_event {
                 PlayerEvent::AttackHit { .. } => {
                     self.swing_timer.reset();
                 }
@@ -69,20 +74,7 @@ impl Player {
                 }
                 _ => {}
             }
-        }
-        // The timer being "ready" means the swing is over, so just point the sword forward
-        if self.swing_timer.ready {
-            self.sword_img.direction = player_state.direction;
-        } else {
-            // If the timer is going, then put the sword in some portion of the swing animation
-            self.sword_img.direction =
-                self.player_state.direction + (2.0 * PI * self.swing_timer.time_left_percent());
-        }
-        self.player_state = player_state;
-    }
-    fn update(&mut self, dt: Duration, audio: &mut Audio) {
-        self.swing_timer.update(dt);
-        for player_event in self.player_state.player_events.drain(..) {
+            // Play sounds
             match player_event {
                 PlayerEvent::AttackMiss => audio.play("miss"),
                 PlayerEvent::Die => audio.play("die"),
@@ -92,20 +84,30 @@ impl Player {
                 _ => (),
             }
         }
+        // The timer being "ready" means the swing is over, so just point the sword forward
+        if self.swing_timer.ready {
+            self.sword_img.direction = ps.direction;
+        } else {
+            // If the timer is going, then put the sword in some portion of the swing animation
+            self.sword_img.direction =
+                ps.direction + (2.0 * PI * self.swing_timer.time_left_percent());
+        }
+    }
+    fn update(&mut self, dt: Duration) {
+        self.swing_timer.update(dt);
     }
     fn draw(&self, window: &mut Window) {
         if self.player_state.dead {
             if !self.player_state.joining {
-                window.draw_image(&self.rip_img);
+                window.draw(&self.rip_img);
             }
             return;
         }
-        window.draw_shape(&self.body_shape);
-        window.draw_image(&self.sword_img);
+        window.draw(&self.player_img);
+        window.draw(&self.sword_img);
     }
 }
 
-#[derive(Debug)]
 struct MovementStack {
     horizontal: Vec<ButtonValue>,
     vertical: Vec<ButtonValue>,
@@ -176,11 +178,11 @@ fn main() {
         std::process::exit(3);
     }
     let my_id = response.unwrap();
-    let game_setting = server_conn.get_game_setting();
+    let game_settings = server_conn.get_game_settings();
 
     println!(
         "Client v{} connected to server v{} at {}",
-        VERSION, game_setting.version, host
+        VERSION, game_settings.version, host
     );
 
     let mut window = Window::new(None, "Rusty Sword Arena!");
@@ -194,14 +196,15 @@ fn main() {
     let mut dt = Duration::from_secs(0);
 
     let mut audio = Audio::new();
-    audio.add("miss", "media/miss.ogg");
     audio.add("die", "media/die.ogg");
-    audio.add("spawn", "media/spawn.ogg");
     audio.add("join", "media/join.ogg");
+    audio.add("miss", "media/miss.ogg");
     audio.add("ow", "media/ow.ogg");
+    audio.add("spawn", "media/spawn.ogg");
+    audio.add("startup", "media/startup.ogg");
 
     'gameloop: loop {
-        // Accumulate user input into one struct
+        // Accumulate & send player input
         for event in window.poll_game_events() {
             match event {
                 GameEvent::Quit => break 'gameloop,
@@ -214,29 +217,28 @@ fn main() {
                 } => movement_stack.handle_buttons(button_state, button_value, &mut player_input),
             }
         }
-
-        // Send player input
         if let Some(my_player) = players.get(&my_id) {
+            // Direction towards the mouse depends on me knowing where I am
             player_input.direction = my_player.player_state.pos.angle_between(mouse_pos);
         }
         server_conn.send_player_input(&player_input);
 
         // Process any new game states
-        let new_game_states = server_conn.poll_game_states();
-        for game_state in new_game_states {
+        for game_state in server_conn.poll_game_states() {
             // Remove any players who are no longer in the game
             players.retain(|k, _v| game_state.player_states.contains_key(k));
-            // Update or add all players that have states
+            // Create missing players, update player state of existing players
             for (id, player_state) in game_state.player_states {
                 players
                     .entry(id)
                     .or_insert_with(|| Player::new(&window, player_state.clone()))
-                    .update_state(player_state);
+                    .update_state(player_state, &mut audio);
             }
         }
-        // Process Player Events
+
+        // Update player timers
         for player in players.values_mut() {
-            player.update(dt, &mut audio);
+            player.update(dt);
         }
 
         // Draw a frame!

@@ -396,7 +396,7 @@ fn remove_player(
 #[allow(clippy::never_loop)]
 fn process_game_control_requests(
     game_control_server_socket: &mut zmq::Socket,
-    game_setting: &mut GameSettings,
+    game_settings: &mut GameSettings,
     player_states: &mut HashMap<u8, PlayerState>,
     rng: &mut ThreadRng,
     color_picker: &mut ColorPicker,
@@ -413,10 +413,10 @@ fn process_game_control_requests(
                         let result: Result<u8, String>;
                         loop {
                             // Is the game full?
-                            if player_states.len() >= game_setting.max_players as usize {
+                            if player_states.len() >= game_settings.max_players as usize {
                                 let err = format!(
                                     "Join Failed: No room for player {} - {} players is the max!",
-                                    name, game_setting.max_players
+                                    name, game_settings.max_players
                                 );
                                 println!("{}", err);
                                 result = Err(err);
@@ -446,7 +446,7 @@ fn process_game_control_requests(
                             let color = color_picker.pop_color();
                             // Create the new player state
                             let player_state = PlayerState::new(
-                                &game_setting,
+                                &game_settings,
                                 id,
                                 name.clone(),
                                 color,
@@ -484,7 +484,7 @@ fn process_game_control_requests(
                                 &[
                                     &return_identity[..],
                                     &[],
-                                    &serialize(&game_setting).unwrap(),
+                                    &serialize(&game_settings).unwrap(),
                                 ],
                                 0,
                             )
@@ -517,7 +517,7 @@ fn coalesce_player_input(
 fn update_state(
     player_states: &mut HashMap<u8, PlayerState>,
     player_inputs: &mut HashMap<u8, PlayerInput>,
-    game_setting: &mut GameSettings,
+    game_settings: &mut GameSettings,
     color_picker: &mut ColorPicker,
     delta: Duration,
     rng: &mut ThreadRng,
@@ -551,22 +551,22 @@ fn update_state(
             player_state.direction = player_input.direction;
             // Update current velocity
             let clamped_move_amount = player_input.move_amount.clamped_to_normal();
-            if clamped_move_amount.magnitude() > game_setting.move_threshold {
+            if clamped_move_amount.magnitude() > game_settings.move_threshold {
                 // Player is moving -- add input to current velocity
                 player_state.velocity = player_state.velocity
-                    + (clamped_move_amount * game_setting.acceleration * delta_f32);
+                    + (clamped_move_amount * game_settings.acceleration * delta_f32);
             } else {
                 // Player is holding still, apply drag to current velocity
                 player_state.velocity =
-                    player_state.velocity * (1.0 - (game_setting.drag * delta_f32));
+                    player_state.velocity * (1.0 - (game_settings.drag * delta_f32));
             }
             // If the player is attacking, then he can only go half as fast
             if player_input.attack {
                 player_state.velocity = player_state
                     .velocity
-                    .clamped_to(game_setting.max_velocity * 0.5);
+                    .clamped_to(game_settings.max_velocity * 0.5);
             }
-            player_state.velocity = player_state.velocity.clamped_to(game_setting.max_velocity);
+            player_state.velocity = player_state.velocity.clamped_to(game_settings.max_velocity);
         }
     }
     // Process all the velocities to affect position (not just the players who had input this loop)
@@ -692,7 +692,7 @@ fn main() {
     let mut loop_start = Instant::now();
     let mut frame_timer = timer::Timer::from_nanos(16_666_666); // 60 FPS
     let mut color_picker = ColorPicker::new();
-    let mut game_setting = GameSettings::new();
+    let mut game_settings = GameSettings::new();
     let mut rng = thread_rng();
     let mut frame_number: u64 = 0;
     let mut player_states = HashMap::<u8, PlayerState>::new();
@@ -701,7 +701,7 @@ fn main() {
     let sleep_delay = Duration::from_millis(1);
 
     println!("--------------------------------------------------------------");
-    println!("Server started (Ctrl-C to stop)\n{:#?}", game_setting);
+    println!("Server started (Ctrl-C to stop)\n{:#?}", game_settings);
     loop {
         let delta = loop_start.elapsed();
         loop_start = Instant::now();
@@ -715,7 +715,7 @@ fn main() {
         // Handle and reply to all Game Control requests. The game settings might get changed.
         process_game_control_requests(
             &mut game_control_server_socket,
-            &mut game_setting,
+            &mut game_settings,
             &mut player_states,
             &mut rng,
             &mut color_picker,
@@ -733,7 +733,7 @@ fn main() {
         update_state(
             &mut player_states,
             &mut player_inputs,
-            &mut game_setting,
+            &mut game_settings,
             &mut color_picker,
             delta,
             &mut rng,
@@ -757,7 +757,7 @@ fn main() {
             let game_state = GameState {
                 frame_number,
                 delta,
-                game_setting_hash: game_setting.get_hash(),
+                game_settings_hash: game_settings.get_hash(),
                 player_states: player_states.clone(),
                 high_scores: top10,
             };

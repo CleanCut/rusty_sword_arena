@@ -72,16 +72,16 @@ impl ConnectionToServer {
         result
     }
 
-    /// Get the current GameSetting.  You should look at the version number and make sure that you
-    /// are connecting to a version of the server you expect.
-    pub fn get_game_setting(&mut self) -> GameSettings {
+    /// Get the current `GameSettings`.  You should look at the version number and make sure that
+    /// you are connecting to a version of the server you expect.
+    pub fn get_game_settings(&mut self) -> GameSettings {
         let msg = GameControlMsg::Fetch;
         self.game_control_socket
             .send(&serialize(&msg).unwrap(), 0)
             .unwrap();
         let bytes = self.game_control_socket.recv_bytes(0).unwrap();
-        let game_setting: GameSettings = deserialize(&bytes[..]).unwrap();
-        game_setting
+        let game_settings: GameSettings = deserialize(&bytes[..]).unwrap();
+        game_settings
     }
 
     /// Cause the selected player id to leave the game.  You should pass in your own player id,

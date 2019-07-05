@@ -110,21 +110,24 @@ impl Shape {
 struct ImgVertex {
     position: [f32; 2],
     tex_coords: [f32; 2],
+    color: [f32; 3],
+    tint: u8,
 }
 
-implement_vertex!(ImgVertex, position, tex_coords);
+implement_vertex!(ImgVertex, position, tex_coords, color, tint);
 
-/// A PNG image that can be drawn to a `Window` using its `.draw_image()` method.
+/// An image that can be drawn using the `Window.draw()` method.  Currently only PNG format is
+/// supported.
 ///
-/// If you are looking at a PNG image in Photoshop, the "right" direction is the "front" of the
+/// If you are looking at an image in Photoshop, the "right" direction is the "front" of the
 /// image.  `direction` is the angle in radians that the image will be rotated.
 ///
 /// If you want your image to have transparency without getting white borders, export as a PNG-8
 /// with Transparency checked, and Matte set to None.  See `media/png-settings-screenshot.png` in
 /// the repository for a screenshot of the Photoshop "Export > Save for Web" settings that are known
-/// to work.
+/// to work.  Or just exporting as a 24-bit PNG might work.
 #[derive(Debug)]
-pub struct Image {
+pub struct Img {
     pub pos: Vector2,
     pub direction: f32,
     vertex_buffer: glium::vertex::VertexBuffer<ImgVertex>,
@@ -132,11 +135,11 @@ pub struct Image {
     texture: glium::texture::CompressedTexture2d,
 }
 
-impl Image {
+impl Img {
     /// Create a new image.  `filename` is relative to the root of the project you are running from.
     /// For example, if you created a `media` subdirectory in the root of your project and then put
     /// `soldier.png` in it, then your filename would be `media/soldier.png`.
-    pub fn new(window: &Window, pos: Vector2, direction: f32, filename: &str) -> Self {
+    pub fn new(window: &Window, pos: Vector2, direction: f32, color: Option<Color>, filename: &str) -> Self {
         let file = std::fs::File::open(filename).unwrap();
         let reader = std::io::BufReader::new(file);
         let image = image::load(reader, image::PNG).unwrap().to_rgba();
@@ -144,6 +147,9 @@ impl Image {
         let image =
             glium::texture::RawImage2d::from_raw_rgba_reversed(&image.into_raw(), image_dimensions);
         let texture = glium::texture::CompressedTexture2d::new(&window.display, image).unwrap();
+
+        let tint = if color.is_some() { 1 } else { 0 };
+        let color = color.unwrap_or_else(|| Color::new(1.0, 1.0, 1.0));
 
         let vertex_buffer = {
             let scale = 0.1;
@@ -153,18 +159,26 @@ impl Image {
                     ImgVertex {
                         position: [-scale, -scale],
                         tex_coords: [0.0, 0.0],
+                        color: [color.r, color.g, color.b],
+                        tint,
                     },
                     ImgVertex {
                         position: [-scale, scale],
                         tex_coords: [0.0, 1.0],
+                        color: [color.r, color.g, color.b],
+                        tint,
                     },
                     ImgVertex {
                         position: [scale, scale],
                         tex_coords: [1.0, 1.0],
+                        color: [color.r, color.g, color.b],
+                        tint,
                     },
                     ImgVertex {
                         position: [scale, -scale],
                         tex_coords: [1.0, 0.0],
+                        color: [color.r, color.g, color.b],
+                        tint,
                     },
                 ],
             )
@@ -277,8 +291,14 @@ impl Window {
             uniform mat4 matrix;
             in vec2 position;
             in vec2 tex_coords;
+            in vec3 color;
+            in uint tint;
+            out vec3 v_color;
             out vec2 v_tex_coords;
+            flat out uint u_tint;
             void main() {
+                u_tint = tint;
+                v_color = color;
                 gl_Position = matrix * vec4(position, 0.0, 1.0);
                 v_tex_coords = tex_coords;
             }
@@ -288,9 +308,15 @@ impl Window {
             #version 140
             uniform sampler2D tex;
             in vec2 v_tex_coords;
+            in vec3 v_color;
+            flat in uint u_tint;
             out vec4 f_color;
             void main() {
-                f_color = texture(tex, v_tex_coords);
+                if ((texture(tex, v_tex_coords).a < 0.9) || (u_tint == 0u)) {
+                    f_color = texture(tex, v_tex_coords);
+                } else {
+                    f_color = mix(texture(tex, v_tex_coords), vec4(v_color, 1.0), 0.5);
+                }
             }
         "#;
 
@@ -376,13 +402,13 @@ impl Window {
         }
     }
 
-    /// You must call `.drawstart()` before calling this method.  `draw_image()` will draw your
+    /// You must call `.drawstart()` before calling this method.  `draw()` will draw your
     /// image to the current off-screen framebuffer.  After the first time a given image value is
     /// drawn it stays on the GPU and during subsequent calls it only sends updated
     /// position/rotation, which is super efficient, so don't destroy and recreate images every
     /// frame! Draw calls draw to the framebuffer in the order that they occur, so the last image
     /// you draw will be on top.
-    pub fn draw_image(&mut self, img: &Image) {
+    pub fn draw(&mut self, img: &Img) {
         if let Some(ref mut target) = self.target {
             let uniforms = uniform! {
             // CAUTION: The inner arrays are COLUMNS not ROWS (left to right actually is top to bottom)
