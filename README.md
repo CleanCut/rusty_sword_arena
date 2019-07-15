@@ -138,7 +138,7 @@ Now you are ready for the tutorial! You are going to make your own game client f
 
 - [Presentation slides](https://agileperception.com/static/rustyswordarena2019.pdf) & walk-through
   by the instructor (Nathan Stocks)
-- [Rusty Sword Arena Crate Docs](https://agileperception.com/doc/rusty_sword_arena/)
+- [Rusty Sword Arena Library Documentation](https://agileperception.com/doc/rusty_sword_arena/)
 - [How To Learn Rust](https://github.com/CleanCut/rusty_sword_arena/blob/master/HowToLearnRust.md)
 - [The Rust Standard Library](https://doc.rust-lang.org/std/)
 - [Sound Files (Zip)](https://agileperception.com/static/media.zip)
