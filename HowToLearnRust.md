@@ -1,8 +1,6 @@
 # How To Learn Rust
 
-Perhaps more important than a crash course tutorial in Rust is learning _how to learn Rust_.  You can sit back and
-listen to the tutorial and maybe you will learn a little something.  Learning how to learn Rust will put you on a path
-that will lead to eventual mastery.  It is up to you!
+Perhaps more important than a crash course tutorial in Rust is **learning how to learn Rust**.  Learning how to learn Rust will put you on a path that will lead to mastering the subject.
 
 ### IDE / Editor
 
@@ -10,9 +8,10 @@ Big, bloated IDE's can actually be really helpful in learning Rust.  IDE support
 it is already getting really good.  Much more than just syntax highlighting, an IDE like IntelliJ will integrate with
 the compiler and show you type hints, compiler check errors, and all sorts of good stuff inline. 
 
-- Google: Rust _(your favorite IDE)_
-  - Install Rust support
-  - Install TOML support, which is often separate from Rust support ([TOML](https://github.com/toml-lang/toml)
+- Google the terms: `rust (name of the IDE or Editor you use)`
+  - Need a suggestion? Visual Studio Code and IntelliJ are both great choices (and there are many more...)
+  - Find the correct way to install Rust support for your IDE or Editor (it's often a plugin)
+  - (Optional) Install TOML support, which is often separate from Rust support ([TOML](https://github.com/toml-lang/toml)
     is the config file format that Rust uses)
   - ...wait...
   - Be amazed at all the helpful auto-complete, etc. that turns on.  Yay!
@@ -20,11 +19,11 @@ the compiler and show you type hints, compiler check errors, and all sorts of go
 
 ### Find Answers
 
-You are always going to have questions.  Know how to find the answers.
+You are always going to have questions.  Here is how you find the answers.
 
 - If it is about something the standard library, then Google: `rust std (thing you want to find)`
   - For example, can't quite remember what that method on `Vec` was? Google `rust std Vec`
-- There is a very welcoming [Rust Community](https://www.rust-lang.org/en-US/community.html) out there that you can
+- There is a very welcoming [Rust Community](https://www.rust-lang.org/community) out there that you can
   communicate with.  See the link above for:
   - Forums
   - IRC channels
@@ -69,44 +68,42 @@ Long-format reading is really interesting and informative. You will learn some t
 book that you would never have encountered during years of reading random bits of the standard library reference.  I 
 found these books _especially_ useful and high quality:
 
-**Educational**
+**Books**
 
 - [The Rust Programming Language](https://doc.rust-lang.org/book/), aka "The Book" - the official free online book 
-  about the language.  I have read the first _and_ second edition, and they're both great.  At this point in time it
-  probably makes more sense to go straight to the second edition.
+  about the language, though you can [purchase a physical copy](https://amzn.to/2Li5ymI) if you prefer.
 - [Programming Rust](https://amzn.to/2KC72XV) - The O'Reilly book by Jim Blandy and Jason Orendorff.  Fantastic book
-  focused on using the Rust language.  Much longer and more in depth than you can get elsewhere.
+  focused on using the Rust language, but it covers only the 2015 edition. Hopefully they release a 2nd edition in the future.
 
 **Informational**
 
 - [Entering the Quantum Era—How Firefox got fast again and where it’s going to get faster](https://hacks.mozilla.org/2017/11/entering-the-quantum-era-how-firefox-got-fast-again-and-where-its-going-to-get-faster/)
 
-**Random References (Things the Tutorial Didn't Specifically Cover)**
+**Things we mentioned but didn't cover in depth**
 - [TOML Format](https://github.com/toml-lang/toml) - the config file format Rust uses
 - [Semantic Versioning](https://semver.org/) and [Cargo's Version Field Rules](https://doc.rust-lang.org/cargo/reference/manifest.html#the-version-field)
+- [The Edition Guide](https://rust-lang-nursery.github.io/edition-guide/introduction.html) - Differences between Rust 2015 and Rust 2018
 - [String Formatting](https://doc.rust-lang.org/std/fmt/index.html) - `print!()`, `println!()`, `format!()`, etc. and
   how to deal with the format string.
-- Non-Lexical Lifetimes (NLL) - [What it is](http://smallcultfollowing.com/babysteps/blog/2016/04/27/non-lexical-lifetimes-introduction/)
-  and [how close it is to becoming real](https://github.com/rust-lang/rust/issues/43234)
-- [Firefox has over a million lines of Rust Code](https://4e6.github.io/firefox-lang-stats/)
+- [Firefox has about 1.5 million lines of Rust Code](https://www.openhub.net/p/firefox/analyses/latest/languages_summary)
   
-**Fundamental Learning References (Things the Tutorial Covered)**
-- [Cargo](https://doc.rust-lang.org/book/second-edition/ch01-03-hello-cargo.html) and
-  [dependencies](https://doc.rust-lang.org/book/second-edition/ch02-00-guessing-game-tutorial.html#using-a-crate-to-get-more-functionality)
-- [Variables, Mutability, and Shadowing](https://doc.rust-lang.org/book/second-edition/ch03-01-variables-and-mutability.html)
-- [Functions](https://doc.rust-lang.org/book/second-edition/ch03-03-how-functions-work.html) - fn
-- [Modules](https://doc.rust-lang.org/book/second-edition/ch07-01-mod-and-the-filesystem.html)
-  and [pub](https://doc.rust-lang.org/book/second-edition/ch07-02-controlling-visibility-with-pub.html)
-  and [use](https://doc.rust-lang.org/book/second-edition/ch07-03-importing-names-with-use.html)
-- [Scalar Types](https://doc.rust-lang.org/book/second-edition/ch03-02-data-types.html#scalar-types) - 
+**More information about things we learned**
+- [Cargo](https://doc.rust-lang.org/book/ch01-03-hello-cargo.html) and
+  [dependencies](https://doc.rust-lang.org/book/ch02-00-guessing-game-tutorial.html#using-a-crate-to-get-more-functionality)
+- [Variables, Mutability, and Shadowing](https://doc.rust-lang.org/book/ch03-01-variables-and-mutability.html)
+- [Functions](https://doc.rust-lang.org/book/ch03-03-how-functions-work.html) - fn
+- [Modules](https://doc.rust-lang.org/book/ch07-02-defining-modules-to-control-scope-and-privacy.html)
+  and [pub](https://doc.rust-lang.org/book/ch07-03-paths-for-referring-to-an-item-in-the-module-tree.html#exposing-paths-with-the-pub-keyword)
+  and [use](https://doc.rust-lang.org/book/ch07-04-bringing-paths-into-scope-with-the-use-keyword.html)
+- [Scalar Types](https://doc.rust-lang.org/book/ch03-02-data-types.html#scalar-types) - 
   Integers, Floating-point, Boolean, Characters.
-- [Compound Types](https://doc.rust-lang.org/book/second-edition/ch03-02-data-types.html#compound-types) - 
+- [Compound Types](https://doc.rust-lang.org/book/ch03-02-data-types.html#compound-types) - 
   Tuples, Arrays.
-- [Control Flow](https://doc.rust-lang.org/book/second-edition/ch03-05-control-flow.html) - if, while, for
-- [Threads](https://doc.rust-lang.org/book/second-edition/ch16-01-threads.html)
-  and [channels](https://doc.rust-lang.org/book/second-edition/ch16-02-message-passing.html)
-- [Ownership and Scope](https://doc.rust-lang.org/book/second-edition/ch04-01-what-is-ownership.html)
-- [References & Borrowing](https://doc.rust-lang.org/book/second-edition/ch04-02-references-and-borrowing.html)
-- Common Collections: [Vectors](https://doc.rust-lang.org/book/second-edition/ch08-01-vectors.html),
-  [Strings](https://doc.rust-lang.org/book/second-edition/ch08-02-strings.html),
-  and [Hash Maps](https://doc.rust-lang.org/book/second-edition/ch08-03-hash-maps.html)
+- [Control Flow](https://doc.rust-lang.org/book/ch03-05-control-flow.html) - if, while, for
+- [Threads](https://doc.rust-lang.org/book/ch16-01-threads.html)
+  and [closures](https://doc.rust-lang.org/book/ch13-01-closures.html)
+- [Ownership and Scope](https://doc.rust-lang.org/book/ch04-01-what-is-ownership.html)
+- [References & Borrowing](https://doc.rust-lang.org/book/ch04-02-references-and-borrowing.html)
+- Common Collections: [Vectors](https://doc.rust-lang.org/book/ch08-01-vectors.html),
+  [Strings](https://doc.rust-lang.org/book/ch08-02-strings.html),
+  and [Hash Maps](https://doc.rust-lang.org/book/ch08-03-hash-maps.html)
