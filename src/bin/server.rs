@@ -578,7 +578,7 @@ fn update_state(
         // Apply velocity to position
         player_state.pos = player_state.pos + (player_state.velocity * delta_f32);
         // Don't go all the way into the dark!
-        let boundary = player_state.radius + 1.0;
+        let boundary = 1.0;
         if player_state.pos.x < -boundary
             || player_state.pos.x > boundary
             || player_state.pos.y < -boundary

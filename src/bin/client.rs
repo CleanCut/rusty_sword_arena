@@ -18,8 +18,8 @@ struct Player {
     player_state: PlayerState,
     player_img: Img,
     sword_img: Img,
-    swing_timer: Timer,
     rip_img: Img,
+    sword_timer: Timer,
 }
 
 impl Player {
@@ -45,14 +45,14 @@ impl Player {
             Some(player_state.color),
             "media/rip.png",
         );
-        let mut sword_swing_timer = Timer::from_millis(350);
-        sword_swing_timer.update(Duration::from_secs(5));
+        let mut sword_timer = Timer::from_millis(350);
+        sword_timer.update(Duration::from_secs(5));
         Self {
             player_state,
             player_img,
             sword_img,
-            swing_timer: sword_swing_timer,
             rip_img,
+            sword_timer,
         }
     }
     fn update_state(&mut self, player_state: PlayerState, audio: &mut Audio) {
@@ -64,14 +64,10 @@ impl Player {
         self.rip_img.pos = ps.pos;
         // Process events for this player
         for player_event in ps.player_events.drain(..) {
-            // Reset the swing timer
+            // Reset the sword timer
             match player_event {
-                PlayerEvent::AttackHit { .. } => {
-                    self.swing_timer.reset();
-                }
-                PlayerEvent::AttackMiss => {
-                    self.swing_timer.reset();
-                }
+                PlayerEvent::AttackHit { .. } => self.sword_timer.reset(),
+                PlayerEvent::AttackMiss => self.sword_timer.reset(),
                 _ => {}
             }
             // Play sounds
@@ -84,17 +80,17 @@ impl Player {
                 _ => (),
             }
         }
-        // The timer being "ready" means the swing is over, so just point the sword forward
-        if self.swing_timer.ready {
+        // The timer being "ready" means the sword swing is over, so just point the sword forward
+        if self.sword_timer.ready {
             self.sword_img.direction = ps.direction;
         } else {
             // If the timer is going, then put the sword in some portion of the swing animation
             self.sword_img.direction =
-                ps.direction + (2.0 * PI * self.swing_timer.time_left_percent());
+                ps.direction + (2.0 * PI * self.sword_timer.time_left_percent());
         }
     }
-    fn update(&mut self, dt: Duration) {
-        self.swing_timer.update(dt);
+    fn update_timer(&mut self, dt: Duration) {
+        self.sword_timer.update(dt);
     }
     fn draw(&self, window: &mut Window) {
         if self.player_state.dead {
@@ -116,14 +112,14 @@ fn main() {
     }
     let host = args.pop().unwrap();
     let name = args.pop().unwrap();
-    let mut server_conn = ConnectionToServer::new(&host);
-    let response = server_conn.join(&name);
+    let mut connection = ConnectionToServer::new(&host);
+    let response = connection.join(&name);
     if let Err(err) = response {
         println!("{}", err);
         std::process::exit(3);
     }
     let my_id = response.unwrap();
-    let game_settings = server_conn.get_game_settings();
+    let game_settings = connection.get_game_settings();
 
     println!(
         "Client v{} connected to server v{} at {}",
@@ -159,16 +155,16 @@ fn main() {
             }
         }
         if let Some(my_player) = players.get(&my_id) {
-            // Direction towards the mouse depends on me knowing where I am
+            // If I know my position, I can set my direction to point towards the mouse
             player_input.direction = my_player.player_state.pos.angle_between(mouse_pos);
         }
-        server_conn.send_player_input(&player_input);
+        connection.send_player_input(&player_input);
 
         // Process any new game states
-        for game_state in server_conn.poll_game_states() {
-            // Remove any players who are no longer in the game
-            players.retain(|k, _v| game_state.player_states.contains_key(k));
-            // Create missing players, update player state of existing players
+        for game_state in connection.poll_game_states() {
+            // Remove players who no longer have a game state
+            players.retain(|k, _| game_state.player_states.contains_key(k));
+            // Create new players and update existing players
             for (id, player_state) in game_state.player_states {
                 players
                     .entry(id)
@@ -179,7 +175,7 @@ fn main() {
 
         // Update player timers
         for player in players.values_mut() {
-            player.update(dt);
+            player.update_timer(dt);
         }
 
         // Draw a frame!
@@ -201,7 +197,7 @@ fn main() {
     }
 
     println!("Leaving the game.");
-    let succeeded = server_conn.leave(my_id);
+    let succeeded = connection.leave(my_id);
     println!(
         "Server reports disconnection {}",
         if succeeded { "successful" } else { "failed" }

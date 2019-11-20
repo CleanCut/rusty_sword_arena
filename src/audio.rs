@@ -8,7 +8,7 @@ use std::io::{Cursor, Read};
 
 /// A simple 4-track audio system to load/decode audio files from disk to play later. Supported
 /// formats are: MP3, WAV, Vorbis and Flac.  This is just a thin convenience layer on top of
-/// [rodio](https://github.com/tomaka/rodio).
+/// [rodio](https://github.com/tomaka/rodio).  For complex use-cases, you should use rodio directly!
 pub struct Audio {
     clips: HashMap<&'static str, Buffered<Decoder<Cursor<Vec<u8>>>>>,
     channels: Vec<Sink>,
@@ -44,12 +44,13 @@ impl Audio {
         let decoder = Decoder::new(cursor).unwrap();
         let buffered = decoder.buffered();
         // Buffers are lazily decoded, which often leads to static on first play on low-end systems
-        // or when you compile in debug mode.  Since this is an educational project, those are going
-        // to be common conditions.  So, to optimize for our use-case, we will pre-warm all of our
-        // audio buffers by forcing things to be decoded and cached right now when we first load the
-        // file.  I would like to find a cleaner way to do this, but the following scheme (iterating
-        // through a clone and discarding the decoded frames) works since clones of a Buffered share
-        // the actual decoded data buffer cache by means of Arc and Mutex.
+        // or when you compile in debug mode.  Since this library is intended for educational
+        // projects, those are going to be common conditions.  So, to optimize for our use-case, we
+        // will pre-warm all of our audio buffers by forcing things to be decoded and cached right
+        // now when we first load the file.  I would like to find a cleaner way to do this, but the
+        // following scheme (iterating through a clone and discarding the decoded frames) works
+        // since clones of a Buffered share the actual decoded data buffer cache by means of Arc and
+        // Mutex.
         let warm = buffered.clone();
         for i in warm {
             drop(i);
