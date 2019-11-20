@@ -138,7 +138,7 @@
 #![doc(html_logo_url = "https://agileperception.com/static/img/APSwirl200.png")]
 
 /// A module for reading and playing audio files
-pub mod audio;
+pub use rusty_audio as audio;
 /// Everything in the game module is shared by the server _and_ the client
 pub mod game;
 /// The graphics module that will be used by your client

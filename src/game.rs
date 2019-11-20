@@ -167,6 +167,7 @@ pub enum GameEvent {
 
 /// Stateful, stack-based button processor.  You can use this to process button state/values and
 /// update a `PlayerInput` that you can send to the server.  Also handles the attack button.
+#[derive(Default)]
 pub struct ButtonProcessor {
     horizontal: Vec<ButtonValue>,
     vertical: Vec<ButtonValue>,
