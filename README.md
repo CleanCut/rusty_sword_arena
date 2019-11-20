@@ -64,13 +64,15 @@ sudo yum install -y epel-release
 sudo yum install -y czmq-devel alsa-lib-devel
 ```
 
-**Debian**
-Run the following AND follow the instructions for Debian in the
+**Debian/Ubuntu**
+
+Run the following AND follow the instructions for Debian/Ubuntu in the
 [ZeroMQ's download documentation](http://zeromq.org/area:download) (you might need to create an
 `/etc/apt/sources.list.d/zeromq.list` file if you don't have a `sources.list` file on Debian 9) :
 
 ```bash
 sudo apt install libasound2-dev
+sudo apt install pkgconf
 ```
 
 **Other Operating Systems**
