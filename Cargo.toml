@@ -13,7 +13,7 @@ edition = "2018"
 
 [dependencies]
 # For graphics support 👾 (OpenGL) -- TODO: Switch to rendy
-glium = "0.25"
+glium = "0.26"
 image = "0.21"
 
 # Networking support -- TODO: Switch to grpc or twirp

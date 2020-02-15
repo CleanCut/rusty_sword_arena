@@ -3,12 +3,23 @@
 use crate::game::{ButtonState, ButtonValue, Color, GameEvent, Vector2};
 
 use glium::{
-    self,
-    glutin::{self, ElementState},
-    implement_vertex, uniform, Frame, IndexBuffer, Surface,
+    glutin::{
+        dpi::{LogicalSize, PhysicalPosition},
+        event::{ElementState, Event, MouseButton, VirtualKeyCode, WindowEvent},
+        event_loop::{ControlFlow, EventLoop},
+        platform::desktop::EventLoopExtDesktop,
+        window::WindowBuilder,
+        ContextBuilder,
+    },
+    implement_vertex,
+    index::{NoIndices, PrimitiveType},
+    program::ProgramCreationInput,
+    texture::{CompressedTexture2d, RawImage2d},
+    uniform, Blend, Display, DrawParameters, Frame, IndexBuffer, Program, Smooth, Surface,
+    VertexBuffer,
 };
-use std::cmp::min;
 use std::f64::consts::PI;
+use std::cmp::min;
 
 #[derive(Copy, Clone, Debug)]
 struct ShapeVertex {
@@ -63,8 +74,8 @@ fn create_ring_vertices(radius: f32, num_vertices: usize, color: Color) -> Vec<S
 pub struct Shape {
     pub pos: Vector2,
     pub direction: f32,
-    vertex_buffer: glium::vertex::VertexBuffer<ShapeVertex>,
-    indices: glium::index::NoIndices,
+    vertex_buffer: VertexBuffer<ShapeVertex>,
+    indices: NoIndices,
 }
 
 impl Shape {
@@ -77,13 +88,12 @@ impl Shape {
         color: Color,
     ) -> Self {
         let vertex_buffer =
-            glium::VertexBuffer::new(&window.display, &create_circle_vertices(radius, 32, color))
-                .unwrap();
+            VertexBuffer::new(&window.display, &create_circle_vertices(radius, 32, color)).unwrap();
         Self {
             pos,
             direction,
             vertex_buffer,
-            indices: glium::index::NoIndices(glium::index::PrimitiveType::TriangleFan),
+            indices: NoIndices(PrimitiveType::TriangleFan),
         }
     }
     /// Create a thin ring, or outline of a circle.
@@ -95,13 +105,12 @@ impl Shape {
         color: Color,
     ) -> Self {
         let vertex_buffer =
-            glium::VertexBuffer::new(&window.display, &create_ring_vertices(radius, 32, color))
-                .unwrap();
+            VertexBuffer::new(&window.display, &create_ring_vertices(radius, 32, color)).unwrap();
         Self {
             pos,
             direction,
             vertex_buffer,
-            indices: glium::index::NoIndices(glium::index::PrimitiveType::LineLoop),
+            indices: NoIndices(PrimitiveType::LineLoop),
         }
     }
 }
@@ -130,9 +139,9 @@ implement_vertex!(ImgVertex, position, tex_coords, color, tint);
 pub struct Img {
     pub pos: Vector2,
     pub direction: f32,
-    vertex_buffer: glium::vertex::VertexBuffer<ImgVertex>,
+    vertex_buffer: VertexBuffer<ImgVertex>,
     index_buffer: IndexBuffer<u16>,
-    texture: glium::texture::CompressedTexture2d,
+    texture: CompressedTexture2d,
 }
 
 impl Img {
@@ -150,16 +159,15 @@ impl Img {
         let reader = std::io::BufReader::new(file);
         let image = image::load(reader, image::PNG).unwrap().to_rgba();
         let image_dimensions = image.dimensions();
-        let image =
-            glium::texture::RawImage2d::from_raw_rgba_reversed(&image.into_raw(), image_dimensions);
-        let texture = glium::texture::CompressedTexture2d::new(&window.display, image).unwrap();
+        let image = RawImage2d::from_raw_rgba_reversed(&image.into_raw(), image_dimensions);
+        let texture = CompressedTexture2d::new(&window.display, image).unwrap();
 
         let tint = if color.is_some() { 1 } else { 0 };
         let color = color.unwrap_or_else(|| Color::new(1.0, 1.0, 1.0));
 
         let vertex_buffer = {
             let scale = 0.1;
-            glium::VertexBuffer::new(
+            VertexBuffer::new(
                 &window.display,
                 &[
                     ImgVertex {
@@ -190,9 +198,9 @@ impl Img {
             )
             .unwrap()
         };
-        let index_buffer = glium::IndexBuffer::new(
+        let index_buffer = IndexBuffer::new(
             &window.display,
-            glium::index::PrimitiveType::TriangleStrip,
+            PrimitiveType::TriangleStrip,
             &[1 as u16, 2, 0, 3],
         )
         .unwrap();
@@ -209,43 +217,44 @@ impl Img {
 /// An OpenGL window for displaying graphics. Also the object through which you'll receive input
 /// events (mouse, keyboard, etc.)
 pub struct Window {
-    events_loop: glutin::EventsLoop,
-    display: glium::Display,
-    shape_program: glium::Program,
-    img_program: glium::Program,
-    screen_to_opengl: Box<dyn Fn((f64, f64)) -> Vector2>,
+    event_loop: EventLoop<()>,
+    display: Display,
+    shape_program: Program,
+    img_program: Program,
+    screen_to_opengl: Box<dyn Fn(PhysicalPosition<f64>) -> Vector2>,
     target: Option<Frame>,
 }
 
 impl Window {
-    /// By default, this will be a square window with a dimension of `1024px` or
-    /// `(monitor height - 100px)`, whichever is smaller.  You can override the dimension by
-    /// providing a value for override_dimension, for example: `Some(2048)`.
+    /// By default, this will be a square window with a dimension of `1024` logical pixels or
+    /// `(smallest monitor height - 100)` logical pixels, whichever is smaller.  You can override
+    /// the dimension by providing a value for override_dimension, for example: `Some(2048)`.
     ///
     /// `window_title` is for the OS to use on the bar above your window.
     pub fn new(override_dimension: Option<u32>, window_title: &str) -> Self {
-        let events_loop = glutin::EventsLoop::new();
-        let primary_monitor = events_loop.get_primary_monitor();
-        let physical_size = primary_monitor.get_dimensions();
-        let screen_height = physical_size
-            .to_logical(primary_monitor.get_hidpi_factor())
-            .height;
-        let dimension = match override_dimension {
-            Some(x) => f64::from(x),
-            None => f64::from(min(screen_height as u32 - 100, 1024)),
-        };
-        let logical_size = glutin::dpi::LogicalSize::new(dimension, dimension);
-        let window = glutin::WindowBuilder::new()
-            .with_dimensions(logical_size)
+        let event_loop = EventLoop::<()>::new();
+        let mut min_height = 1024;
+        for monitor in event_loop.available_monitors() {
+            min_height = min(min_height, monitor.size().to_logical::<u32>(monitor.scale_factor()).height- 100);
+        }
+        let dimension = override_dimension.unwrap_or(min_height);
+        let logical_size = LogicalSize::new(dimension, dimension);
+        let window = WindowBuilder::new()
+            .with_inner_size(logical_size)
             .with_title(window_title);
-        let context = glutin::ContextBuilder::new();
-        let display = glium::Display::new(window, context, &events_loop).unwrap();
+        let context = ContextBuilder::new();
+        let display = Display::new(window, context, &event_loop).unwrap();
+
+        let current_monitor = display.gl_window().window().current_monitor();
+        let scale_factor: f64 = current_monitor.scale_factor();
 
         // Create a closure that captures current screen information to use to
         // do local screen coordinate conversion for us.
-        let screen_to_opengl = Box::new(move |screen_coord: (f64, f64)| -> Vector2 {
-            let x = (screen_coord.0 as f32 / (0.5 * dimension) as f32) - 1.0;
-            let y = 1.0 - (screen_coord.1 as f32 / (0.5 * dimension) as f32);
+        let inverse_half_dimension = 1.0 / (dimension as f32 * 0.5);
+        let screen_to_opengl = Box::new(move |pos: PhysicalPosition<f64>| -> Vector2 {
+            let logical_pos: (f64, f64) = pos.to_logical::<f64>(scale_factor).into();
+            let x = (logical_pos.0 as f32 * inverse_half_dimension) - 1.0;
+            let y = 1.0 - (logical_pos.1 as f32 * inverse_half_dimension);
             Vector2 { x, y }
         });
 
@@ -276,9 +285,9 @@ impl Window {
             }
         "#;
 
-        let program = glium::Program::new(
+        let program = Program::new(
             &display,
-            glium::program::ProgramCreationInput::SourceCode {
+            ProgramCreationInput::SourceCode {
                 vertex_shader: shape_vertex_shader,
                 tessellation_control_shader: None,
                 tessellation_evaluation_shader: None,
@@ -326,9 +335,9 @@ impl Window {
             }
         "#;
 
-        let program_img = glium::Program::new(
+        let program_img = Program::new(
             &display,
-            glium::program::ProgramCreationInput::SourceCode {
+            ProgramCreationInput::SourceCode {
                 vertex_shader: vertex_shader_img,
                 tessellation_control_shader: None,
                 tessellation_evaluation_shader: None,
@@ -342,7 +351,7 @@ impl Window {
         .unwrap();
 
         Self {
-            events_loop,
+            event_loop: event_loop,
             display,
             shape_program: program,
             img_program: program_img,
@@ -388,11 +397,11 @@ impl Window {
                         };
 
             // These options don't seem to have any effect at all :-(
-            let draw_parameters = glium::DrawParameters {
-                blend: glium::Blend::alpha_blending(),
+            let draw_parameters = DrawParameters {
+                blend: Blend::alpha_blending(),
                 line_width: Some(5.0),
                 point_size: Some(5.0),
-                smooth: Some(glium::draw_parameters::Smooth::Nicest),
+                smooth: Some(Smooth::Nicest),
                 ..Default::default()
             };
 
@@ -428,11 +437,11 @@ impl Window {
             };
 
             // These options don't seem to have any effect at all :-(
-            let draw_parameters = glium::DrawParameters {
-                blend: glium::Blend::alpha_blending(),
+            let draw_parameters = DrawParameters {
+                blend: Blend::alpha_blending(),
                 line_width: Some(5.0),
                 point_size: Some(5.0),
-                smooth: Some(glium::draw_parameters::Smooth::Nicest),
+                smooth: Some(Smooth::Nicest),
                 ..Default::default()
             };
 
@@ -464,25 +473,26 @@ impl Window {
     pub fn poll_game_events(&mut self) -> Vec<GameEvent> {
         let screen_to_opengl = &mut (self.screen_to_opengl);
         let mut events = Vec::<GameEvent>::new();
-        self.events_loop.poll_events(|ev| {
-            if let glium::glutin::Event::WindowEvent { event, .. } = ev {
+        self.event_loop.run_return(|ev, _, control_flow| {
+            *control_flow = ControlFlow::Exit;
+            if let Event::WindowEvent { event, .. } = ev {
                 match event {
                     // Time to close the app?
-                    glutin::WindowEvent::CloseRequested => events.push(GameEvent::Quit),
+                    WindowEvent::CloseRequested => events.push(GameEvent::Quit),
                     // Mouse moved
-                    glutin::WindowEvent::CursorMoved { position, .. } => {
-                        let mouse_pos = screen_to_opengl(position.into());
+                    WindowEvent::CursorMoved { position, .. } => {
+                        let mouse_pos = screen_to_opengl(position);
                         events.push(GameEvent::MouseMoved {
                             position: mouse_pos,
                         });
                     }
                     // Keyboard button
-                    glutin::WindowEvent::KeyboardInput { input, .. } => {
+                    WindowEvent::KeyboardInput { input, .. } => {
                         let button_state = match input.state {
                             ElementState::Pressed => ButtonState::Pressed,
                             ElementState::Released => ButtonState::Released,
                         };
-                        use glium::glutin::VirtualKeyCode::*;
+                        use VirtualKeyCode::*;
                         if let Some(vkey) = input.virtual_keycode {
                             match vkey {
                                 W | Up | Comma => events.push(GameEvent::Button {
@@ -510,8 +520,8 @@ impl Window {
                             }
                         }
                     }
-                    glutin::WindowEvent::MouseInput { state, button, .. } => {
-                        if button == glium::glutin::MouseButton::Left {
+                    WindowEvent::MouseInput { state, button, .. } => {
+                        if button == MouseButton::Left {
                             let button_state = match state {
                                 ElementState::Pressed => ButtonState::Pressed,
                                 ElementState::Released => ButtonState::Released,
