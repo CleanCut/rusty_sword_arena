@@ -143,7 +143,7 @@ Now you are ready for the tutorial! You are going to make your own game client f
 - [Rusty Sword Arena Library Documentation](https://agileperception.com/doc/rusty_sword_arena/)
 - [How To Learn Rust](https://github.com/CleanCut/rusty_sword_arena/blob/master/HowToLearnRust.md)
 - [The Rust Standard Library](https://doc.rust-lang.org/std/)
-- [Sound Files (Zip)](https://agileperception.com/static/media.zip)
+- [Sound Files (Zip)](https://agileperception.com/static/rustyswordarena_media.zip)
   or [Individual Sound Files](https://github.com/CleanCut/rusty_sword_arena/tree/master/media)
   - Or you could [record](https://www.audacityteam.org/) or [create](https://www.bfxr.net/)
     your own sounds!  Files can be MP3, WAV, Vorbis or Flac.
