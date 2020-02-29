@@ -3,8 +3,8 @@
 
 use rusty_sword_arena::{
     audio::Audio,
-    game::{ButtonProcessor, GameEvent, PlayerEvent, PlayerInput, PlayerState, Vector2},
-    gfx::{Img, Window},
+    game::{ButtonProcessor, PlayerEvent, PlayerInput, PlayerState},
+    gfx::{angle_facing, GameEvent, Img, Vec2, Window},
     net::ConnectionToServer,
     timer::Timer,
     VERSION,
@@ -128,7 +128,7 @@ fn main() {
 
     let mut window = Window::new(None, "Rusty Sword Arena!");
     let mut players: HashMap<u8, Player> = HashMap::new();
-    let mut mouse_pos = Vector2::new();
+    let mut mouse_pos = Vec2::zeros();
     let mut player_input = PlayerInput::with_id(my_id);
     let mut button_processor = ButtonProcessor::new();
     let mut instant = Instant::now();
@@ -156,7 +156,7 @@ fn main() {
         }
         if let Some(my_player) = players.get(&my_id) {
             // If I know my position, I can set my direction to point towards the mouse
-            player_input.direction = my_player.player_state.pos.angle_between(mouse_pos);
+            player_input.direction = angle_facing(&my_player.player_state.pos, &mouse_pos);
         }
         connection.send_player_input(&player_input);
 

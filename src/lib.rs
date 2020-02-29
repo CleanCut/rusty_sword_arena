@@ -141,8 +141,8 @@
 pub use rusty_audio as audio;
 /// Everything in the game module is shared by the server _and_ the client
 pub mod game;
-/// The graphics module that will be used by your client
-pub mod gfx;
+/// The graphics module that will be used by your client, re-exported from rusty_gfx
+pub use rusty_gfx as gfx;
 /// The networking module that will be used by your client
 pub mod net;
 /// A timer module for general use

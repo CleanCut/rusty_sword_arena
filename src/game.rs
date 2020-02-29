@@ -1,169 +1,15 @@
-use crate::{timer::Timer, VERSION};
+use crate::{
+    gfx::{ButtonState, ButtonValue, Color, Vec2},
+    timer::Timer,
+    VERSION,
+};
 
-use rand::prelude::Rng;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use std::collections::{hash_map::DefaultHasher, HashMap};
 use std::fmt;
 use std::hash::{Hash, Hasher};
-use std::ops::{Add, Mul};
 use std::time::Duration;
-
-/// 2D Vector (x, y) that can represent coordinates in OpenGL space that fill your window, or
-/// velocity, or whatever other two f32 values you need.  The OpenGL window is (-1.0, -1.0) in
-/// the bottom left to (1.0, 1.0) in the top right.
-#[derive(Copy, Clone, Debug, Default, Deserialize, Serialize, PartialEq)]
-pub struct Vector2 {
-    pub x: f32,
-    pub y: f32,
-}
-
-impl Vector2 {
-    /// New `Vector2` at (0.0, 0.0)
-    pub fn new() -> Self {
-        Self { x: 0.0, y: 0.0 }
-    }
-    /// Create a random `Vector2` with x and y both in `[-dimension, dimension]`
-    pub fn new_in_square<T: Rng>(dimension: f32, rng: &mut T) -> Self {
-        Self {
-            x: rng.gen_range(-dimension, dimension),
-            y: rng.gen_range(-dimension, dimension),
-        }
-    }
-    /// Calculate the distance between two `Vector2`'s -- useful when they represent coordinates
-    pub fn distance_between(self, other: Self) -> f32 {
-        ((self.x - other.x).powi(2) + (self.y - other.y).powi(2)).sqrt()
-    }
-    /// Calculate the angle between two `Vector2`'s -- useful when they represent coordinates
-    pub fn angle_between(self, other: Self) -> f32 {
-        (other.y - self.y).atan2(other.x - self.x)
-    }
-    /// Calculate the magnitude of the `Vector2` -- useful when it represents a vector (such as
-    /// velocity)
-    pub fn magnitude(self) -> f32 {
-        (self.x.powi(2) + self.y.powi(2)).sqrt()
-    }
-    /// Create a new `Vector2`, normalized to be of unit length (length 1).
-    pub fn normalized(self) -> Self {
-        let magnitude = self.magnitude();
-        Self {
-            x: self.x / magnitude,
-            y: self.y / magnitude,
-        }
-    }
-    /// Create a new `Vector2` that is clamped to a magnitude of `1.0`
-    pub fn clamped_to_normal(self) -> Self {
-        if self.magnitude() > 1.0 {
-            self.normalized()
-        } else {
-            self
-        }
-    }
-    /// Create a new `Vector2` clamped to `magnitude`
-    pub fn clamped_to(self, magnitude: f32) -> Self {
-        if self.magnitude() > magnitude {
-            let ratio = magnitude / self.magnitude();
-            Self {
-                x: self.x * ratio,
-                y: self.y * ratio,
-            }
-        } else {
-            self
-        }
-    }
-}
-
-#[allow(clippy::float_cmp)]
-impl PartialOrd for Vector2 {
-    fn partial_cmp(&self, other: &Vector2) -> Option<Ordering> {
-        let magnitude = self.magnitude();
-        let other_magnitude = other.magnitude();
-        if magnitude < other_magnitude {
-            Some(Ordering::Less)
-        } else if magnitude == other_magnitude {
-            Some(Ordering::Equal)
-        } else {
-            Some(Ordering::Greater)
-        }
-    }
-}
-
-impl Add for Vector2 {
-    type Output = Vector2;
-    fn add(self, other: Vector2) -> Vector2 {
-        Vector2 {
-            x: self.x + other.x,
-            y: self.y + other.y,
-        }
-    }
-}
-
-impl Mul<f32> for Vector2 {
-    type Output = Vector2;
-    fn mul(self, other: f32) -> Vector2 {
-        Vector2 {
-            x: self.x * other,
-            y: self.y * other,
-        }
-    }
-}
-
-/// Convenience trait that adds an `.f32()` method that returns a 32-bit float representation of
-/// something.  Implemented for `std::time::Duration` and `rusty_sword_arena::timer::Timer`.
-pub trait Floatable {
-    fn f32(&self) -> f32;
-}
-
-impl Floatable for Duration {
-    fn f32(&self) -> f32 {
-        self.as_secs() as f32 + self.subsec_nanos() as f32 * 1e-9
-    }
-}
-
-/// Abstracted button values you may receive (arrow keys and WASD keys combined into directions, for
-/// example)
-#[derive(Copy, Clone, Debug, Deserialize, Serialize, PartialEq)]
-pub enum ButtonValue {
-    /// An abstracted button that combines: Arrow Up, W, Comma (Dvorak)
-    Up,
-    /// An abstracted button that combines: Arrow Down, S, O (Dvorak)
-    Down,
-    /// An abstracted button that combines: Arrow Left, A
-    Left,
-    /// An abstracted button that combines: Arrow Right, D, E (Dvorak)
-    Right,
-    /// An abstracted button that combines: Left Mouse Button, Space Bar, Backspace (Kinesis
-    /// Advantage Keyboard)
-    Attack,
-}
-
-/// Whether a button was pressed or released
-#[derive(Copy, Clone, Debug, Deserialize, Serialize, PartialEq)]
-pub enum ButtonState {
-    /// A button was just pressed
-    Pressed,
-    /// A button was just released
-    Released,
-}
-
-/// `GameEvent` represents game events caused by a user, such as the mouse moving around, buttons
-/// being pushed, or the window being closed.
-#[derive(Copy, Clone, Debug, Deserialize, Serialize, PartialEq)]
-pub enum GameEvent {
-    /// The user pressed Escape or closed the window. We should quit the game.
-    Quit,
-    /// Indicates the current position the mouse has moved to.  The mouse is now at this location in
-    /// OpenGL coordinates.  Note that on some operating systems this event will fire even if the
-    /// cursor is outside the bounds of the window.
-    MouseMoved { position: Vector2 },
-    /// Indicates that a button with variant `ButtonValue` has been either pressed or released
-    /// (variant of `ButtonState`).  Note that both mouse buttons and keyboard buttons are
-    /// abstracted and collected together into a few logical game buttons.
-    Button {
-        button_value: ButtonValue,
-        button_state: ButtonState,
-    },
-}
 
 /// Stateful, stack-based button processor.  You can use this to process button state/values and
 /// update a `PlayerInput` that you can send to the server.  Also handles the attack button.
@@ -192,14 +38,16 @@ impl ButtonProcessor {
             ButtonState::Pressed => match button_value {
                 ButtonValue::Up | ButtonValue::Down => self.vertical.push(button_value),
                 ButtonValue::Left | ButtonValue::Right => self.horizontal.push(button_value),
-                ButtonValue::Attack => player_input.attack = true,
+                ButtonValue::Action1 => player_input.attack = true,
+                _ => (),
             },
             ButtonState::Released => match button_value {
                 ButtonValue::Up | ButtonValue::Down => self.vertical.retain(|&x| x != button_value),
                 ButtonValue::Left | ButtonValue::Right => {
                     self.horizontal.retain(|&x| x != button_value)
                 }
-                ButtonValue::Attack => player_input.attack = false,
+                ButtonValue::Action1 => player_input.attack = false,
+                _ => (),
             },
         }
         // Set horizontal movement based on the stack
@@ -225,44 +73,24 @@ impl ButtonProcessor {
     }
 }
 
+/// Convenience trait that adds an `.f32()` method that returns a 32-bit float representation of
+/// something.  Implemented for `std::time::Duration` and `rusty_sword_arena::timer::Timer`.
+pub trait Floatable {
+    fn f32(&self) -> f32;
+}
+
+impl Floatable for Duration {
+    fn f32(&self) -> f32 {
+        self.as_secs() as f32 + self.subsec_nanos() as f32 * 1e-9
+    }
+}
+
 /// Various game control actions. Used by the networking module and the server.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub enum GameControlMsg {
     Join { name: String },
     Leave { id: u8 },
     Fetch,
-}
-
-/// A color with 32-bit float parts from `[0.0, 1.0]` suitable for OpenGL.
-#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
-pub struct Color {
-    /// Red
-    pub r: f32,
-    /// Green
-    pub g: f32,
-    /// Blue
-    pub b: f32,
-}
-
-impl Color {
-    /// Slightly simpler way to create a color
-    pub fn new(r: f32, g: f32, b: f32) -> Self {
-        Self { r, g, b }
-    }
-}
-
-impl Hash for Color {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        (self.r as u32).hash(state);
-        (self.g as u32).hash(state);
-        (self.b as u32).hash(state);
-    }
-}
-
-impl PartialEq for Color {
-    fn eq(&self, other: &Self) -> bool {
-        (self.r == other.r) && (self.g == other.g) && (self.b == other.b)
-    }
 }
 
 /// The game settings.  Mostly useful if you want to try to write client-side animations that match
@@ -280,7 +108,7 @@ pub struct GameSettings {
     /// How much drag there is on movement when the player is _not_ trying to move (how quick you
     /// stop)
     pub drag: f32,
-    /// Move threshold. Magnitude of Vector2 below which a move_speed will be considered 0.
+    /// Move threshold. Magnitude of Vec2 below which a move_speed will be considered 0.
     pub move_threshold: f32,
     /// Milliseconds. How long the server will wait to respawn a player who dies.
     pub respawn_delay: u64,
@@ -505,13 +333,13 @@ pub struct PlayerState {
     /// The color of the player
     pub color: Color,
     /// The position of the player in OpenGL units.
-    pub pos: Vector2,
+    pub pos: Vec2,
     /// The direction the player is facing, in radians
     pub direction: f32,
     /// Your player occupies a circle of this radius, in OpenGL units.
     pub radius: f32,
     /// Current velocity of the player
-    pub velocity: Vector2,
+    pub velocity: Vec2,
     /// Current health of the player [0.0, 100.0]
     pub health: f32,
     // Private! No docs for you.  We use this when we respawn.
@@ -541,7 +369,7 @@ impl PlayerState {
         id: u8,
         name: String,
         color: Color,
-        pos: Vector2,
+        pos: Vec2,
         radius: f32,
     ) -> Self {
         let mut respawn_timer = Timer::from_millis(game_settings.respawn_delay);
@@ -553,7 +381,7 @@ impl PlayerState {
             pos,
             direction: 0.0,
             radius,
-            velocity: Vector2::new(),
+            velocity: Vec2::new(0., 0.),
             health: 100.0,
             starting_health: 100.0,
             weapon: Weapon::new(),
@@ -584,7 +412,7 @@ impl PlayerState {
         self.dead = true;
     }
     /// Used by the server when a player needs to spawn
-    pub fn respawn(&mut self, pos: Vector2, msg: &str) {
+    pub fn respawn(&mut self, pos: Vec2, msg: &str) {
         println!("{}", msg);
         self.pos = pos;
         self.health = self.starting_health;
@@ -627,8 +455,8 @@ pub struct GameState {
 /// server (60fps = 16.7ms).  The server should be able to handle ~67 pkts/sec per client.  I hope.
 ///
 /// `PlayerInput` is used to collect input into and send it to the server.  You
-/// can use the [angle_between](game/struct.Vector2.html#method.angle_between) method of a
-/// Vector2 to find the direction for the input based off of the position in your own player's
+/// can use the [angle_between](game/struct.Vec2.html#method.angle_between) method of a
+/// Vec2 to find the direction for the input based off of the position in your own player's
 /// [PlayerState](game/struct.PlayerState.html) and the current position of the mouse,
 /// which you get from one of the [game events](../gfx/struct.Window.html#method.poll_game_events)
 ///
@@ -640,7 +468,7 @@ pub struct GameState {
 /// It's pretty safe to just overwrite move_amount and direction with the latest input you've got.
 /// Direction handling is instantaneous, and the move_amount is treated like a force (you move with
 /// a bit of inertia).
-#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct PlayerInput {
     /// The ID of your player
     pub id: u8,
@@ -650,9 +478,20 @@ pub struct PlayerInput {
     /// How much your player is attempting to move horizontally (x) and vertically (y) [-1.0, 1.0].
     /// Positive is right and up for x and y, respectively.  You can derive movement amounts from
     /// `Button` variants of the `GameEvent`s you get from the `Window.poll_game_events()`.
-    pub move_amount: Vector2,
+    pub move_amount: Vec2,
     /// What direction your player is facing. You can turn instantly, you lucky dog.
     pub direction: f32,
+}
+
+impl Default for PlayerInput {
+    fn default() -> Self {
+        Self {
+            id: 0,
+            attack: false,
+            move_amount: Vec2::zeros(),
+            direction: 0.0,
+        }
+    }
 }
 
 impl PlayerInput {
@@ -661,7 +500,7 @@ impl PlayerInput {
         Self {
             id,
             attack: false,
-            move_amount: Vector2::new(),
+            move_amount: Vec2::zeros(),
             direction: 0.0,
         }
     }

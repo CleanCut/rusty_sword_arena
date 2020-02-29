@@ -2,9 +2,10 @@ use bincode::{deserialize, serialize};
 use rand::prelude::{thread_rng, Rng, ThreadRng};
 use rusty_sword_arena::{
     game::{
-        Color, Floatable, GameControlMsg, GameSettings, GameState, HighScores, PlayerEvent,
-        PlayerInput, PlayerState, Vector2,
+        Floatable, GameControlMsg, GameSettings, GameState, HighScores, PlayerEvent, PlayerInput,
+        PlayerState,
     },
+    gfx::{clamp_vec_to_magnitude, distance, new_in_square, Color, Vec2},
     net, timer,
 };
 use std::collections::HashMap;
@@ -450,7 +451,7 @@ fn process_game_control_requests(
                                 id,
                                 name.clone(),
                                 color,
-                                Vector2::new_in_square(0.6, rng),
+                                new_in_square(0.6, rng),
                                 0.05,
                             );
                             high_scores.add_player(&player_state.name);
@@ -532,10 +533,7 @@ fn update_state(
         player_state.update(delta);
         // Anyone ready to spawn?
         if player_state.dead && player_state.respawn_timer.ready {
-            player_state.respawn(
-                Vector2::new_in_square(0.9, rng),
-                &format!("Player {} spawns", id),
-            );
+            player_state.respawn(new_in_square(0.9, rng), &format!("Player {} spawns", id));
         }
     }
 
@@ -544,13 +542,17 @@ fn update_state(
         if let Some(player_state) = player_states.get_mut(id) {
             // Ignore input from dead players, and remove their movement.
             if player_state.dead {
-                player_state.velocity = Vector2::new();
+                player_state.velocity = Vec2::zeros();
                 continue;
             }
             // Instantaneously face a direction
             player_state.direction = player_input.direction;
             // Update current velocity
-            let clamped_move_amount = player_input.move_amount.clamped_to_normal();
+            let clamped_move_amount = if player_input.move_amount.magnitude() > 1.0 {
+                player_input.move_amount.normalize()
+            } else {
+                player_input.move_amount
+            };
             if clamped_move_amount.magnitude() > game_settings.move_threshold {
                 // Player is moving -- add input to current velocity
                 player_state.velocity = player_state.velocity
@@ -562,11 +564,13 @@ fn update_state(
             }
             // If the player is attacking, then he can only go half as fast
             if player_input.attack {
-                player_state.velocity = player_state
-                    .velocity
-                    .clamped_to(game_settings.max_velocity * 0.5);
+                // player_state.velocity = player_state
+                //     .velocity
+                //     .clamped_to(game_settings.max_velocity * 0.5);
+                clamp_vec_to_magnitude(&mut player_state.velocity, game_settings.max_velocity * 0.5)
+            } else {
+                clamp_vec_to_magnitude(&mut player_state.velocity, game_settings.max_velocity);
             }
-            player_state.velocity = player_state.velocity.clamped_to(game_settings.max_velocity);
         }
     }
     // Process all the velocities to affect position (not just the players who had input this loop)
@@ -628,9 +632,7 @@ fn update_state(
             if defender.dead {
                 continue;
             }
-            if attacker.pos.distance_between(defender.pos)
-                <= attacker.weapon.radius + attacker.radius
-            {
+            if distance(&attacker.pos, &defender.pos) <= attacker.weapon.radius + attacker.radius {
                 missed = false;
                 if (defender.health > 0.0) && ((defender.health - attacker.weapon.damage) <= 0.0) {
                     high_scores.score(&attacker.name);

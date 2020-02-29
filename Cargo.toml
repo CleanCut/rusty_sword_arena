@@ -1,6 +1,6 @@
 [package]
 name = "rusty_sword_arena"
-version = "1.3.3"
+version = "2.0.0"
 authors = ["Nathan Stocks <cleancut@github.com>"]
 description = "Library/repository for the half-day Rust tutorial teaching you how to make a game client in Rust."
 documentation = "https://agileperception.com/doc/rusty_sword_arena/"
@@ -13,8 +13,7 @@ edition = "2018"
 
 [dependencies]
 # For graphics support 👾 (OpenGL) -- TODO: Switch to rendy
-glium = "0.26"
-image = "0.21"
+rusty_gfx = "0.4.0"
 
 # Networking support -- TODO: Switch to grpc or twirp
 zmq = "0.9"
@@ -28,7 +27,7 @@ serde = { version = "1.0", features = ["derive"] }
 bincode = "1.0"
 
 # For random numbers! 🎲
-rand = "0.6"
+rand = "0.7.3"
 
 # For playing sound 🔊
 rusty_audio = "1.1.1"
